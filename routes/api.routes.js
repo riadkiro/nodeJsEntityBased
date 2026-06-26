@@ -994,6 +994,7 @@ router.post('/api/tasks/:taskId/toggle', async (req, res) => {
 const TaskList = require('../models/task-list.model')
 const RecordTask = require('../models/record-task.model')
 const TaskComment = require('../models/task-comment.model')
+const ReminderService = require('../services/reminders/reminder.service')
 
 const cleanTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback
@@ -1096,6 +1097,90 @@ const optionColor = (options, label, fallback = '#9ca3af') => {
     const cleanLabel = cleanTaskText(label, '')
     const found = (options || []).find(item => item.label === cleanLabel)
     return found?.color || fallback
+}
+
+const taskReminderError = (res, error) => {
+    if (!error?.status) return false
+    res.status(error.status).json({
+        error: error.message,
+        code: error.code || 'REMINDER_ERROR'
+    })
+    return true
+}
+
+const taskResolveTimeZone = (value) => {
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+    const zone = cleanTaskText(value, '')
+    if (!zone) return fallback
+    try {
+        new Intl.DateTimeFormat('en-US', { timeZone: zone }).format(new Date())
+        return zone
+    } catch (_) {
+        return fallback
+    }
+}
+
+const taskFormatReminderTime = (date, timeZone) => {
+    try {
+        return new Intl.DateTimeFormat('fr-FR', {
+            timeZone: taskResolveTimeZone(timeZone),
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date instanceof Date ? date : new Date(date))
+    } catch (_) {
+        return ''
+    }
+}
+
+const taskReminderMessage = (task, scheduledAt, timeZone) => {
+    const time = taskFormatReminderTime(scheduledAt, timeZone)
+    return time ? `Rappel a ${time}` : `Rappel pour ${cleanTaskText(task?.title, 'cette tache')}`
+}
+
+async function cancelRecordTaskReminder(req, task, slotKey = 'default') {
+    return ReminderService.cancelReminderForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetId: task._id,
+        slotKey,
+    })
+}
+
+async function upsertRecordTaskReminder(req, task, reminderInput) {
+    if (!reminderInput) return null
+    if (reminderInput.enabled === false) {
+        await cancelRecordTaskReminder(req, task, reminderInput.slotKey || 'default')
+        return null
+    }
+
+    return ReminderService.upsertReminder({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetModel: 'RecordTask',
+        targetId: task._id,
+        slotKey: reminderInput.slotKey || 'default',
+        title: reminderInput.title || task.title,
+        message: reminderInput.message || taskReminderMessage(task, reminderInput.scheduledAt, reminderInput.timeZone),
+        scheduledAt: reminderInput.scheduledAt,
+        timeZone: reminderInput.timeZone,
+        channel: reminderInput.channel || 'local',
+        metadata: {
+            ...(reminderInput.metadata || {}),
+            taskTitle: task.title,
+            source: 'node',
+        },
+    })
+}
+
+async function findRecordTaskReminder(req, task) {
+    return ReminderService.findReminderForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetId: task._id,
+    })
 }
 
 const cleanTaskOptionPayload = (options, fallback, fallbackColor) => {
@@ -1526,6 +1611,7 @@ router.delete('/api/task-lists/:listId', async (req, res) => {
         comments.forEach(comment => {
             ;(comment.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
         })
+        await Promise.all(tasks.map(task => cancelRecordTaskReminder(req, task)))
         await RecordTask.deleteMany({ taskListId: req.params.listId })
         if (taskIds.length) await TaskComment.deleteMany({ taskId: { $in: taskIds } })
 
@@ -1544,7 +1630,18 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
         const list = await TaskList.findById(req.params.listId).lean()
         const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
-        res.json({ success: true, tasks: tasks.map(t => serializeRecordTask(req, t, list)) })
+        const reminderMap = await ReminderService.scheduledReminderMap({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetIds: tasks.map(task => task._id),
+        })
+        res.json({
+            success: true,
+            tasks: tasks.map(t => serializeRecordTask(req, t, list, {
+                reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
+            }))
+        })
     } catch (error) {
         console.error('[API] Get tasks error:', error)
         res.status(500).json({ error: error.message })
@@ -1560,6 +1657,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         const { title, description, priority, startDate, dueDate, assignedTo, status, isDayPriority } = req.body
         const cleanTitle = cleanTaskText(title)
         if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body)
 
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
@@ -1585,9 +1683,18 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             assignedTo: assignedTo || '',
             order
         })
+        const reminder = reminderInput
+            ? await upsertRecordTaskReminder(req, task, reminderInput)
+            : null
 
-        res.json({ success: true, task: serializeRecordTask(req, task, list) })
+        res.json({
+            success: true,
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            })
+        })
     } catch (error) {
+        if (taskReminderError(res, error)) return
         console.error('[API] Create task error:', error)
         res.status(500).json({ error: error.message })
     }
@@ -1624,17 +1731,24 @@ router.post('/api/record-tasks/:taskId/status', async (req, res) => {
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
         const list = await TaskList.findById(oldTask.taskListId).lean()
         const statusColor = optionColor(getListStatuses(list), status, '#9ca3af')
-        const completedAt = status === 'Terminé' ? new Date() : null
+        const completedAt = cleanTaskText(status, '').toLowerCase().includes('termin') ? new Date() : null
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor, completedAt }, { new: true })
+        const reminder = completedAt
+            ? null
+            : await findRecordTaskReminder(req, task)
+        if (completedAt) await cancelRecordTaskReminder(req, task)
 
         res.json({
             success: true,
             status: task.status,
             statusColor: task.statusColor,
             completedAt: task.completedAt || null,
-            task: serializeRecordTask(req, task, list)
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            })
         })
     } catch (error) {
+        if (taskReminderError(res, error)) return
         console.error('[API] Task status error:', error)
         res.status(500).json({ error: error.message })
     }
@@ -1678,9 +1792,12 @@ router.post('/api/record-tasks/:taskId/attachments', (req, res, next) => {
         await task.save()
 
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        const reminder = await findRecordTaskReminder(req, task)
         res.json({
             success: true,
-            task: serializeRecordTask(req, task, list),
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            }),
             attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
         })
     } catch (error) {
@@ -1710,9 +1827,12 @@ router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req,
         removeTaskAttachmentFile(req, filename)
 
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        const reminder = await findRecordTaskReminder(req, task)
         res.json({
             success: true,
-            task: serializeRecordTask(req, task, list),
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            }),
             attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
         })
     } catch (error) {
@@ -1730,6 +1850,7 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
         const comments = await TaskComment.find({ taskId: req.params.taskId }).select('attachments').lean()
         const task = await RecordTask.findByIdAndDelete(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
+        await cancelRecordTaskReminder(req, task)
         ;(task.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
         comments.forEach(comment => {
             ;(comment.attachments || []).forEach(att => removeTaskAttachmentFile(req, att.filename))
@@ -1743,6 +1864,56 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
 })
 
 /**
+ * POST /account/:account_number/api/record-tasks/:taskId/reminder
+ * Configure a reminder for a task.
+ */
+router.post('/api/record-tasks/:taskId/reminder', async (req, res) => {
+    try {
+        const task = await RecordTask.findById(req.params.taskId)
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+        const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body)
+        if (!reminderInput) {
+            return res.status(400).json({ error: 'Date de rappel requise', code: 'VALIDATION_ERROR' })
+        }
+        const reminder = await upsertRecordTaskReminder(req, task, reminderInput)
+        res.json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            })
+        })
+    } catch (error) {
+        if (taskReminderError(res, error)) return
+        console.error('[API] Upsert task reminder error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * DELETE /account/:account_number/api/record-tasks/:taskId/reminder
+ * Cancel a task reminder.
+ */
+router.delete('/api/record-tasks/:taskId/reminder', async (req, res) => {
+    try {
+        const task = await RecordTask.findById(req.params.taskId)
+        if (!task) return res.status(404).json({ error: 'Task not found' })
+        const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        await cancelRecordTaskReminder(req, task)
+        res.json({
+            success: true,
+            reminder: null,
+            task: serializeRecordTask(req, task, list, { reminder: null })
+        })
+    } catch (error) {
+        if (taskReminderError(res, error)) return
+        console.error('[API] Delete task reminder error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /account/:account_number/api/record-tasks/:taskId
  * Fetch a single task by ID
  */
@@ -1751,8 +1922,15 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
         const task = await RecordTask.findById(req.params.taskId).lean()
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
-        res.json({ success: true, task: serializeRecordTask(req, task, list) })
+        const reminder = await findRecordTaskReminder(req, task)
+        res.json({
+            success: true,
+            task: serializeRecordTask(req, task, list, {
+                reminder: ReminderService.serializeReminder(reminder)
+            })
+        })
     } catch (err) {
+        if (taskReminderError(res, err)) return
         console.error('[API] Get task error:', err)
         res.status(500).json({ success: false, error: err.message })
     }
@@ -1769,6 +1947,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
         let targetList = oldTask.taskListId ? await TaskList.findById(oldTask.taskListId).lean() : null
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body)
 
         allowedFields.forEach(f => {
             if (req.body[f] !== undefined) {
@@ -1797,7 +1976,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         // Auto-set color fields and completedAt
         if (updates.status) {
             updates.statusColor = optionColor(getListStatuses(targetList), updates.status, '#9ca3af')
-            updates.completedAt = updates.status === 'Terminé' ? new Date() : null
+            updates.completedAt = cleanTaskText(updates.status, '').toLowerCase().includes('termin') ? new Date() : null
         }
         if (updates.priority) {
             updates.priorityColor = optionColor(getListPriorities(targetList), updates.priority, '')
@@ -1807,11 +1986,13 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         if (updates.startDate === '' || updates.startDate === null) updates.startDate = null
         if (updates.dueDate === '' || updates.dueDate === null) updates.dueDate = null
 
-        if (Object.keys(updates).length === 0) {
+        if (Object.keys(updates).length === 0 && !reminderInput) {
             return res.status(400).json({ error: 'No valid fields to update' })
         }
 
-        const task = await RecordTask.findByIdAndUpdate(req.params.taskId, updates, { new: true })
+        const task = Object.keys(updates).length
+            ? await RecordTask.findByIdAndUpdate(req.params.taskId, updates, { new: true })
+            : await RecordTask.findById(req.params.taskId)
 
         // Auto-log activity for status and priority changes
         const activityFields = ['status', 'priority']
@@ -1837,12 +2018,23 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
                 }
             }
         }
+        let reminder = null
+        if (reminderInput) {
+            reminder = await upsertRecordTaskReminder(req, task, reminderInput)
+        } else if (cleanTaskText(updates.status, '').toLowerCase().includes('termin')) {
+            await cancelRecordTaskReminder(req, task)
+        } else {
+            reminder = await findRecordTaskReminder(req, task)
+        }
 
         res.json({
             success: true,
-            task: serializeRecordTask(req, task, targetList)
+            task: serializeRecordTask(req, task, targetList, {
+                reminder: ReminderService.serializeReminder(reminder)
+            })
         })
     } catch (error) {
+        if (taskReminderError(res, error)) return
         console.error('[API] Update task error:', error)
         res.status(500).json({ error: error.message })
     }

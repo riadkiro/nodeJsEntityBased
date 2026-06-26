@@ -385,6 +385,9 @@
                                         <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
                                     </div>
                                     <div class="th-task-meta-simple">
+                                        <span class="th-attachment-mini" x-show="task.reminder" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
+                                            <iconify-icon icon="solar:alarm-linear" width="12"></iconify-icon>
+                                        </span>
                                         <span class="th-attachment-mini" x-show="taskHasAttachments(task)" title="Pièce jointe">
                                             <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
                                         </span>
@@ -1304,6 +1307,12 @@ document.addEventListener('alpine:init', () => {
             const d = new Date(value);
             if (Number.isNaN(d.getTime())) return '—';
             return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
+        },
+        formatTime(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return d.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' });
         },
         formatLongDate(value) {
             if (!value) return '—';

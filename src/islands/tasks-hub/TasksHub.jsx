@@ -18,6 +18,28 @@ import TasksTimeline from './components/TasksTimeline'
 import TasksKanban from './components/TasksKanban'
 import TasksSidebar from './components/TasksSidebar'
 
+function reminderPromptValue(value) {
+    if (!value) return ''
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ''
+    return [
+        date.getFullYear(),
+        String(date.getMonth() + 1).padStart(2, '0'),
+        String(date.getDate()).padStart(2, '0'),
+    ].join('-') + ' ' + [
+        String(date.getHours()).padStart(2, '0'),
+        String(date.getMinutes()).padStart(2, '0'),
+    ].join(':')
+}
+
+function parseReminderPrompt(value) {
+    const match = String(value || '').trim().match(/^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})$/)
+    if (!match) return null
+    const [, year, month, day, hour, minute] = match.map(Number)
+    const date = new Date(year, month - 1, day, hour, minute, 0, 0)
+    return Number.isNaN(date.getTime()) ? null : date
+}
+
 export default function TasksHub({
     accountNumber,
     dataUrl,
@@ -356,6 +378,52 @@ export default function TasksHub({
         }
     }, [accountNumber, activeList, filters])
 
+    const handleSetReminder = useCallback(async (task) => {
+        if (!task?._id) return
+        const current = reminderPromptValue(task.reminder?.scheduledAt)
+        const value = window.prompt('Rappel (YYYY-MM-DD HH:mm)', current)
+        if (value === null) return
+        const scheduledAt = parseReminderPrompt(value)
+        if (!scheduledAt) {
+            window.alert('Date de rappel invalide')
+            return
+        }
+
+        try {
+            const res = await fetch(`/account/${accountNumber}/api/tasks-hub/tasks/${task._id}/reminder`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    scheduledAt: scheduledAt.toISOString(),
+                    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Casablanca',
+                }),
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || data.success === false) throw new Error(data.error || 'Rappel impossible')
+            setAllRows(prev => prev.map(row => row._id === task._id ? { ...row, reminder: data.reminder || null } : row))
+        } catch (err) {
+            console.error('[TasksHub] Set reminder error:', err)
+            window.alert(err.message || 'Rappel impossible')
+        }
+    }, [accountNumber])
+
+    const handleClearReminder = useCallback(async (task) => {
+        if (!task?._id) return
+        try {
+            const res = await fetch(`/account/${accountNumber}/api/tasks-hub/tasks/${task._id}/reminder`, {
+                method: 'DELETE',
+                credentials: 'include',
+            })
+            const data = await res.json().catch(() => ({}))
+            if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible')
+            setAllRows(prev => prev.map(row => row._id === task._id ? { ...row, reminder: null } : row))
+        } catch (err) {
+            console.error('[TasksHub] Clear reminder error:', err)
+            window.alert(err.message || 'Suppression impossible')
+        }
+    }, [accountNumber])
+
     // ─── Loading / Error states ─────────────────────────────────────
     if (loading && allRows.length === 0) {
         return (
@@ -392,6 +460,8 @@ export default function TasksHub({
                 entitySlug={resolvedSlug}
                 pagination={pagination}
                 onPageChange={handlePageChange}
+                onSetReminder={handleSetReminder}
+                onClearReminder={handleClearReminder}
             />
         ),
         kanban: (

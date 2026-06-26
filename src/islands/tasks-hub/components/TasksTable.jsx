@@ -19,6 +19,8 @@ export default function TasksTable({
     entitySlug,
     pagination,
     onPageChange,
+    onSetReminder,
+    onClearReminder,
 }) {
     const parentRef = useRef(null)
 
@@ -118,8 +120,42 @@ export default function TasksTable({
         }
 
         if (col.id === 'actions') {
+            const reminderDate = row.reminder?.scheduledAt ? new Date(row.reminder.scheduledAt) : null
+            const reminderLabel = reminderDate && !Number.isNaN(reminderDate.getTime())
+                ? reminderDate.toLocaleString('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })
+                : ''
             return (
                 <div className="flex items-center gap-1">
+                    <button
+                        type="button"
+                        className={`p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors ${row.reminder ? 'text-primary' : 'text-gray-400 hover:text-primary'}`}
+                        onClick={(e) => {
+                            e.stopPropagation()
+                            onSetReminder?.(row)
+                        }}
+                        title={reminderLabel ? `Rappel ${reminderLabel}` : 'Ajouter un rappel'}
+                    >
+                        <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 6.5V12L15.5 14" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d="M5 5L3.5 6.5M19 5L20.5 6.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                            <circle cx="12" cy="13" r="7" stroke="currentColor" strokeWidth="1.5" />
+                        </svg>
+                    </button>
+                    {row.reminder && (
+                        <button
+                            type="button"
+                            className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/20 text-gray-400 hover:text-red-500 transition-colors"
+                            onClick={(e) => {
+                                e.stopPropagation()
+                                onClearReminder?.(row)
+                            }}
+                            title="Supprimer le rappel"
+                        >
+                            <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                                <path d="M18 6L6 18M6 6L18 18" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                            </svg>
+                        </button>
+                    )}
                     <a
                         href={`/account/${accountNumber}/record/${entitySlug}/${row._id}`}
                         className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-primary transition-colors"
@@ -136,7 +172,7 @@ export default function TasksTable({
         }
 
         return <span className="text-sm text-gray-600 dark:text-gray-400 truncate">{value || '—'}</span>
-    }, [accountNumber, entitySlug])
+    }, [accountNumber, entitySlug, onSetReminder, onClearReminder])
 
     // Handle row click
     const handleRowClick = useCallback((row) => {
@@ -202,8 +238,8 @@ export default function TasksTable({
                                                     className="px-4 flex items-center overflow-hidden"
                                                     style={{
                                                         height: `${virtualRow.size}px`,
-                                                        flex: col.id === 'title' ? '2 1 0' : col.id === 'actions' ? '0 0 60px' : '1 1 0',
-                                                        minWidth: col.id === 'actions' ? '60px' : '100px',
+                                                        flex: col.id === 'title' ? '2 1 0' : col.id === 'actions' ? '0 0 112px' : '1 1 0',
+                                                        minWidth: col.id === 'actions' ? '112px' : '100px',
                                                     }}
                                                 >
                                                     {renderCell(row, col)}

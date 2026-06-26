@@ -142,6 +142,7 @@ router.get("/api/agenda-hub", async (req, res) => {
 // Tasks Hub API — must be before api-account (has /:id catch-all)
 const TaskListModel = require('../models/task-list.model');
 const RecordTaskModel = require('../models/record-task.model');
+const ReminderService = require('../services/reminders/reminder.service');
 const hubTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback;
     const text = value.trim();
@@ -179,6 +180,40 @@ const hubDefaultPriorities = Object.entries(hubPriorityColors).map(([label, colo
     color: color || '#cbd5e1',
     order
 }));
+const hubResolveTimeZone = (value) => {
+    const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    const zone = hubTaskText(value, '');
+    if (!zone) return fallback;
+    try {
+        new Intl.DateTimeFormat('en-US', { timeZone: zone }).format(new Date());
+        return zone;
+    } catch (_) {
+        return fallback;
+    }
+};
+const hubFormatReminderTime = (date, timeZone) => {
+    try {
+        return new Intl.DateTimeFormat('fr-FR', {
+            timeZone: hubResolveTimeZone(timeZone),
+            hour: '2-digit',
+            minute: '2-digit'
+        }).format(date instanceof Date ? date : new Date(date));
+    } catch (_) {
+        return '';
+    }
+};
+const hubTaskReminderMessage = (task, scheduledAt, timeZone) => {
+    const time = hubFormatReminderTime(scheduledAt, timeZone);
+    return time ? `Rappel a ${time}` : `Rappel pour ${hubTaskText(task?.title, 'cette tache')}`;
+};
+const hubReminderError = (res, error) => {
+    if (!error?.status) return false;
+    res.status(error.status).json({
+        error: error.message,
+        code: error.code || 'REMINDER_ERROR'
+    });
+    return true;
+};
 const hubTaskOptions = (options, fallback) => {
     const source = Array.isArray(options) && options.length ? options : fallback;
     return source
@@ -366,10 +401,61 @@ async function resolveHubTaskTarget(req, taskListId = '') {
     return { entity: entity || {}, record, list };
 }
 
+async function hubTenantRecordIds(req) {
+    const _tc = require('../middleware/tenant').tenantCollection;
+    const Record = await _tc(req, "Record");
+    return Record.find({}).distinct('_id');
+}
+
+async function hubLoadTenantTask(req, taskId) {
+    if (!/^[a-f\d]{24}$/i.test(String(taskId || ''))) return null;
+    const ids = await hubTenantRecordIds(req);
+    if (!ids.length) return null;
+    return RecordTaskModel.findOne({ _id: taskId, recordId: { $in: ids } });
+}
+
+async function hubCancelTaskReminder(req, task, slotKey = 'default') {
+    return ReminderService.cancelReminderForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetId: task._id,
+        slotKey,
+    });
+}
+
+async function hubUpsertTaskReminder(req, task, reminderInput) {
+    if (!reminderInput) return null;
+    if (reminderInput.enabled === false) {
+        await hubCancelTaskReminder(req, task, reminderInput.slotKey || 'default');
+        return null;
+    }
+
+    return ReminderService.upsertReminder({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetModel: 'RecordTask',
+        targetId: task._id,
+        slotKey: reminderInput.slotKey || 'default',
+        title: reminderInput.title || task.title,
+        message: reminderInput.message || hubTaskReminderMessage(task, reminderInput.scheduledAt, reminderInput.timeZone),
+        scheduledAt: reminderInput.scheduledAt,
+        timeZone: reminderInput.timeZone,
+        channel: reminderInput.channel || 'local',
+        metadata: {
+            ...(reminderInput.metadata || {}),
+            taskTitle: task.title,
+            source: 'node',
+        },
+    });
+}
+
 router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
     try {
         const title = hubTaskText(req.body?.title, '');
         if (!title) return res.status(400).json({ error: 'Title required' });
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
 
         const status = hubStatusColors[req.body?.status] ? req.body.status : 'À faire';
         const priority = hubPriorityColors.hasOwnProperty(req.body?.priority) ? req.body.priority : 'Aucune';
@@ -392,6 +478,9 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             assignedTo: hubTaskText(req.body?.assignedTo, ''),
             order
         });
+        const reminder = reminderInput
+            ? await hubUpsertTaskReminder(req, task, reminderInput)
+            : null;
 
         res.json({
             success: true,
@@ -423,14 +512,54 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
                 entitySlug: entity.slug || '',
                 entityIcon: entity.icon || 'solar:user-rounded-bold-duotone',
                 entityColor: entity.color || '#7c3aed',
-                scope: 'personal'
+                scope: 'personal',
+                reminder: ReminderService.serializeReminder(reminder)
             }
         });
     } catch (error) {
+        if (hubReminderError(res, error)) return;
         console.error('[TasksHub] Create personal task error:', error);
         res.status(500).json({ error: error.message });
 	    }
 	});
+
+router.post("/api/tasks-hub/tasks/:taskId/reminder", async (req, res) => {
+    try {
+        const task = await hubLoadTenantTask(req, req.params.taskId);
+        if (!task) return res.status(404).json({ error: 'Task not found' });
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput) {
+            return res.status(400).json({ error: 'Date de rappel requise', code: 'VALIDATION_ERROR' });
+        }
+        const reminder = await hubUpsertTaskReminder(req, task, reminderInput);
+        res.json({
+            success: true,
+            taskId: task._id.toString(),
+            reminder: ReminderService.serializeReminder(reminder),
+        });
+    } catch (error) {
+        if (hubReminderError(res, error)) return;
+        console.error('[TasksHub] Upsert task reminder error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+router.delete("/api/tasks-hub/tasks/:taskId/reminder", async (req, res) => {
+    try {
+        const task = await hubLoadTenantTask(req, req.params.taskId);
+        if (!task) return res.status(404).json({ error: 'Task not found' });
+        await hubCancelTaskReminder(req, task);
+        res.json({
+            success: true,
+            taskId: task._id.toString(),
+            reminder: null,
+        });
+    } catch (error) {
+        if (hubReminderError(res, error)) return;
+        console.error('[TasksHub] Delete task reminder error:', error);
+        res.status(500).json({ error: error.message });
+    }
+});
 
 router.post("/api/tasks-hub/reorder", async (req, res) => {
     try {
@@ -475,6 +604,12 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
         }
 
         const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: -1 }).lean();
+        const reminderMap = await ReminderService.scheduledReminderMap({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetIds: allTasks.map(task => task._id),
+        });
         const records = tenantRecords;
         const recordMap = {};
         records.forEach(r => { recordMap[r._id.toString()] = r; });
@@ -576,7 +711,8 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 entityName: entity?.name || 'Sans entité',
                 entitySlug: entity?.slug || '',
                 entityIcon: entity?.icon || 'solar:folder-bold-duotone',
-                entityColor: entity?.color || '#4361ee'
+                entityColor: entity?.color || '#4361ee',
+                reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
             }));
             const done = listTasks.filter(t => t.status === 'Terminé').length;
             entityGroups[eId].records[rId].totalTasks += normalizedTasks.length;

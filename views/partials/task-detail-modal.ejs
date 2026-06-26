@@ -474,10 +474,10 @@
                                 <div class="tdm-prop-value">
                                     <span class="tdm-prop-datetime">
                                         <input type="date" class="tdm-prop-date"
-                                               :value="$store.taskModal.reminderDateVal()"
+                                               x-model="$store.taskModal.task._reminderDraftDate"
                                                @change="$store.taskModal.updateReminderPart('date', $event.target.value || '')">
                                         <input type="time" class="tdm-prop-time"
-                                               :value="$store.taskModal.reminderDateVal() ? $store.taskModal.reminderTimeVal() : ''"
+                                               x-model="$store.taskModal.task._reminderDraftTime"
                                                :disabled="!$store.taskModal.reminderDateVal()"
                                                @change="$store.taskModal.updateReminderPart('time', $event.target.value || '')">
                                         <button type="button" class="tdm-reminder-clear" title="Supprimer le rappel"
@@ -1450,6 +1450,34 @@ document.addEventListener('alpine:init', () => {
             return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
         },
 
+        reminderDateFromValue(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return [
+                d.getFullYear(),
+                String(d.getMonth() + 1).padStart(2, '0'),
+                String(d.getDate()).padStart(2, '0')
+            ].join('-');
+        },
+
+        reminderTimeFromValue(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        },
+
+        composeReminderDateTime(dateValue, timeValue) {
+            const date = String(dateValue || '').trim();
+            const time = String(timeValue || '').trim();
+            if (!date || !time) return null;
+            const [year, month, day] = date.split('-').map(Number);
+            const [hour, minute] = time.split(':').map(Number);
+            if (!year || !month || !day || !Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+            return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
+        },
+
         updateTaskDatePart(field, part, value) {
             if (!this.task || !['startDate', 'dueDate'].includes(field)) return;
             const currentDate = this.toDateVal(this.task[field]);
@@ -1464,22 +1492,22 @@ document.addEventListener('alpine:init', () => {
         syncReminderDraft() {
             if (!this.task) return;
             const scheduledAt = this.task.reminder?.scheduledAt || '';
-            this.task._reminderDraftDate = this.toDateVal(scheduledAt);
-            this.task._reminderDraftTime = this.toTimeVal(scheduledAt);
+            this.task._reminderDraftDate = this.reminderDateFromValue(scheduledAt);
+            this.task._reminderDraftTime = this.reminderTimeFromValue(scheduledAt);
         },
 
         reminderDateVal() {
             if (!this.task) return '';
             return this.task._reminderDraftDate !== undefined
                 ? this.task._reminderDraftDate
-                : this.toDateVal(this.task?.reminder?.scheduledAt);
+                : this.reminderDateFromValue(this.task?.reminder?.scheduledAt);
         },
 
         reminderTimeVal() {
             if (!this.task) return '';
             return this.task._reminderDraftTime !== undefined
                 ? this.task._reminderDraftTime
-                : this.toTimeVal(this.task?.reminder?.scheduledAt);
+                : this.reminderTimeFromValue(this.task?.reminder?.scheduledAt);
         },
 
         reminderTimeZone() {
@@ -1502,7 +1530,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
             if (!nextTime) return;
-            const scheduledAt = this.composeDateTime(nextDate, nextTime);
+            const scheduledAt = this.composeReminderDateTime(nextDate, nextTime);
             if (!scheduledAt) return;
             await this.setReminder(scheduledAt);
         },

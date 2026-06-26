@@ -6,6 +6,7 @@ const fsp = require('fs/promises');
 const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
+const { taskTenantModels } = require('../../services/task-tenant-models.service');
 const { canAccessRecord, canEditRecordModule } = require('../../middleware/shared-records-helper');
 const { ensureEventsEntity } = require('../../services/events-entity.service');
 const OcrService = require('../../services/ocr.service');
@@ -22,9 +23,6 @@ const {
     ensureOpenAIResponsesAction,
     shouldUseOpenAIWebSearch
 } = require('../../src/integrations/openaiActions');
-const GlobalTaskList = require('../../models/task-list.model');
-const GlobalRecordTask = require('../../models/record-task.model');
-
 const router = express.Router();
 
 const RECORD_AI_MODEL = process.env.RECORD_AI_MODEL || process.env.AI_ASSISTANT_MODEL || 'gpt-5.5';
@@ -6153,12 +6151,12 @@ async function agentBuildToolCatalog(req, record, entity) {
             .limit(60)
             .lean()
         : [];
-    const tasks = await GlobalRecordTask.find({ recordId: record._id })
+    const { TaskList, RecordTask } = await taskTenantModels(req);
+    const tasks = await RecordTask.find({ recordId: record._id })
         .select('title description status priority dueDate taskListId updatedAt')
         .sort({ updatedAt: -1 })
         .limit(60)
         .lean();
-    const TaskList = await tenantCollection(req, 'TaskList');
     const taskLists = await TaskList.find({ recordId: record._id }).select('label').lean();
     const taskListMap = new Map(taskLists.map(tl => [cleanId(tl._id), tl.label || '']));
     const documents = await Document.find(agentDocumentRecordQuery(record))
@@ -6611,12 +6609,13 @@ async function requireAgentRun(req, recordId, runId) {
 }
 
 async function agentEnsureTaskList(req, recordId, requestedLabel = '') {
+    const { TaskList } = await taskTenantModels(req);
     const label = agentSafeString(requestedLabel || 'Actions IA', 90) || 'Actions IA';
-    let list = await GlobalTaskList.findOne({ recordId, label });
+    let list = await TaskList.findOne({ recordId, label });
     if (list) return { list, created: false };
 
-    const maxOrder = await GlobalTaskList.findOne({ recordId }).sort({ order: -1 }).lean();
-    list = await GlobalTaskList.create({
+    const maxOrder = await TaskList.findOne({ recordId }).sort({ order: -1 }).lean();
+    list = await TaskList.create({
         recordId,
         label,
         color: '#4f46e5',
@@ -8272,7 +8271,8 @@ async function applyAgentAction(req, record, entity, action) {
             'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
         };
         const dueDate = action.input?.dueDate ? new Date(action.input.dueDate) : null;
-        const task = await GlobalRecordTask.create({
+        const { RecordTask } = await taskTenantModels(req);
+        const task = await RecordTask.create({
             taskListId: list._id,
             recordId: record._id,
             title: action.input?.title || 'Action IA',
@@ -8296,7 +8296,8 @@ async function applyAgentAction(req, record, entity, action) {
         const canEdit = await canEditRecordModule(req, record._id, 'tasks');
         if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
 
-        const task = await GlobalRecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
+        const { RecordTask } = await taskTenantModels(req);
+        const task = await RecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
         if (!task) throw new Error('Tâche introuvable');
 
         const before = {
@@ -8490,16 +8491,18 @@ async function undoAgentLog(req, record, entity, log) {
     }
 
     if (inverse.tool === 'delete_task' && inverse.taskId) {
-        await GlobalRecordTask.deleteOne({ _id: inverse.taskId, recordId: record._id });
+        const { TaskList, RecordTask } = await taskTenantModels(req);
+        await RecordTask.deleteOne({ _id: inverse.taskId, recordId: record._id });
         if (inverse.taskListCreated && inverse.taskListId) {
-            const remaining = await GlobalRecordTask.countDocuments({ taskListId: inverse.taskListId });
-            if (!remaining) await GlobalTaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
+            const remaining = await RecordTask.countDocuments({ taskListId: inverse.taskListId });
+            if (!remaining) await TaskList.deleteOne({ _id: inverse.taskListId, recordId: record._id });
         }
         return;
     }
 
     if (inverse.tool === 'restore_task' && inverse.task?.taskId) {
-        await GlobalRecordTask.updateOne(
+        const { RecordTask } = await taskTenantModels(req);
+        await RecordTask.updateOne(
             { _id: inverse.task.taskId, recordId: record._id },
             {
                 $set: {

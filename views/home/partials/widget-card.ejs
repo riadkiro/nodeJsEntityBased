@@ -139,6 +139,11 @@
                                @blur="saveEditTodayTask(wid, item)">
                     </template>
 		                    <span class="dx-row-meta dx-task-row-actions">
+		                        <span class="dx-task-reminder-badge"
+		                              x-show="taskHasReminder(item)"
+		                              :title="taskReminderLabel(item)">
+		                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+		                        </span>
 		                        <span class="dx-task-attachment-badge"
 		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
 		                              title="Pièce jointe">
@@ -236,6 +241,11 @@
                                @blur="saveEditHomeTask(wid, item)">
 	                    </template>
 		                    <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
+		                        <span class="dx-task-reminder-badge"
+		                              x-show="taskHasReminder(item)"
+		                              :title="taskReminderLabel(item)">
+		                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+		                        </span>
 		                        <span class="dx-task-attachment-badge"
 		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
 		                              title="Pièce jointe">
@@ -520,6 +530,11 @@
 	                                   @blur="saveEditHomeTask(wid, item)">
 		                        </template>
 			                        <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
+			                            <span class="dx-task-reminder-badge"
+			                                  x-show="taskHasReminder(item)"
+			                                  :title="taskReminderLabel(item)">
+			                                <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+			                            </span>
 			                            <span class="dx-task-attachment-badge"
 			                                  x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
 			                                  title="Pièce jointe">

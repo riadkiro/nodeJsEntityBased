@@ -140,9 +140,8 @@ router.get("/api/agenda-hub", async (req, res) => {
     }
 });
 // Tasks Hub API — must be before api-account (has /:id catch-all)
-const TaskListModel = require('../models/task-list.model');
-const RecordTaskModel = require('../models/record-task.model');
 const ReminderService = require('../services/reminders/reminder.service');
+const { taskTenantModels } = require('../services/task-tenant-models.service');
 const hubTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback;
     const text = value.trim();
@@ -325,6 +324,7 @@ async function ensurePersonalTaskRecord(req) {
 }
 
 async function ensurePersonalTaskList(req, options = {}) {
+    const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
     const label = hubTaskListLabel(options.label || 'Liste des tâches');
     const color = options.color || '#6366f1';
     const icon = options.icon || 'solar:checklist-bold-duotone';
@@ -392,6 +392,7 @@ async function resolveHubTaskTarget(req, taskListId = '') {
     const _tc = require('../middleware/tenant').tenantCollection;
     const Entity = await _tc(req, "Entity");
     const Record = await _tc(req, "Record");
+    const { TaskList: TaskListModel } = await taskTenantModels(req);
     const list = await TaskListModel.findById(id);
     if (!list) return null;
 
@@ -411,6 +412,7 @@ async function hubLoadTenantTask(req, taskId) {
     if (!/^[a-f\d]{24}$/i.test(String(taskId || ''))) return null;
     const ids = await hubTenantRecordIds(req);
     if (!ids.length) return null;
+    const { RecordTask: RecordTaskModel } = await taskTenantModels(req);
     return RecordTaskModel.findOne({ _id: taskId, recordId: { $in: ids } });
 }
 
@@ -462,6 +464,7 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
         const target = await resolveHubTaskTarget(req, req.body?.taskListId);
         if (!target) return res.status(404).json({ error: 'Liste de tâches introuvable' });
         const { entity, record, list } = target;
+        const { RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const order = await RecordTaskModel.countDocuments({ taskListId: list._id });
         const task = await RecordTaskModel.create({
             taskListId: list._id,
@@ -569,6 +572,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             .filter(id => /^[a-f\d]{24}$/i.test(id));
         if (!normalizedTaskIds.length) return res.status(400).json({ error: 'taskIds array required' });
 
+        const { RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const existingTasks = await RecordTaskModel.find({ _id: { $in: normalizedTaskIds } }).select('_id').lean();
         const allowedIds = new Set(existingTasks.map(task => task._id.toString()));
         const bulkOps = normalizedTaskIds
@@ -598,6 +602,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
         }
 
+        const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: 1 }).lean();
         if (allLists.length === 0) {
             return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
@@ -828,11 +833,18 @@ router.get("/api/home-overview", async (req, res) => {
 
         // Scope to tenant: get all record IDs belonging to this tenant first
         const tenantRecordIds = await Record.find({}).distinct('_id');
+        const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
 
         const [allLists, allTasks] = await Promise.all([
             tenantRecordIds.length ? TaskListModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([]),
             tenantRecordIds.length ? RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([])
         ]);
+        const reminderMap = await ReminderService.scheduledReminderMap({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetIds: allTasks.map(task => task._id),
+        });
 
         const recordIds = new Set();
         allLists.forEach(list => { if (list?.recordId) recordIds.add(list.recordId.toString()); });
@@ -922,6 +934,7 @@ router.get("/api/home-overview", async (req, res) => {
                 entitySlug,
                 entityIcon: entity?.icon || 'solar:folder-bold-duotone',
                 entityColor: entity?.color || '#4361ee',
+                reminder: ReminderService.serializeReminder(reminderMap.get(taskId)),
                 link: recordId && entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}` : `/account/${req.account_number}/tasks`
             };
         });

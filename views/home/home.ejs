@@ -1359,6 +1359,22 @@
 	        display: block;
 	        pointer-events: none;
 	    }
+	    .dx-task-reminder-badge {
+	        width: 18px;
+	        height: 18px;
+	        border-radius: 6px;
+	        display: inline-flex;
+	        align-items: center;
+	        justify-content: center;
+	        background: #fef3c7;
+	        color: #d97706;
+	        flex: 0 0 auto;
+	        box-shadow: inset 0 0 0 1px #fde68a;
+	    }
+	    .dx-task-reminder-badge iconify-icon {
+	        display: block;
+	        pointer-events: none;
+	    }
 	    .dx-shopping-row.dx-task-row .dx-check {
 	        border: 1.5px solid #9aa8c2;
 	        padding: 0;
@@ -2145,6 +2161,11 @@
 	    .dark .dx-task-record-mini {
 	        background: color-mix(in srgb, var(--task-record-color, #4361ee) 18%, #0e1726);
 	    }
+	    .dark .dx-task-reminder-badge {
+	        background: rgba(245,158,11,.14);
+	        color: #fbbf24;
+	        box-shadow: inset 0 0 0 1px rgba(251,191,36,.24);
+	    }
 	    .dark .dx-task-record-line,
 	    .dark .dx-task-due-badge {
 	        color: #8ea0bd;
@@ -2712,8 +2733,27 @@ document.addEventListener('alpine:init', () => {
 		            return Array.isArray(task.attachments) && task.attachments.length > 0;
 		        },
 
+		        taskHasReminder(task = {}) {
+		            const raw = task?.reminder?.scheduledAt;
+		            if (!raw) return false;
+		            const date = new Date(raw);
+		            return !Number.isNaN(date.getTime());
+		        },
+
+		        taskReminderLabel(task = {}) {
+		            if (!this.taskHasReminder(task)) return 'Rappel';
+		            const date = new Date(task.reminder.scheduledAt);
+		            return 'Rappel ' + date.toLocaleString('fr-FR', {
+		                day: '2-digit',
+		                month: 'short',
+		                hour: '2-digit',
+		                minute: '2-digit'
+		            }).replace('.', '');
+		        },
+
 		        homeTaskRowMetaEnabled(wid, task = {}) {
 		            return this.homeTaskPriorityEnabled(wid)
+		                || this.taskHasReminder(task)
 		                || (this.homeTaskAttachmentsEnabled(wid) && this.taskHasAttachments(task))
 		                || (this.homeTaskRecordEnabled(wid) && !!this.taskRecordLabel(task));
 		        },

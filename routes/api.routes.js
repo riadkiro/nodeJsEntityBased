@@ -15,6 +15,7 @@ const crypto = require('crypto')
 const { tenantCollection } = require('../middleware/tenant')
 const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } = require('../services/record-filter-query')
 const { ensureEventsEntity } = require('../services/events-entity.service')
+const { taskTenantModels } = require('../services/task-tenant-models.service')
 const { sanitizeUploadedFilename } = require('../utils/filename-encoding')
 
 /**
@@ -991,9 +992,6 @@ router.post('/api/tasks/:taskId/toggle', async (req, res) => {
 // ═══════════════════════════════════════════════════════════════
 // RECORD TASKS — Per-record task lists & tasks (scoped to each record)
 // ═══════════════════════════════════════════════════════════════
-const TaskList = require('../models/task-list.model')
-const RecordTask = require('../models/record-task.model')
-const TaskComment = require('../models/task-comment.model')
 const ReminderService = require('../services/reminders/reminder.service')
 
 const cleanTaskText = (value, fallback = '') => {
@@ -1195,7 +1193,8 @@ const cleanTaskOptionPayload = (options, fallback, fallbackColor) => {
     return cleaned.length ? cleaned : fallback
 }
 
-const syncTaskOptions = async ({ listId, kind, previousOptions, nextOptions, renames = [] }) => {
+const syncTaskOptions = async ({ req, listId, kind, previousOptions, nextOptions, renames = [] }) => {
+    const { RecordTask } = await taskTenantModels(req)
     const field = kind === 'priority' ? 'priority' : 'status'
     const colorField = kind === 'priority' ? 'priorityColor' : 'statusColor'
     const fallback = nextOptions[0] || (kind === 'priority' ? defaultTaskPriorities[0] : defaultTaskStatuses[0])
@@ -1349,6 +1348,7 @@ const removeTaskAttachmentFile = (req, filename) => {
  */
 router.get('/api/record/:recordId/task-lists', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
         const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
 
@@ -1393,6 +1393,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { viewMode } = req.body
         if (!['list', 'kanban'].includes(viewMode)) {
             return res.status(400).json({ error: 'Invalid viewMode, must be list or kanban' })
@@ -1411,6 +1412,7 @@ router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/statuses', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { statuses, renames } = req.body
         if (!Array.isArray(statuses) || statuses.length === 0) {
             return res.status(400).json({ error: 'At least one status is required' })
@@ -1424,6 +1426,7 @@ router.put('/api/task-lists/:listId/statuses', async (req, res) => {
         }
         await TaskList.findByIdAndUpdate(req.params.listId, { statuses: cleaned })
         await syncTaskOptions({
+            req,
             listId: req.params.listId,
             kind: 'status',
             previousOptions: previous,
@@ -1443,6 +1446,7 @@ router.put('/api/task-lists/:listId/statuses', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/priorities', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { priorities, renames } = req.body
         if (!Array.isArray(priorities) || priorities.length === 0) {
             return res.status(400).json({ error: 'At least one priority is required' })
@@ -1456,6 +1460,7 @@ router.put('/api/task-lists/:listId/priorities', async (req, res) => {
 	        }
 	        await TaskList.findByIdAndUpdate(req.params.listId, { priorities: cleaned })
         await syncTaskOptions({
+            req,
             listId: req.params.listId,
             kind: 'priority',
             previousOptions: previous,
@@ -1475,6 +1480,7 @@ router.put('/api/task-lists/:listId/priorities', async (req, res) => {
  */
 router.get('/api/task-lists/:listId/options', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
         res.json({
@@ -1494,6 +1500,7 @@ router.get('/api/task-lists/:listId/options', async (req, res) => {
  */
 router.post('/api/record/:recordId/task-lists', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { label, color } = req.body
         const cleanLabel = cleanTaskText(label)
         if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
@@ -1531,6 +1538,7 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
  */
 router.post('/api/record/:recordId/task-lists/reorder', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { listIds } = req.body
         if (!Array.isArray(listIds)) return res.status(400).json({ error: 'listIds array required' })
 
@@ -1557,6 +1565,7 @@ router.post('/api/record/:recordId/task-lists/reorder', async (req, res) => {
  */
 router.put('/api/task-lists/:listId', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { label } = req.body
         const cleanLabel = cleanTaskText(label)
         if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
@@ -1577,6 +1586,7 @@ router.put('/api/task-lists/:listId', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/color', async (req, res) => {
     try {
+        const { TaskList } = await taskTenantModels(req)
         const { color } = req.body
         if (!color) return res.status(400).json({ error: 'Color required' })
 
@@ -1596,6 +1606,7 @@ router.put('/api/task-lists/:listId/color', async (req, res) => {
  */
 router.delete('/api/task-lists/:listId', async (req, res) => {
     try {
+        const { TaskList, RecordTask, TaskComment } = await taskTenantModels(req)
         const list = await TaskList.findByIdAndDelete(req.params.listId)
         if (!list) return res.status(404).json({ error: 'List not found' })
 
@@ -1628,6 +1639,7 @@ router.delete('/api/task-lists/:listId', async (req, res) => {
  */
 router.get('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const list = await TaskList.findById(req.params.listId).lean()
         const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
         const reminderMap = await ReminderService.scheduledReminderMap({
@@ -1654,6 +1666,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
  */
 router.post('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const { title, description, priority, startDate, dueDate, assignedTo, status, isDayPriority } = req.body
         const cleanTitle = cleanTaskText(title)
         if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
@@ -1706,6 +1719,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
  */
 router.put('/api/record-tasks/:taskId/rename', async (req, res) => {
     try {
+        const { RecordTask } = await taskTenantModels(req)
         const { title } = req.body
         const cleanTitle = cleanTaskText(title)
         if (!cleanTitle) return res.status(400).json({ error: 'Title required' })
@@ -1726,6 +1740,7 @@ router.put('/api/record-tasks/:taskId/rename', async (req, res) => {
  */
 router.post('/api/record-tasks/:taskId/status', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const { status } = req.body
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
@@ -1765,6 +1780,7 @@ router.post('/api/record-tasks/:taskId/attachments', (req, res, next) => {
     })
 }, async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const task = await RecordTask.findById(req.params.taskId)
         if (!task) {
             ;(req.files || []).forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
@@ -1812,6 +1828,7 @@ router.post('/api/record-tasks/:taskId/attachments', (req, res, next) => {
  */
 router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const task = await RecordTask.findById(req.params.taskId)
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
 
@@ -1847,6 +1864,7 @@ router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req,
  */
 router.delete('/api/record-tasks/:taskId', async (req, res) => {
     try {
+        const { RecordTask, TaskComment } = await taskTenantModels(req)
         const comments = await TaskComment.find({ taskId: req.params.taskId }).select('attachments').lean()
         const task = await RecordTask.findByIdAndDelete(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
@@ -1869,6 +1887,7 @@ router.delete('/api/record-tasks/:taskId', async (req, res) => {
  */
 router.post('/api/record-tasks/:taskId/reminder', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const task = await RecordTask.findById(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
@@ -1897,6 +1916,7 @@ router.post('/api/record-tasks/:taskId/reminder', async (req, res) => {
  */
 router.delete('/api/record-tasks/:taskId/reminder', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const task = await RecordTask.findById(req.params.taskId)
         if (!task) return res.status(404).json({ error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
@@ -1919,6 +1939,7 @@ router.delete('/api/record-tasks/:taskId/reminder', async (req, res) => {
  */
 router.get('/api/record-tasks/:taskId', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const task = await RecordTask.findById(req.params.taskId).lean()
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
@@ -1942,6 +1963,7 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
  */
 router.put('/api/record-tasks/:taskId', async (req, res) => {
     try {
+        const { TaskList, RecordTask, TaskComment } = await taskTenantModels(req)
         const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId']
         const updates = {}
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
@@ -2046,6 +2068,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
  */
 router.post('/api/task-lists/:listId/reorder', async (req, res) => {
     try {
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const { taskIds } = req.body
         if (!Array.isArray(taskIds)) return res.status(400).json({ error: 'taskIds array required' })
 
@@ -2081,6 +2104,7 @@ router.post('/api/task-lists/:listId/reorder', async (req, res) => {
  */
 router.get('/api/record-tasks/:taskId/comments', async (req, res) => {
     try {
+        const { TaskComment } = await taskTenantModels(req)
         const comments = await TaskComment.find({ taskId: req.params.taskId })
             .sort({ createdAt: 1 })
             .lean()
@@ -2111,6 +2135,7 @@ router.post('/api/record-tasks/:taskId/comments', (req, res, next) => {
     })
 }, async (req, res) => {
     try {
+        const { RecordTask, TaskComment } = await taskTenantModels(req)
         const { text, publishToChat } = req.body
         const cleanText = cleanTaskText(text, '')
         const files = Array.isArray(req.files) ? req.files : []

@@ -3,13 +3,12 @@ const crypto = require('crypto');
 
 const User = require('../models/user.model');
 const Account = require('../models/account.model');
-const TaskList = require('../models/task-list.model');
-const RecordTask = require('../models/record-task.model');
 const mailer = require('../services/mailer');
 const ReminderService = require('../services/reminders/reminder.service');
 const { convertPendingInvitesToGrants } = require('../services/record-access-invitations');
 const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
+const { taskTenantModels } = require('../services/task-tenant-models.service');
 
 const router = express.Router();
 
@@ -477,6 +476,7 @@ async function ensurePersonalTaskRecord(req) {
 
 async function ensurePersonalTaskList(req) {
     const { entity, record } = await ensurePersonalTaskRecord(req);
+    const { TaskList } = await taskTenantModels(req);
     const lists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
     let list = lists.find(item => cleanListLabel(item.label).toLowerCase() === 't\u00e2ches du jour'.toLowerCase());
 
@@ -504,12 +504,14 @@ async function loadTenantTask(req, taskId) {
     if (!/^[a-f\d]{24}$/i.test(String(taskId || ''))) return null;
     const ids = await tenantRecordIds(req);
     if (!ids.length) return null;
+    const { RecordTask } = await taskTenantModels(req);
     return RecordTask.findOne({ _id: taskId, recordId: { $in: ids } });
 }
 
 async function serializeSingleTask(req, task) {
     const Record = await tenantCollection(req, 'Record');
     const Entity = await tenantCollection(req, 'Entity');
+    const { TaskList } = await taskTenantModels(req);
     const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
     const record = task.recordId ? await Record.findById(task.recordId).select('title computedTitle referenceTitle entityId icon color').lean() : null;
     const entity = record?.entityId ? await Entity.findById(record.entityId).select('name slug icon color').lean() : null;
@@ -615,6 +617,7 @@ async function taskBoard(req) {
         };
     }
 
+    const { TaskList, RecordTask } = await taskTenantModels(req);
     const [allLists, allTasks] = await Promise.all([
         TaskList.find({ recordId: { $in: recordIds } }).sort({ order: 1, createdAt: 1 }).lean(),
         RecordTask.find({ recordId: { $in: recordIds } }).sort({ order: 1, createdAt: -1 }).lean(),
@@ -1030,6 +1033,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
 
         const target = await ensurePersonalTaskList(req);
+        const { RecordTask } = await taskTenantModels(req);
         const order = await RecordTask.countDocuments({ taskListId: target.list._id });
         const status = normalizeStatus(req.body?.status);
         const priority = normalizePriority(req.body?.priority);
@@ -1081,6 +1085,7 @@ router.post('/accounts/:accountNumber/tasks/reorder', async (req, res) => {
         if (!normalized.length) return sendError(res, 400, 'taskIds array required', 'VALIDATION_ERROR');
 
         const ids = await tenantRecordIds(req);
+        const { RecordTask } = await taskTenantModels(req);
         const existingTasks = await RecordTask.find({ _id: { $in: normalized }, recordId: { $in: ids } }).select('_id').lean();
         const allowed = new Set(existingTasks.map(task => task._id.toString()));
         const bulkOps = normalized
@@ -1104,6 +1109,7 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
 
         const updates = {};
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        const { TaskList } = await taskTenantModels(req);
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
         const priorities = normalizeOptions(list?.priorities, defaultPriorities);
@@ -1172,6 +1178,7 @@ router.post('/accounts/:accountNumber/tasks/:taskId/toggle', async (req, res) =>
         const task = await loadTenantTask(req, req.params.taskId);
         if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
 
+        const { TaskList } = await taskTenantModels(req);
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
         const done = req.body?.done !== undefined ? !!req.body.done : task.status !== STATUS_DONE;

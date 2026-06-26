@@ -2075,15 +2075,35 @@ router.post('/api/task-lists/:listId/reorder', async (req, res) => {
         const list = await TaskList.findById(req.params.listId).select('_id').lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
 
-        const normalizedTaskIds = taskIds
+        const normalizedTaskIds = [...new Set(taskIds
             .map(id => String(id || ''))
-            .filter(id => /^[a-f\d]{24}$/i.test(id))
+            .filter(id => /^[a-f\d]{24}$/i.test(id)))]
         const existingTasks = await RecordTask.find({ taskListId: req.params.listId, _id: { $in: normalizedTaskIds } }).select('_id').lean()
         const allowedIds = new Set(existingTasks.map(task => task._id.toString()))
-        const bulkOps = normalizedTaskIds
-            .filter(id => allowedIds.has(id))
-            .map((id, index) => ({
-                updateOne: { filter: { _id: id, taskListId: req.params.listId }, update: { $set: { order: index } } }
+        const orderedAllowedTaskIds = normalizedTaskIds.filter(id => allowedIds.has(id))
+        if (!orderedAllowedTaskIds.length) return res.json({ success: true })
+
+        const allTasks = await RecordTask.find({ taskListId: req.params.listId })
+            .select('_id order')
+            .sort({ order: 1, createdAt: -1 })
+            .lean()
+        const orderedSet = new Set(orderedAllowedTaskIds)
+        const remainingTasks = allTasks.filter(task => !orderedSet.has(task._id.toString()))
+
+        const reorderedTaskIds = [
+            ...orderedAllowedTaskIds.map((id, index) => ({ id, order: index })),
+            ...remainingTasks.map((task, index) => ({
+                id: task._id.toString(),
+                order: orderedAllowedTaskIds.length + index,
+            })),
+        ]
+        const currentOrderById = new Map(
+            allTasks.map(task => [task._id.toString(), Number(task.order) || 0]),
+        )
+        const bulkOps = reorderedTaskIds
+            .filter(({ id, order }) => currentOrderById.get(id) !== order)
+            .map(({ id, order }) => ({
+                updateOne: { filter: { _id: id, taskListId: req.params.listId }, update: { $set: { order } } }
             }))
         if (bulkOps.length > 0) await RecordTask.bulkWrite(bulkOps)
 

@@ -1081,19 +1081,50 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
 router.post('/accounts/:accountNumber/tasks/reorder', async (req, res) => {
     try {
         const taskIds = Array.isArray(req.body?.taskIds) ? req.body.taskIds : [];
-        const normalized = taskIds.map(id => String(id || '')).filter(id => /^[a-f\d]{24}$/i.test(id));
+        const normalized = [...new Set(taskIds
+            .map(id => String(id || ''))
+            .filter(id => /^[a-f\d]{24}$/i.test(id)))];
         if (!normalized.length) return sendError(res, 400, 'taskIds array required', 'VALIDATION_ERROR');
 
         const ids = await tenantRecordIds(req);
         const { RecordTask } = await taskTenantModels(req);
-        const existingTasks = await RecordTask.find({ _id: { $in: normalized }, recordId: { $in: ids } }).select('_id').lean();
-        const allowed = new Set(existingTasks.map(task => task._id.toString()));
-        const bulkOps = normalized
-            .filter(id => allowed.has(id))
-            .map((id, index) => ({
-                updateOne: { filter: { _id: id }, update: { $set: { order: index } } },
+        const existingTasks = await RecordTask.find({
+            _id: { $in: normalized },
+            recordId: { $in: ids },
+        }).select('_id').lean();
+        const allowedIds = new Set(existingTasks.map(task => task._id.toString()));
+        const orderedAllowedTaskIds = normalized.filter(id => allowedIds.has(id));
+        if (!orderedAllowedTaskIds.length) {
+            return res.json({ success: true });
+        }
+
+        const allTasks = await RecordTask.find({ recordId: { $in: ids } })
+            .select('_id order')
+            .sort({ order: 1, createdAt: -1 })
+            .lean();
+        const orderedSet = new Set(orderedAllowedTaskIds);
+        const remainingTasks = allTasks.filter(task => !orderedSet.has(task._id.toString()));
+
+        const reorderedTaskIds = [
+            ...orderedAllowedTaskIds.map((id, index) => ({ id, order: index })),
+            ...remainingTasks.map((task, index) => ({
+                id: task._id.toString(),
+                order: orderedAllowedTaskIds.length + index,
+            })),
+        ];
+
+        const currentOrderById = new Map(
+            allTasks.map(task => [task._id.toString(), Number(task.order) || 0]),
+        );
+        const bulkOps = reorderedTaskIds
+            .filter(({ id, order }) => currentOrderById.get(id) !== order)
+            .map(({ id, order }) => ({
+                updateOne: {
+                    filter: { _id: id },
+                    update: { $set: { order } },
+                },
             }));
-        if (bulkOps.length) await RecordTask.bulkWrite(bulkOps);
+        if (bulkOps.length > 0) await RecordTask.bulkWrite(bulkOps);
 
         res.json({ success: true });
     } catch (error) {

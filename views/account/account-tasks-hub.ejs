@@ -202,7 +202,7 @@
 .th-task-row-simple.is-done .th-task-title-simple{color:#94a3b8;text-decoration:line-through;font-weight:600}
 .th-task-meta-simple{display:flex;align-items:center;gap:9px;justify-content:flex-end;min-width:120px}
 .th-attachment-mini{display:inline-flex;align-items:center;color:#b8c3d6}
-.th-reminder-mini{width:21px;height:21px;border-radius:7px;background:#efe8ff;color:#7c5cff;display:inline-flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px #dfd4ff;flex:0 0 auto}
+.th-reminder-mini{width:18px;height:18px;border-radius:6px;color:var(--primary-color,#6e5afb);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .th-priority-simple{border:0;background:transparent;padding:0;color:var(--priority-color,#cbd5e1);display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:10.5px;font-weight:850;white-space:nowrap;cursor:pointer}
 .th-priority-simple iconify-icon{color:currentColor}
 .th-inline-form{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;margin-top:4px}
@@ -387,7 +387,7 @@
                                     </div>
                                     <div class="th-task-meta-simple">
                                         <span class="th-reminder-mini" x-show="taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
-                                            <iconify-icon icon="solar:alarm-linear" width="12"></iconify-icon>
+                                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
                                         </span>
                                         <span class="th-attachment-mini" x-show="taskHasAttachments(task)" title="Pièce jointe">
                                             <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>

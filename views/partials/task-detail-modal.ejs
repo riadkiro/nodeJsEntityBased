@@ -65,6 +65,7 @@
 .tdm-prop{display:flex;align-items:center;gap:10px;min-height:46px;padding:8px 0;border-bottom:1px solid #f8f9fa}
 .tdm-prop:last-child{border-bottom:none}
 .tdm-prop-icon{width:16px;color:#bfc9d4;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tdm-prop-icon.tdm-reminder-icon{color:var(--primary-color,#6e5afb)}
 .tdm-prop-label{min-width:78px;color:#94a3b8;font-size:11.5px;font-weight:600;line-height:1.2}
 .tdm-prop-value{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;gap:6px;position:relative}
 .tdm-prop-text{color:#0e1726;font-size:13px;font-weight:600;line-height:1.25;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -469,7 +470,7 @@
                             </div>
 
                             <div class="tdm-prop">
-                                <span class="tdm-prop-icon"><iconify-icon icon="solar:alarm-linear" width="15"></iconify-icon></span>
+                                <span class="tdm-prop-icon tdm-reminder-icon"><iconify-icon icon="solar:bell-bing-bold-duotone" width="15"></iconify-icon></span>
                                 <span class="tdm-prop-label">Rappel</span>
                                 <div class="tdm-prop-value">
                                     <span class="tdm-prop-datetime">

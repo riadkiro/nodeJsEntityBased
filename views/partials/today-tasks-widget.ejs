@@ -86,6 +86,11 @@
                                   title="Pièce jointe">
                                 <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
                             </span>
+                            <span class="dx-task-reminder-badge"
+                                  x-show="taskHasReminder(item)"
+                                  :title="taskReminderLabel(item)">
+                                <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+                            </span>
                             <span class="dx-task-record-line"
                                   x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
                                   :style="'--task-record-color:' + taskRecordColor(item)"

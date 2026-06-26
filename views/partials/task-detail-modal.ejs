@@ -474,11 +474,13 @@
                                 <div class="tdm-prop-value">
                                     <span class="tdm-prop-datetime">
                                         <input type="date" class="tdm-prop-date"
-                                               x-model="$store.taskModal.task._reminderDraftDate"
+                                               x-model="$store.taskModal.reminderDraft.date"
+                                               @input="$store.taskModal.setReminderDraftPart('date', $event.target.value || '')"
                                                @change="$store.taskModal.updateReminderPart('date', $event.target.value || '')">
                                         <input type="time" class="tdm-prop-time"
-                                               x-model="$store.taskModal.task._reminderDraftTime"
+                                               x-model="$store.taskModal.reminderDraft.time"
                                                :disabled="!$store.taskModal.reminderDateVal()"
+                                               @input="$store.taskModal.setReminderDraftPart('time', $event.target.value || '')"
                                                @change="$store.taskModal.updateReminderPart('time', $event.target.value || '')">
                                         <button type="button" class="tdm-reminder-clear" title="Supprimer le rappel"
                                                 x-show="$store.taskModal.task.reminder"
@@ -628,6 +630,10 @@ document.addEventListener('alpine:init', () => {
 		        _descriptionSaveTimer: null,
 		        _descriptionSavedHtml: '',
 		        _descriptionEditorSyncing: false,
+		        reminderDraft: { date: '', time: '', dirty: false },
+		        reminderSaving: false,
+		        _openSeq: 0,
+		        _reminderEditSeq: 0,
 		        _onUpdate: null,
 		        _onDelete: null,
         defaults: {
@@ -649,11 +655,16 @@ document.addEventListener('alpine:init', () => {
         colorPalette: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#dc2626','#ec4899','#8b5cf6','#64748b'],
 
 		        async open(taskObj, { onUpdate, onDelete } = {}) {
+		            const openSeq = ++this._openSeq;
+		            const taskId = String(taskObj?._id || '');
 		            window.dispatchEvent(new CustomEvent('close-home-task-menu'));
 		            this.closeMenus();
 		            this.clearChatFiles();
 		            this.chatSending = false;
 		            this.descriptionStatus = '';
+		            this.reminderDraft = { date: '', time: '', dirty: false };
+		            this.reminderSaving = false;
+		            this._reminderEditSeq = 0;
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = this.normalizeDescriptionHtml(taskObj?.description || '');
@@ -665,23 +676,29 @@ document.addEventListener('alpine:init', () => {
                 attachments: Array.isArray(taskObj?.attachments) ? taskObj.attachments : [],
                 status: taskObj?.status || 'À faire',
                 priority: taskObj?.priority || 'Aucune',
-                reminder: taskObj?.reminder || null,
-                _reminderDraftDate: '',
-                _reminderDraftTime: ''
+                reminder: taskObj?.reminder || null
             };
-            this.syncReminderDraft();
+            this.syncReminderDraft({ force: true });
 	            this._onUpdate = onUpdate || null;
 	            this._onDelete = onDelete || null;
 	            this.loadTeamMembers();
 
             if (taskObj?._id) {
+                const reminderFetchSeq = this._reminderEditSeq;
                 try {
                     const taskRes = await fetch(API + '/api/record-tasks/' + taskObj._id, { credentials: 'include' });
                     const taskData = await taskRes.json().catch(() => ({}));
                     if (taskData.success && taskData.task) {
+                        if (openSeq !== this._openSeq || String(this.task?._id || '') !== taskId) return;
                         const comments = this.task?._comments || [];
+                        const keepLocalReminder = this._reminderEditSeq !== reminderFetchSeq || this.reminderDraft.dirty || this.reminderSaving;
+                        const localReminder = this.task?.reminder || null;
                         this.task = { ...this.task, ...taskData.task, _comments: comments };
-                        this.syncReminderDraft();
+                        if (keepLocalReminder) {
+                            this.task.reminder = localReminder;
+                        } else {
+                            this.syncReminderDraft({ force: true });
+                        }
                         this._descriptionSavedHtml = this.normalizeDescriptionHtml(this.task.description || '');
                         this.statusOptions = this.normalizeOptions(taskData.task.statuses, this.defaults.statuses);
                         this.priorityOptions = this.normalizeOptions(taskData.task.priorities, this.defaults.priorities);
@@ -694,6 +711,7 @@ document.addEventListener('alpine:init', () => {
 	                    const res = await fetch(API + '/api/record-tasks/' + taskObj._id + '/comments', { credentials: 'include' });
 	                    const data = await res.json();
 	                    if (data.success && Array.isArray(data.comments) && this.task) {
+	                        if (openSeq !== this._openSeq || String(this.task?._id || '') !== taskId) return;
 	                        this.task._comments = this.sortConversation(data.comments);
 	                        this.scrollConversationToRecent();
 	                    }
@@ -728,11 +746,14 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 		        close() {
+		            this._openSeq += 1;
 		            this.task = null;
 		            this.closeMenus();
 		            this.uploadBusy = false;
 		            this.chatSending = false;
 		            this.descriptionStatus = '';
+		            this.reminderDraft = { date: '', time: '', dirty: false };
+		            this.reminderSaving = false;
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = '';
@@ -1489,25 +1510,23 @@ document.addEventListener('alpine:init', () => {
             this.updateField(field, nextValue);
         },
 
-        syncReminderDraft() {
+        syncReminderDraft({ force = false } = {}) {
             if (!this.task) return;
+            if (!force && (this.reminderDraft.dirty || this.reminderSaving)) return;
             const scheduledAt = this.task.reminder?.scheduledAt || '';
-            this.task._reminderDraftDate = this.reminderDateFromValue(scheduledAt);
-            this.task._reminderDraftTime = this.reminderTimeFromValue(scheduledAt);
+            this.reminderDraft = {
+                date: this.reminderDateFromValue(scheduledAt),
+                time: this.reminderTimeFromValue(scheduledAt),
+                dirty: false
+            };
         },
 
         reminderDateVal() {
-            if (!this.task) return '';
-            return this.task._reminderDraftDate !== undefined
-                ? this.task._reminderDraftDate
-                : this.reminderDateFromValue(this.task?.reminder?.scheduledAt);
+            return this.reminderDraft.date || '';
         },
 
         reminderTimeVal() {
-            if (!this.task) return '';
-            return this.task._reminderDraftTime !== undefined
-                ? this.task._reminderDraftTime
-                : this.reminderTimeFromValue(this.task?.reminder?.scheduledAt);
+            return this.reminderDraft.date ? (this.reminderDraft.time || '') : '';
         },
 
         reminderTimeZone() {
@@ -1518,14 +1537,27 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        setReminderDraftPart(part, value, { dirty = true } = {}) {
+            const currentDate = this.reminderDraft.date || '';
+            const currentTime = this.reminderDraft.time || '';
+            const nextDate = part === 'date' ? String(value || '') : currentDate;
+            const nextTime = nextDate ? (part === 'time' ? String(value || '') : currentTime) : '';
+            this.reminderDraft = {
+                date: nextDate,
+                time: nextTime,
+                dirty: dirty || this.reminderDraft.dirty
+            };
+            if (dirty) this._reminderEditSeq += 1;
+            return this.reminderDraft;
+        },
+
         async updateReminderPart(part, value) {
             if (!this.task?._id) return;
-            const nextDate = part === 'date' ? String(value || '') : this.reminderDateVal();
-            const nextTime = part === 'time' ? String(value || '') : this.reminderTimeVal();
-            this.task._reminderDraftDate = nextDate;
-            this.task._reminderDraftTime = nextTime;
+            const draft = this.setReminderDraftPart(part, value);
+            const nextDate = draft.date;
+            const nextTime = draft.time;
             if (!nextDate) {
-                this.task._reminderDraftTime = '';
+                this.reminderDraft = { date: '', time: '', dirty: !!this.task.reminder };
                 if (this.task.reminder) await this.clearReminder();
                 return;
             }
@@ -1537,7 +1569,9 @@ document.addEventListener('alpine:init', () => {
 
         async setReminder(scheduledAt) {
             if (!this.task?._id) return false;
+            this._reminderEditSeq += 1;
             const previous = this.task.reminder || null;
+            const previousDraft = { ...this.reminderDraft };
             const comments = this.task._comments || [];
             const optimistic = {
                 ...(previous || {}),
@@ -1547,8 +1581,8 @@ document.addEventListener('alpine:init', () => {
                 timeZone: this.reminderTimeZone(),
                 status: 'scheduled'
             };
+            this.reminderSaving = true;
             this.task.reminder = optimistic;
-            this.syncReminderDraft();
             try {
                 const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/reminder', {
                     method: 'POST',
@@ -1563,13 +1597,16 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Rappel impossible');
                 if (data.task) this.task = { ...this.task, ...data.task, _comments: comments };
                 else this.task.reminder = data.reminder || optimistic;
-                this.syncReminderDraft();
+                this.reminderSaving = false;
+                this.reminderDraft.dirty = false;
+                this.syncReminderDraft({ force: true });
                 if (this._onUpdate) this._onUpdate(this.task._id, 'reminder', this.task.reminder, this.task);
                 if (window.showMessage) window.showMessage('Rappel enregistre', 'success');
                 return true;
             } catch (e) {
                 this.task.reminder = previous;
-                this.syncReminderDraft();
+                this.reminderSaving = false;
+                this.reminderDraft = { ...previousDraft, dirty: true };
                 if (window.showMessage) window.showMessage(e.message || 'Erreur lors du rappel', 'danger');
                 return false;
             }
@@ -1577,10 +1614,13 @@ document.addEventListener('alpine:init', () => {
 
         async clearReminder() {
             if (!this.task?._id) return false;
+            this._reminderEditSeq += 1;
             const previous = this.task.reminder || null;
+            const previousDraft = { ...this.reminderDraft };
             const comments = this.task._comments || [];
+            this.reminderSaving = true;
             this.task.reminder = null;
-            this.syncReminderDraft();
+            this.reminderDraft = { date: '', time: '', dirty: true };
             try {
                 const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/reminder', {
                     method: 'DELETE',
@@ -1590,13 +1630,15 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
                 if (data.task) this.task = { ...this.task, ...data.task, _comments: comments };
                 else this.task.reminder = null;
-                this.syncReminderDraft();
+                this.reminderSaving = false;
+                this.reminderDraft = { date: '', time: '', dirty: false };
                 if (this._onUpdate) this._onUpdate(this.task._id, 'reminder', null, this.task);
                 if (window.showMessage) window.showMessage('Rappel supprime', 'success');
                 return true;
             } catch (e) {
                 this.task.reminder = previous;
-                this.syncReminderDraft();
+                this.reminderSaving = false;
+                this.reminderDraft = previousDraft;
                 if (window.showMessage) window.showMessage(e.message || 'Erreur lors de la suppression', 'danger');
                 return false;
             }

@@ -6,6 +6,7 @@ const Account = require('../models/account.model');
 const TaskList = require('../models/task-list.model');
 const RecordTask = require('../models/record-task.model');
 const mailer = require('../services/mailer');
+const ReminderService = require('../services/reminders/reminder.service');
 const { convertPendingInvitesToGrants } = require('../services/record-access-invitations');
 const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
@@ -59,6 +60,13 @@ function sendError(res, status, error, code) {
         error,
         ...(code ? { code } : {}),
     });
+}
+
+function sendCaughtError(res, error, fallback = 'Erreur serveur') {
+    if (error instanceof ReminderService.ReminderValidationError) {
+        return sendError(res, error.status || 400, error.message, error.code);
+    }
+    return sendError(res, 500, error.message || fallback);
 }
 
 function normalizeEmail(email) {
@@ -308,6 +316,66 @@ function parseColorInt(color, fallback = 0xFF6F55DC) {
     return Number.parseInt(`FF${hex}`, 16);
 }
 
+function formatReminderTime(date, timeZone) {
+    try {
+        return new Intl.DateTimeFormat('fr-FR', {
+            timeZone: resolveTimeZone(timeZone),
+            hour: '2-digit',
+            minute: '2-digit',
+        }).format(date instanceof Date ? date : new Date(date));
+    } catch (_) {
+        return '';
+    }
+}
+
+function taskReminderMessage(task, scheduledAt, timeZone) {
+    const time = formatReminderTime(scheduledAt, timeZone);
+    return time ? `Rappel a ${time}` : `Rappel pour ${cleanText(task?.title, 'cette tache')}`;
+}
+
+async function upsertTaskReminder(req, task, reminderInput) {
+    if (!reminderInput) return null;
+    if (reminderInput.enabled === false) {
+        await ReminderService.cancelReminderForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetId: task._id,
+            slotKey: reminderInput.slotKey || 'default',
+        });
+        return null;
+    }
+
+    return ReminderService.upsertReminder({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetModel: 'RecordTask',
+        targetId: task._id,
+        slotKey: reminderInput.slotKey || 'default',
+        title: reminderInput.title || task.title,
+        message: reminderInput.message || taskReminderMessage(task, reminderInput.scheduledAt, reminderInput.timeZone),
+        scheduledAt: reminderInput.scheduledAt,
+        timeZone: reminderInput.timeZone,
+        channel: reminderInput.channel || 'local',
+        metadata: {
+            ...(reminderInput.metadata || {}),
+            taskTitle: task.title,
+            source: 'mobile',
+        },
+    });
+}
+
+async function cancelTaskReminder(req, task, slotKey = 'default') {
+    return ReminderService.cancelReminderForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetId: task._id,
+        slotKey,
+    });
+}
+
 function resolveTimeZone(value) {
     const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const zone = cleanText(value, '');
@@ -445,10 +513,16 @@ async function serializeSingleTask(req, task) {
     const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
     const record = task.recordId ? await Record.findById(task.recordId).select('title computedTitle referenceTitle entityId icon color').lean() : null;
     const entity = record?.entityId ? await Entity.findById(record.entityId).select('name slug icon color').lean() : null;
-    return serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity);
+    const reminder = await ReminderService.findReminderForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetId: task._id,
+    });
+    return serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder);
 }
 
-function serializeTaskRow(req, task, list, record, entity) {
+function serializeTaskRow(req, task, list, record, entity, reminder = null) {
     const statuses = normalizeOptions(list?.statuses, defaultStatuses);
     const priorities = normalizeOptions(list?.priorities, defaultPriorities);
     const status = cleanText(task.status, STATUS_TODO);
@@ -501,6 +575,7 @@ function serializeTaskRow(req, task, list, record, entity) {
         entitySlug,
         entityIcon: entity?.icon || 'solar:folder-bold-duotone',
         entityColor: entity?.color || '#4361ee',
+        reminder: ReminderService.serializeReminder(reminder),
         link: recordId && entitySlug
             ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}`
             : `/account/${req.account_number}/tasks`,
@@ -561,13 +636,26 @@ async function taskBoard(req) {
         : [];
     const entityMap = new Map(entities.map(entity => [entity._id.toString(), entity]));
     const listMap = new Map(allLists.map(list => [list._id.toString(), list]));
+    const reminderMap = await ReminderService.scheduledReminderMap({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'task',
+        targetIds: allTasks.map(task => task._id),
+    });
 
     const rows = allTasks
         .filter(task => recordMap.has(task.recordId?.toString?.() || ''))
         .map(task => {
             const record = recordMap.get(task.recordId?.toString?.() || '');
             const entity = record?.entityId ? entityMap.get(record.entityId.toString()) : null;
-            return serializeTaskRow(req, task, listMap.get(task.taskListId?.toString?.() || ''), record, entity);
+            return serializeTaskRow(
+                req,
+                task,
+                listMap.get(task.taskListId?.toString?.() || ''),
+                record,
+                entity,
+                reminderMap.get(task._id?.toString?.() || '')
+            );
         });
 
     const isDone = task => task.status === STATUS_DONE || task.done;
@@ -858,6 +946,26 @@ router.get('/me', mobileAuth, async (req, res) => {
 
 router.use('/accounts/:accountNumber', mobileAuth, mobileAccount);
 
+router.get('/accounts/:accountNumber/reminders', async (req, res) => {
+    try {
+        const reminders = await ReminderService.listReminders({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: req.query?.targetType,
+            status: req.query?.status || 'scheduled',
+            dueBefore: req.query?.dueBefore,
+        });
+
+        res.json({
+            success: true,
+            reminders: reminders.map(ReminderService.serializeReminder),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] List reminders error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.get('/accounts/:accountNumber/tasks/today', async (req, res) => {
     try {
         res.json(await taskBoard(req));
@@ -878,10 +986,48 @@ router.get('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
     }
 });
 
+router.post('/accounts/:accountNumber/tasks/:taskId/reminder', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput) return sendError(res, 400, 'Date de rappel requise', 'VALIDATION_ERROR');
+
+        const reminder = await upsertTaskReminder(req, task, reminderInput);
+        res.json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Upsert task reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.delete('/accounts/:accountNumber/tasks/:taskId/reminder', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        await cancelTaskReminder(req, task);
+        res.json({
+            success: true,
+            reminder: null,
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Delete task reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.post('/accounts/:accountNumber/tasks', async (req, res) => {
     try {
         const title = cleanText(req.body?.title, '');
         if (!title) return sendError(res, 400, 'Title required', 'VALIDATION_ERROR');
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
 
         const target = await ensurePersonalTaskList(req);
         const order = await RecordTask.countDocuments({ taskListId: target.list._id });
@@ -917,10 +1063,14 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             completedAt: status === STATUS_DONE ? new Date() : null,
         });
 
+        if (reminderInput?.enabled) {
+            await upsertTaskReminder(req, task, reminderInput);
+        }
+
         res.status(201).json({ success: true, task: await serializeSingleTask(req, task) });
     } catch (error) {
         console.error('[MobileAPI] Create task error:', error);
-        sendError(res, 500, error.message || 'Erreur serveur');
+        sendCaughtError(res, error);
     }
 });
 
@@ -953,6 +1103,7 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
 
         const updates = {};
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
         const priorities = normalizeOptions(list?.priorities, defaultPriorities);
@@ -982,15 +1133,23 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         if (req.body?.dueDate !== undefined) updates.dueDate = req.body.dueDate || null;
         if (req.body?.assignedTo !== undefined) updates.assignedTo = cleanText(req.body.assignedTo, '');
 
-        if (!Object.keys(updates).length) return sendError(res, 400, 'No valid fields to update', 'VALIDATION_ERROR');
+        if (!Object.keys(updates).length && !reminderInput) {
+            return sendError(res, 400, 'No valid fields to update', 'VALIDATION_ERROR');
+        }
 
-        Object.assign(task, updates);
-        await task.save();
+        if (Object.keys(updates).length) {
+            Object.assign(task, updates);
+            await task.save();
+        }
+
+        if (reminderInput) {
+            await upsertTaskReminder(req, task, reminderInput);
+        }
 
         res.json({ success: true, task: await serializeSingleTask(req, task) });
     } catch (error) {
         console.error('[MobileAPI] Update task error:', error);
-        sendError(res, 500, error.message || 'Erreur serveur');
+        sendCaughtError(res, error);
     }
 });
 
@@ -999,11 +1158,12 @@ router.delete('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         const task = await loadTenantTask(req, req.params.taskId);
         if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
 
+        await cancelTaskReminder(req, task);
         await task.deleteOne();
         res.json({ success: true });
     } catch (error) {
         console.error('[MobileAPI] Delete task error:', error);
-        sendError(res, 500, error.message || 'Erreur serveur');
+        sendCaughtError(res, error);
     }
 });
 
@@ -1019,11 +1179,12 @@ router.post('/accounts/:accountNumber/tasks/:taskId/toggle', async (req, res) =>
         task.statusColor = optionColor(statuses, task.status, '#9ca3af');
         task.completedAt = done ? new Date() : null;
         await task.save();
+        if (done) await cancelTaskReminder(req, task);
 
         res.json({ success: true, task: await serializeSingleTask(req, task) });
     } catch (error) {
         console.error('[MobileAPI] Toggle task error:', error);
-        sendError(res, 500, error.message || 'Erreur serveur');
+        sendCaughtError(res, error);
     }
 });
 

@@ -3215,66 +3215,88 @@ document.addEventListener('alpine:init', () => {
 	            });
 	        },
 
-	        revertHomeTaskSortableDom(evt) {
-	            const container = evt?.from;
-	            const item = evt?.item;
-	            if (!container || !item) return;
-	            const siblings = Array.from(container.querySelectorAll(':scope > .dx-task-row'))
+        revertHomeTaskSortableDom(evt) {
+            const container = evt?.from;
+            const item = evt?.item;
+            if (!container || !item) return;
+            const siblings = Array.from(container.querySelectorAll(':scope > .dx-task-row'))
 	                .filter(row => row !== item);
 	            const oldIndex = Number.isInteger(evt.oldDraggableIndex) ? evt.oldDraggableIndex : evt.oldIndex;
-	            const ref = Number.isInteger(oldIndex) ? (siblings[oldIndex] || null) : null;
-	            container.insertBefore(item, ref);
-	        },
+                const ref = Number.isInteger(oldIndex) ? (siblings[oldIndex] || null) : null;
+                container.insertBefore(item, ref);
+            },
 
-	        reorderHomeTaskCollection(source = [], orderedIds = [], orderedTasksById = new Map(), orderMap = new Map()) {
-	            const idsInSource = new Set((source || []).map(task => this.homeTaskId(task)).filter(Boolean));
-	            const localOrderedIds = orderedIds.filter(id => idsInSource.has(id));
-	            if (!localOrderedIds.length) return source || [];
-	            let cursor = 0;
-	            return (source || []).map(task => {
-	                const id = this.homeTaskId(task);
-	                if (!id || !orderMap.has(id)) return task;
-	                const nextId = localOrderedIds[cursor++] || id;
-	                const replacement = orderedTasksById.get(nextId) || task;
-	                return this.normalizeHomeTask({ ...task, ...replacement, order: orderMap.get(nextId) });
-	            });
-	        },
+        reorderHomeTaskCollection(source = [], orderedIds = [], orderedTasksById = new Map(), orderMap = new Map()) {
+            const sourceTasks = Array.isArray(source) ? source : [];
+            if (!sourceTasks.length || !orderedIds.length) return sourceTasks;
+            const sourceById = new Map();
+            sourceTasks.forEach(task => {
+                const id = this.homeTaskId(task);
+                if (id && !sourceById.has(id)) sourceById.set(id, task);
+            });
+            const seenIds = new Set();
+            const normalizedOrderedIds = [];
+            orderedIds.forEach(rawId => {
+                const id = String(rawId || '');
+                const replacement = sourceById.get(id);
+                if (!id || seenIds.has(id) || !replacement) return;
+                seenIds.add(id);
+                if (orderedTasksById.get(id) === undefined) {
+                    orderedTasksById.set(id, replacement);
+                }
+                normalizedOrderedIds.push(id);
+            });
+            if (!normalizedOrderedIds.length) return sourceTasks;
+            const orderedTaskIds = new Set(normalizedOrderedIds);
 
-	        async reorderDayTaskWidget(orderedIds, wid) {
-	            const taskSources = [
-	                ...(this.todayTasks || []),
-	                ...(this.allTasks || []),
-	                ...(this.completedTodayData || []),
-	                ...((this.homeTaskLists || []).flatMap(list => list.tasks || []))
-	            ];
-	            const sourceById = new Map();
-	            taskSources.forEach(task => {
-	                const id = this.homeTaskId(task);
-	                if (id && !sourceById.has(id)) sourceById.set(id, task);
-	            });
-	            const orderedTasks = orderedIds.map(id => sourceById.get(id)).filter(Boolean);
-	            if (orderedTasks.length !== orderedIds.length) return;
+            let cursor = 0;
+            return sourceTasks.map(task => {
+                const id = this.homeTaskId(task);
+                if (!orderedTaskIds.has(id)) return task;
+                const nextId = normalizedOrderedIds[cursor++] || id;
+                const replacement = orderedTasksById.get(nextId);
+                if (!replacement) return task;
+                const nextOrder = orderMap && orderMap.has(nextId) ? orderMap.get(nextId) : cursor - 1;
+                return this.normalizeHomeTask({ ...task, ...replacement, order: nextOrder });
+            });
+        },
 
-	            const previousAllTasks = [...(this.allTasks || [])];
-	            const previousTodayTasks = [...(this.todayTasks || [])];
-	            const previousCompletedTodayData = [...(this.completedTodayData || [])];
-	            const previousHomeTaskLists = (this.homeTaskLists || []).map(list => ({
-	                ...list,
-	                tasks: [...(list.tasks || [])]
-	            }));
-	            const orderedTasksById = new Map(orderedTasks.map(task => [this.homeTaskId(task), task]));
-	            const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+        async reorderDayTaskWidget(orderedIds, wid) {
+            const taskSources = [
+                ...(this.todayTasks || []),
+                ...(this.allTasks || []),
+                ...(this.completedTodayData || []),
+                ...((this.homeTaskLists || []).flatMap(list => list.tasks || []))
+            ];
+            const sourceById = new Map();
+            taskSources.forEach(task => {
+                const id = this.homeTaskId(task);
+                if (id && !sourceById.has(id)) sourceById.set(id, task);
+            });
+            const orderedTasks = orderedIds.map(id => sourceById.get(id)).filter(Boolean);
+            const normalizedOrderedIds = orderedTasks.map(task => this.homeTaskId(task));
+            if (!normalizedOrderedIds.length) return;
 
-	            this.todayTasks = this.reorderHomeTaskCollection(this.todayTasks, orderedIds, orderedTasksById, orderMap);
-	            this.allTasks = this.reorderHomeTaskCollection(this.allTasks, orderedIds, orderedTasksById, orderMap);
-	            this.completedTodayData = this.reorderHomeTaskCollection(this.completedTodayData, orderedIds, orderedTasksById, orderMap);
-	            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
-	                const tasks = this.reorderHomeTaskCollection(list.tasks, orderedIds, orderedTasksById, orderMap);
-	                if (tasks === list.tasks) return list;
-	                const nextList = { ...list, tasks };
-	                this.refreshHomeTaskListCounts(nextList);
-	                return nextList;
-	            });
+            const previousAllTasks = [...(this.allTasks || [])];
+            const previousTodayTasks = [...(this.todayTasks || [])];
+            const previousCompletedTodayData = [...(this.completedTodayData || [])];
+            const previousHomeTaskLists = (this.homeTaskLists || []).map(list => ({
+                ...list,
+                tasks: [...(list.tasks || [])]
+            }));
+            const orderedTasksById = new Map(orderedTasks.map(task => [this.homeTaskId(task), task]));
+            const orderMap = new Map(normalizedOrderedIds.map((id, index) => [id, index]));
+
+            this.todayTasks = this.reorderHomeTaskCollection(this.todayTasks, normalizedOrderedIds, orderedTasksById, orderMap);
+            this.allTasks = this.reorderHomeTaskCollection(this.allTasks, normalizedOrderedIds, orderedTasksById, orderMap);
+            this.completedTodayData = this.reorderHomeTaskCollection(this.completedTodayData, normalizedOrderedIds, orderedTasksById, orderMap);
+            this.homeTaskLists = (this.homeTaskLists || []).map(list => {
+                const tasks = this.reorderHomeTaskCollection(list.tasks, normalizedOrderedIds, orderedTasksById, orderMap);
+                if (tasks === list.tasks) return list;
+                const nextList = { ...list, tasks };
+                this.refreshHomeTaskListCounts(nextList);
+                return nextList;
+            });
 	            this.bumpHomeTaskRender(wid);
 	            this.$nextTick(() => {
 	                this.syncHomeTaskDomOrder(wid, orderedTasks);
@@ -3282,12 +3304,12 @@ document.addEventListener('alpine:init', () => {
 	            });
 
 	            try {
-	                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/reorder`, {
-	                    method: 'POST',
-	                    headers: { 'Content-Type': 'application/json' },
-	                    credentials: 'include',
-	                    body: JSON.stringify({ taskIds: orderedIds })
-	                });
+                const res = await fetch(`/account/${_accountNumber}/api/tasks-hub/reorder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ taskIds: normalizedOrderedIds })
+                });
 	                const data = await res.json().catch(() => ({}));
 	                if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
 	            } catch (e) {
@@ -3307,28 +3329,25 @@ document.addEventListener('alpine:init', () => {
 	        async reorderHomeTaskWidgetFromDom(evt, wid) {
 	            const el = evt?.to || evt?.from;
 	            const list = this.homeTaskListForWidget(wid);
-	            if (!el) return;
-	            const movedId = String(evt?.item?.dataset?.taskId || '');
-	            const orderedIds = Array.from(el.querySelectorAll(':scope > .dx-task-row'))
-	                .map(row => String(row.dataset.taskId || ''))
-	                .filter(Boolean);
-	            this.revertHomeTaskSortableDom(evt);
-	            if (!movedId || orderedIds.length < 2) return;
-	            if (!list?.id) {
-	                await this.reorderDayTaskWidget(orderedIds, wid);
-	                return;
-	            }
-	            const byId = new Map((list.tasks || []).map(task => [this.homeTaskId(task), task]));
-	            const visibleTasks = orderedIds.map(id => byId.get(id)).filter(Boolean);
-	            if (visibleTasks.length !== orderedIds.length) return;
-	            const visibleSet = new Set(orderedIds);
-	            let cursor = 0;
-	            const previousTasks = [...(list.tasks || [])];
-	            const nextTasks = previousTasks.map(task => visibleSet.has(this.homeTaskId(task)) ? visibleTasks[cursor++] : task);
-	            nextTasks.forEach((task, index) => { task.order = index; });
-	            list.tasks = nextTasks;
-	            this.replaceHomeTaskList(list.id, { tasks: nextTasks });
-	            this.bumpHomeTaskRender(wid);
+            if (!el) return;
+            const movedId = String(evt?.item?.dataset?.taskId || '');
+            const orderedIds = Array.from(el.querySelectorAll(':scope > .dx-task-row'))
+                .map(row => String(row.dataset.taskId || ''))
+                .filter(Boolean);
+            this.revertHomeTaskSortableDom(evt);
+            if (!movedId || orderedIds.length < 2) return;
+            if (!list?.id) {
+                await this.reorderDayTaskWidget(orderedIds, wid);
+                return;
+            }
+            const byId = new Map((list.tasks || []).map(task => [this.homeTaskId(task), task]));
+            const orderedTasksById = new Map(orderedIds.map(id => [id, byId.get(id)]).filter(([, task]) => !!task));
+            const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+            const previousTasks = [...(list.tasks || [])];
+            const nextTasks = this.reorderHomeTaskCollection(previousTasks, orderedIds, orderedTasksById, orderMap);
+            list.tasks = nextTasks;
+            this.replaceHomeTaskList(list.id, { tasks: nextTasks });
+            this.bumpHomeTaskRender(wid);
 	            this.$nextTick(() => {
 	                this.syncHomeTaskDomOrder(wid, nextTasks);
 	                this.refreshHomeTaskSortables();

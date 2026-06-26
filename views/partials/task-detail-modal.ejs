@@ -477,7 +477,7 @@
                                                :value="$store.taskModal.reminderDateVal()"
                                                @change="$store.taskModal.updateReminderPart('date', $event.target.value || '')">
                                         <input type="time" class="tdm-prop-time"
-                                               :value="$store.taskModal.reminderTimeVal()"
+                                               :value="$store.taskModal.reminderDateVal() ? $store.taskModal.reminderTimeVal() : ''"
                                                :disabled="!$store.taskModal.reminderDateVal()"
                                                @change="$store.taskModal.updateReminderPart('time', $event.target.value || '')">
                                         <button type="button" class="tdm-reminder-clear" title="Supprimer le rappel"
@@ -1469,11 +1469,17 @@ document.addEventListener('alpine:init', () => {
         },
 
         reminderDateVal() {
-            return this.task?._reminderDraftDate || this.toDateVal(this.task?.reminder?.scheduledAt);
+            if (!this.task) return '';
+            return this.task._reminderDraftDate !== undefined
+                ? this.task._reminderDraftDate
+                : this.toDateVal(this.task?.reminder?.scheduledAt);
         },
 
         reminderTimeVal() {
-            return this.task?._reminderDraftTime || this.toTimeVal(this.task?.reminder?.scheduledAt);
+            if (!this.task) return '';
+            return this.task._reminderDraftTime !== undefined
+                ? this.task._reminderDraftTime
+                : this.toTimeVal(this.task?.reminder?.scheduledAt);
         },
 
         reminderTimeZone() {
@@ -1491,7 +1497,8 @@ document.addEventListener('alpine:init', () => {
             this.task._reminderDraftDate = nextDate;
             this.task._reminderDraftTime = nextTime;
             if (!nextDate) {
-                await this.clearReminder();
+                this.task._reminderDraftTime = '';
+                if (this.task.reminder) await this.clearReminder();
                 return;
             }
             if (!nextTime) return;

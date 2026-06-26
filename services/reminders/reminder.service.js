@@ -90,6 +90,9 @@ function resolveScheduledAt(input) {
     const direct = input?.scheduledAt || input?.reminderAt || input?.at;
 
     if (direct) {
+        if (typeof direct === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(direct.trim())) {
+            throw new ReminderValidationError('Date et heure de rappel requises');
+        }
         const date = direct instanceof Date ? direct : new Date(direct);
         if (Number.isNaN(date.getTime())) {
             throw new ReminderValidationError('Date de rappel invalide');

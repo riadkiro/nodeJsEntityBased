@@ -4683,6 +4683,9 @@ document.addEventListener('alpine:init', () => {
 	            return result;
 	        },
 	        completedTodayDayTasks(wid = null) {
+	            if (!wid || this.todayWidgetIsToday(wid)) {
+	                return this.completedTodayTasks();
+	            }
 	            const source = wid ? this.todayWidgetDateTasks(wid) : (this.todayTasks || []);
 	            return source.filter(t => t && t.status === 'Terminé');
 	        },

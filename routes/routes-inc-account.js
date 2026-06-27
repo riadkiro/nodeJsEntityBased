@@ -887,13 +887,13 @@ router.get("/api/home-overview", async (req, res) => {
         allLists.forEach(list => { listMap[list._id.toString()] = list; });
 
         const isDone = task => String(task?.status || '') === 'Terminé';
-        const inToday = value => {
-            const key = calendarDateKey(value);
-            return !!key && key === todayKey;
-        };
         const isBeforeToday = value => {
             const key = calendarDateKey(value);
             return !!key && key < todayKey;
+        };
+        const taskScheduleDateKey = task => {
+            const value = task?.startDate || task?.dueDate || null;
+            return value ? calendarDateKey(value) : '';
         };
         const overdueReferenceDate = task => task?.dueDate || task?.startDate || null;
         const isTaskOverdue = task => !isDone(task) && isBeforeToday(overdueReferenceDate(task));
@@ -970,16 +970,20 @@ router.get("/api/home-overview", async (req, res) => {
 	            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
 	        };
 
+	        const isSelectedTodayTask = task => {
+	            if (isTaskOverdue(task)) return false;
+	            const key = taskScheduleDateKey(task);
+	            if (key) return key === todayKey;
+	            return task.isDayPriority || task.listIsToday;
+	        };
 		        const todayTasks = taskRows
-		            .filter(task => task.isDayPriority || task.listIsToday)
+		            .filter(isSelectedTodayTask)
 		            .sort(compareHomeTasks);
 	        const completedToday = taskRows
 	            .filter(task => {
 	                if (task.status !== 'Terminé') return false;
-	                const cAt = task.completedAt ? new Date(task.completedAt).getTime() : 0;
-	                const uAt = task.updatedAt ? new Date(task.updatedAt).getTime() : 0;
-	                const checkTime = cAt || uAt;
-	                return inToday(checkTime);
+	                const checkDate = task.completedAt || task.updatedAt;
+	                return checkDate && formatDateKeyInTimeZone(checkDate) === todayKey;
 	            });
 		        const openTasksSorted = taskRows
 		            .filter(task => task.status !== 'Terminé')

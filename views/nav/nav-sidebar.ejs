@@ -472,14 +472,14 @@
            @environment-updated.window="await handleEnvironmentUpdated($event)"
            style="scrollbar-width: none; -ms-overflow-style: none;">
 
-        <!-- Dynamic Environment Icons -->
-        <template x-for="env in environments" :key="env.id">
-          <a href="javascript:;"
-             @mouseenter="previewEnvironment(env)"
-             @focus="previewEnvironment(env)"
-             @click="selectEnvironment(env, true); $store.app.openSidebarPreview(env.id)"
-             @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
-             :data-active="activeEnvId === env.id"
+	        <!-- Dynamic Environment Icons -->
+	        <template x-for="env in environments" :key="env.id">
+	          <a href="javascript:;"
+	            @mouseenter="previewEnvironment(env)"
+	            @focus="previewEnvironment(env)"
+	            @click="selectEnvironment(env, true); if ($store.app.sidebar) $store.app.openSidebarPreview(env.id, 'spaces')"
+	            @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
+	            :data-active="activeEnvId === env.id"
              :data-env-id="env.id"
              :data-id="env.id"
              data-type="rail-space"
@@ -541,15 +541,31 @@
         </div>
       </div>
 
-      <!-- BOTTOM: Réglages (toggles admin panel) -->
-      <a href="javascript:;"
-         @click="$dispatch('toggle-admin')"
-         x-data="{ adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }"
-         @toggle-admin.window="adminActive = !adminActive"
-         @show-spaces.window="adminActive = false"
-         :data-active="adminActive"
-         class="mini-rail-item"
-         title="Afficher/masquer l'administration">
+	      <!-- BOTTOM: Réglages (toggles admin panel) -->
+	      <a href="javascript:;"
+	        @mouseenter="previewAdmin()"
+	        @focus="previewAdmin()"
+	        @click="activateAdmin()"
+	        x-data="{
+	          adminActive: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })(),
+	          previewAdmin() {
+	            if (!Alpine.store('app')?.sidebar) return;
+	            Alpine.store('app').openSidebarPreview(null, 'admin');
+	            window.dispatchEvent(new CustomEvent('show-admin-preview'));
+	          },
+	          activateAdmin() {
+	            if (Alpine.store('app')?.sidebar) {
+	              this.previewAdmin();
+	              return;
+	            }
+	            window.dispatchEvent(new CustomEvent('toggle-admin'));
+	          }
+	        }"
+	        @toggle-admin.window="if (!$store.app.sidebar) adminActive = !adminActive"
+	        @show-spaces.window="adminActive = false"
+	        :data-active="!$store.app.sidebar && adminActive"
+	        class="mini-rail-item"
+	        title="Afficher/masquer l'administration">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.5"/>
           <path opacity="0.5" d="M13.7654 2.15224C13.3978 2 12.9319 2 12 2C11.0681 2 10.6022 2 10.2346 2.15224C9.74457 2.35523 9.35523 2.74457 9.15224 3.23463C9.05015 3.47855 9.01577 3.77602 9.00547 4.21781C8.99099 4.84167 8.6694 5.41662 8.13819 5.72078C7.60698 6.02495 6.95655 6.01051 6.41393 5.72472C6.02446 5.5196 5.74387 5.41498 5.48694 5.39277C4.96419 5.34753 4.44331 5.5126 4.04746 5.84924C3.74421 6.10747 3.51117 6.51189 3.04507 7.32071L2.80109 7.74253C2.33499 8.55138 2.10194 8.9558 2.05042 9.36083C1.99254 9.81699 2.10795 10.2784 2.37332 10.6527C2.5667 10.9254 2.86378 11.1325 3.24769 11.3911C3.74921 11.7287 4.06527 12.2846 4.06527 12.9004C4.06527 13.5163 3.74921 14.0721 3.24762 14.4098C2.86374 14.6683 2.56669 14.8754 2.37332 15.1481C2.10795 15.5225 1.99254 15.9839 2.05042 16.44C2.10194 16.845 2.33498 17.2495 2.80109 18.0583L3.04507 18.4801C3.51117 19.2889 3.74421 19.6934 4.04746 19.9516C4.44331 20.2882 4.96419 20.4533 5.48694 20.4081C5.74387 20.3859 6.02446 20.2812 6.41394 20.0762C6.95656 19.7903 7.60698 19.7759 8.13819 20.0801C8.6694 20.3842 8.99099 20.9591 9.00547 21.5831C9.01577 22.0248 9.05015 22.3223 9.15224 22.5662C9.35523 23.0563 9.74457 23.4456 10.2346 23.6486C10.6022 23.8008 11.0681 23.8008 12 23.8008C12.9319 23.8008 13.3978 23.8008 13.7654 23.6486C14.2554 23.4456 14.6448 23.0563 14.8478 22.5662C14.9499 22.3223 14.9842 22.0248 14.9945 21.5831C15.009 20.9591 15.3306 20.3842 15.8618 20.0801C16.393 19.7759 17.0434 19.7903 17.5861 20.0762C17.9755 20.2812 18.2561 20.3859 18.5131 20.4081C19.0358 20.4533 19.5567 20.2882 19.9525 19.9516C20.2558 19.6934 20.4888 19.2889 20.9549 18.4801L21.1989 18.0583C21.665 17.2495 21.8981 16.845 21.9496 16.44C22.0075 15.9839 21.8921 15.5225 21.6267 15.1481C21.4333 14.8754 21.1363 14.6683 20.7523 14.4098C20.2508 14.0721 19.9347 13.5163 19.9347 12.9004C19.9347 12.2846 20.2508 11.7287 20.7523 11.3911C21.1362 11.1326 21.4333 10.9254 21.6267 10.6527C21.8921 10.2784 22.0075 9.81699 21.9496 9.36083C21.8981 8.9558 21.665 8.55135 21.1989 7.74253L20.9549 7.32071C20.4888 6.51189 20.2558 6.10747 19.9525 5.84924C19.5567 5.5126 19.0358 5.34753 18.5131 5.39277C18.2561 5.41498 17.9755 5.5196 17.5861 5.72473C17.0434 6.01051 16.393 6.02495 15.8618 5.72078C15.3306 5.41662 15.009 4.84167 14.9945 4.21781C14.9842 3.77602 14.9499 3.47855 14.8478 3.23463C14.6448 2.74457 14.2554 2.35523 13.7654 2.15224Z" stroke="currentColor" stroke-width="1.5"/>
@@ -582,7 +598,21 @@
 
 
         <!-- ═══ SIDEBAR MODE WRAPPER (Admin vs Spaces toggle) ═══ -->
-        <div x-data="{ showAdmin: (() => { const p = window.location.pathname; return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets'); })() }" @toggle-admin.window="showAdmin = !showAdmin" @show-spaces.window="showAdmin = false">
+	        <div x-data="{
+	          showAdmin: false,
+	          isAdminPath() {
+	            const p = window.location.pathname;
+	            return p.includes('/entity/') || p.includes('/classification/') || p.includes('/field-template/') || p.includes('/field-type/') || p.includes('/db/') || p.includes('/line-schemas') || p.includes('/ordonnance') || p.includes('/datatable') || p.includes('/showcase') || p.includes('/admin') || p.includes('/app-presets');
+	          },
+	          init() {
+	            this.showAdmin = this.isAdminPath();
+	          }
+	        }"
+	          @toggle-admin.window="showAdmin = !showAdmin"
+	          @show-admin.window="showAdmin = true"
+	          @show-admin-preview.window="showAdmin = true"
+	          @show-spaces.window="showAdmin = false"
+	          @sidebar-preview-closed.window="if ($store.app.sidebar) showAdmin = isAdminPath()">
 
         <!-- ═══ ADMIN SECTION (hidden by default, toggle with settings icon) ═══ -->
         <div x-show="showAdmin" x-collapse x-cloak>
@@ -4841,13 +4871,13 @@
         </script>
 
         <!-- Environment Rail Alpine Component -->
-        <script>
-          function environmentRail() {
-            return {
-              environments: [],
-              activeEnvId: null,
-              isLoadingEnvironments: false,
-              lastRefreshTime: 0,
+	        <script>
+	          function environmentRail() {
+	            return {
+	              environments: [],
+	              activeEnvId: null,
+	              isLoadingEnvironments: false,
+	              lastRefreshTime: 0,
 
               // Context menus
               railMenuOpen: false,
@@ -4858,16 +4888,21 @@
               _envCtxHandled: false,
               _activePopup: null,
 
-              async init() {
-                await this.refreshEnvironments();
-                // Listen for modal save events to refresh the list
-                window.addEventListener('env-modal-saved', async (e) => {
-                  const detail = e.detail || {};
-                  await this.refreshEnvironments({ force: true });
-                  if (detail.newEnv) {
-                    this.selectEnvironment(detail.newEnv, true);
-                  }
-                });
+	              async init() {
+	                await this.refreshEnvironments();
+	                // Listen for modal save events to refresh the list
+	                window.addEventListener('env-modal-saved', async (e) => {
+	                  const detail = e.detail || {};
+	                  await this.refreshEnvironments({ force: true });
+	                  if (detail.newEnv) {
+	                    this.selectEnvironment(detail.newEnv, true);
+	                  }
+	                });
+	                window.addEventListener('sidebar-preview-closed', () => {
+	                  if (!this.activeEnvId) return;
+	                  const activeEnv = this.environments.find(env => String(env.id) === String(this.activeEnvId));
+	                  if (activeEnv) this.dispatchEnvironmentChange(activeEnv, false);
+	                });
 
                 // ═══ SortableJS: Reorder envs + accept space/folder drops ═══
                 const self = this;
@@ -5094,31 +5129,37 @@
                 }
               },
 
-              previewEnvironment(env) {
-                if (!env) return;
-                if (Alpine.store('app').sidebar) {
-                  Alpine.store('app').openSidebarPreview(env.id);
-                }
-                this.selectEnvironment(env, true, true);
-              },
+	              previewEnvironment(env) {
+	                if (!env) return;
+	                const app = Alpine.store('app');
+	                if (!app?.sidebar) return;
+	                app.openSidebarPreview(env.id, 'spaces');
+	                window.dispatchEvent(new CustomEvent('show-spaces'));
+	                this.dispatchEnvironmentChange(env, true);
+	              },
 
-              selectEnvironment(env, skipSidebarToggle, showSpaces = true) {
-                // When the rail is collapsed, interactions can reveal the panel
-                // temporarily without changing the persisted sidebar state.
-                if (!skipSidebarToggle && showSpaces && Alpine.store('app').sidebar) {
-                  Alpine.store('app').openSidebarPreview(env.id);
-                }
-                if (showSpaces) {
-                  window.dispatchEvent(new CustomEvent('show-spaces'));
-                }
-                if (this.activeEnvId === env.id) {
-                  return; // Avoid redundant selections to prevent infinite loops
-                }
-                this.activeEnvId = env.id;
-                window.dispatchEvent(new CustomEvent('environment-changed', {
-                  detail: { environmentId: env.id, environment: env }
-                }));
-              },
+	              selectEnvironment(env, skipSidebarToggle, showSpaces = true) {
+	                // When the rail is collapsed, interactions can reveal the panel
+	                // temporarily without changing the persisted sidebar state.
+	                const app = Alpine.store('app');
+	                if (!skipSidebarToggle && showSpaces && app?.sidebar) {
+	                  app.openSidebarPreview(env.id, 'spaces');
+	                }
+	                if (showSpaces) {
+	                  window.dispatchEvent(new CustomEvent('show-spaces'));
+	                }
+	                if (this.activeEnvId === env.id && !app?.sidebarHoverPreview) {
+	                  return; // Avoid redundant selections to prevent infinite loops
+	                }
+	                this.activeEnvId = env.id;
+	                this.dispatchEnvironmentChange(env, false);
+	              },
+
+	              dispatchEnvironmentChange(env, preview = false) {
+	                window.dispatchEvent(new CustomEvent('environment-changed', {
+	                  detail: { environmentId: env.id, environment: env, preview }
+	                }));
+	              },
 
               // ═══ Pure JS Context Menu (renders at body level) ═══
               _destroyPopup() {

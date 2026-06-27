@@ -247,15 +247,17 @@
             sidebar: Alpine.$persist(savedSidebarCollapsed).as('dexapp-sidebar-collapsed'),
             sidebarHoverPreview: false,
             sidebarHoverEnvId: null,
+            sidebarHoverType: null,
             sidebarHoverCloseTimer: null,
             toggleSidebar(val) {
                 this.sidebar = typeof val === 'boolean' ? val : !this.sidebar;
                 if (!this.sidebar) this.closeSidebarPreview();
             },
-            openSidebarPreview(envId = null) {
+            openSidebarPreview(envId = null, type = 'spaces') {
                 if (!this.sidebar) return;
                 this.cancelSidebarPreviewClose();
                 this.sidebarHoverEnvId = envId;
+                this.sidebarHoverType = type;
                 this.sidebarHoverPreview = true;
             },
             scheduleSidebarPreviewClose() {
@@ -272,9 +274,18 @@
                 }
             },
             closeSidebarPreview() {
+                const wasOpen = this.sidebarHoverPreview;
+                const envId = this.sidebarHoverEnvId;
+                const type = this.sidebarHoverType;
                 this.cancelSidebarPreviewClose();
                 this.sidebarHoverPreview = false;
                 this.sidebarHoverEnvId = null;
+                this.sidebarHoverType = null;
+                if (wasOpen) {
+                    window.dispatchEvent(new CustomEvent('sidebar-preview-closed', {
+                        detail: { envId, type },
+                    }));
+                }
             },
 
             // layout design mode

@@ -763,6 +763,37 @@
         transition: border-color 0.2s;
     }
     .tl-detail-date-input:focus { outline: none; border-color: #4361ee; background: #fff; }
+    .tl-detail-datetime {
+        display: flex; align-items: center; gap: 6px;
+        width: 100%; min-width: 0;
+    }
+    .tl-detail-reminder-prop {
+        align-items: flex-start; flex-wrap: wrap; row-gap: 6px;
+    }
+    .tl-detail-reminder-prop .tl-detail-prop-value {
+        flex: 0 0 100%; width: 100%;
+    }
+    .tl-detail-reminder-prop .tl-detail-datetime {
+        max-width: 100%;
+    }
+    .tl-detail-datetime .tl-detail-date-input {
+        flex: 1 1 118px; min-width: 0;
+    }
+    .tl-detail-time-input {
+        width: 70px; flex: 0 0 70px; padding: 4px 6px;
+        border: 1.5px solid transparent; border-radius: 6px;
+        font-size: 12px; font-family: inherit; color: #0e1726;
+        background: #f8fafc; cursor: pointer; transition: border-color 0.2s;
+    }
+    .tl-detail-time-input:focus { outline: none; border-color: #4361ee; background: #fff; }
+    .tl-detail-time-input:disabled { opacity: 0.45; cursor: not-allowed; }
+    .tl-detail-reminder-clear {
+        width: 26px; height: 26px; flex: 0 0 26px; border: none;
+        border-radius: 7px; background: #f8fafc; color: #94a3b8;
+        display: inline-flex; align-items: center; justify-content: center;
+        cursor: pointer; transition: all 0.15s;
+    }
+    .tl-detail-reminder-clear:hover { background: #fef2f2; color: #ef4444; }
 
     /* Assignee input */
     .tl-detail-text-input {
@@ -2075,8 +2106,8 @@
     <% } %>
 
     <!-- ════════ DETAIL MODAL (full-screen centered) ════════ -->
-    <div class="tl-overlay" :class="{'open': detailTask}" @click="closeDetail()"></div>
-    <div class="tl-detail" :class="{'open': detailTask}" @click.stop @keydown.escape.window="closeDetail()">
+    <div x-show="detailTask" x-cloak class="tl-overlay" :class="{'open': detailTask}" @click="closeDetail()"></div>
+    <div x-show="detailTask" x-cloak class="tl-detail" :class="{'open': detailTask}" @click.stop @keydown.escape.window="closeDetail()">
         <template x-if="detailTask">
             <div style="display:flex;flex-direction:column;height:100%">
                 <div class="tl-detail-header">
@@ -2199,6 +2230,30 @@
                                 <input type="date" class="tl-detail-date-input"
                                        :value="detailTask.dueDate ? new Date(detailTask.dueDate).toISOString().split('T')[0] : ''"
                                        @change="detailTask.dueDate = $event.target.value || null; saveDetail('dueDate', detailTask.dueDate)">
+                            </div>
+                        </div>
+
+                        <!-- Reminder -->
+                        <div class="tl-detail-prop tl-detail-reminder-prop">
+                            <div class="tl-detail-prop-icon" style="color:#6366f1"><iconify-icon icon="solar:bell-bing-bold-duotone" width="14"></iconify-icon></div>
+                            <div class="tl-detail-prop-label">Rappel</div>
+                            <div class="tl-detail-prop-value">
+                                <div class="tl-detail-datetime">
+                                    <input type="date" class="tl-detail-date-input"
+                                           x-model="detailReminderDraft.date"
+                                           @input="setDetailReminderDraftPart('date', $event.target.value || '')"
+                                           @change="updateDetailReminderPart('date', $event.target.value || '')">
+                                    <input type="time" class="tl-detail-time-input"
+                                           x-model="detailReminderDraft.time"
+                                           :disabled="!detailReminderDateVal()"
+                                           @input="setDetailReminderDraftPart('time', $event.target.value || '')"
+                                           @change="updateDetailReminderPart('time', $event.target.value || '')">
+                                    <button type="button" class="tl-detail-reminder-clear" title="Supprimer le rappel"
+                                            x-show="detailTask.reminder"
+                                            @click.stop="clearDetailReminder()">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
@@ -2355,6 +2410,8 @@ document.addEventListener('alpine:init', () => {
         detailPostingComment: false,
         detailLoadingComments: false,
         detailUploadBusy: false,
+        detailReminderDraft: { date: '', time: '', dirty: false },
+        detailReminderSaving: false,
         detailDescriptionEditor: null,
         detailDescriptionStatus: '',
         _detailDescriptionSaveTimer: null,
@@ -2617,6 +2674,155 @@ document.addEventListener('alpine:init', () => {
             return window.DexRichTextEditor ? window.DexRichTextEditor.sanitizeHtml(html) : String(html || '');
         },
 
+        detailReminderDateFromValue(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        },
+
+        detailReminderTimeFromValue(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        },
+
+        composeDetailReminderDateTime(dateValue, timeValue) {
+            const date = String(dateValue || '').trim();
+            const time = String(timeValue || '').trim();
+            if (!date || !time) return null;
+            const [year, month, day] = date.split('-').map(Number);
+            const [hour, minute] = time.split(':').map(Number);
+            if (!year || !month || !day || !Number.isFinite(hour) || !Number.isFinite(minute)) return null;
+            return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
+        },
+
+        detailReminderTimeZone() {
+            try {
+                return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Casablanca';
+            } catch (_) {
+                return 'Africa/Casablanca';
+            }
+        },
+
+        syncDetailReminderDraft({ force = false } = {}) {
+            if (!this.detailTask) return;
+            if (!force && (this.detailReminderDraft.dirty || this.detailReminderSaving)) return;
+            const scheduledAt = this.detailTask.reminder?.scheduledAt || '';
+            this.detailReminderDraft = {
+                date: this.detailReminderDateFromValue(scheduledAt),
+                time: this.detailReminderTimeFromValue(scheduledAt),
+                dirty: false
+            };
+        },
+
+        detailReminderDateVal() {
+            return this.detailReminderDraft.date || '';
+        },
+
+        setDetailReminderDraftPart(part, value, { dirty = true } = {}) {
+            const currentDate = this.detailReminderDraft.date || '';
+            const currentTime = this.detailReminderDraft.time || '';
+            const nextDate = part === 'date' ? String(value || '') : currentDate;
+            const nextTime = nextDate ? (part === 'time' ? String(value || '') : currentTime) : '';
+            this.detailReminderDraft = {
+                date: nextDate,
+                time: nextTime,
+                dirty: dirty || this.detailReminderDraft.dirty
+            };
+            return this.detailReminderDraft;
+        },
+
+        async updateDetailReminderPart(part, value) {
+            if (!this.detailTask?._id) return;
+            const draft = this.setDetailReminderDraftPart(part, value);
+            if (!draft.date) {
+                this.detailReminderDraft = { date: '', time: '', dirty: !!this.detailTask.reminder };
+                if (this.detailTask.reminder) await this.clearDetailReminder();
+                return;
+            }
+            if (!draft.time) return;
+            const scheduledAt = this.composeDetailReminderDateTime(draft.date, draft.time);
+            if (!scheduledAt) return;
+            await this.setDetailReminder(scheduledAt);
+        },
+
+        async setDetailReminder(scheduledAt) {
+            if (!this.detailTask?._id) return false;
+            const taskId = this.detailTask._id;
+            const previous = this.detailTask.reminder || null;
+            const previousDraft = { ...this.detailReminderDraft };
+            const taskSnapshot = { ...this.detailTask };
+            const optimistic = {
+                ...(previous || {}),
+                targetId: taskId,
+                title: this.detailTask.title || 'Tache',
+                scheduledAt,
+                timeZone: this.detailReminderTimeZone(),
+                status: 'scheduled'
+            };
+
+            this.detailReminderSaving = true;
+            this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: optimistic });
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/reminder`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        scheduledAt,
+                        timeZone: this.detailReminderTimeZone()
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Rappel impossible');
+                this.syncUpdatedDetailTask(data.task || { ...taskSnapshot, reminder: data.reminder || optimistic });
+                this.detailReminderSaving = false;
+                this.detailReminderDraft.dirty = false;
+                this.syncDetailReminderDraft({ force: true });
+                if (window.showMessage) window.showMessage('Rappel enregistré', 'success');
+                return true;
+            } catch (e) {
+                this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: previous });
+                this.detailReminderSaving = false;
+                this.detailReminderDraft = { ...previousDraft, dirty: true };
+                if (window.showMessage) window.showMessage(e.message || 'Erreur lors du rappel', 'danger');
+                return false;
+            }
+        },
+
+        async clearDetailReminder() {
+            if (!this.detailTask?._id) return false;
+            const taskId = this.detailTask._id;
+            const previous = this.detailTask.reminder || null;
+            const previousDraft = { ...this.detailReminderDraft };
+            const taskSnapshot = { ...this.detailTask };
+
+            this.detailReminderSaving = true;
+            this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: null });
+            this.detailReminderDraft = { date: '', time: '', dirty: true };
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/reminder`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
+                this.syncUpdatedDetailTask(data.task || { ...taskSnapshot, reminder: null });
+                this.detailReminderSaving = false;
+                this.detailReminderDraft = { date: '', time: '', dirty: false };
+                if (window.showMessage) window.showMessage('Rappel supprimé', 'success');
+                return true;
+            } catch (e) {
+                this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: previous });
+                this.detailReminderSaving = false;
+                this.detailReminderDraft = previousDraft;
+                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de la suppression', 'danger');
+                return false;
+            }
+        },
+
         initDetailDescriptionEditor(root) {
             if (!root) return;
             if (this.detailDescriptionEditor?.root === root) return;
@@ -2718,15 +2924,18 @@ document.addEventListener('alpine:init', () => {
 
         syncUpdatedDetailTask(taskData = {}) {
             if (!taskData?._id) return null;
+            const targetList = this.detailList
+                || this.lists.find(list => list._id === String(taskData.taskListId || ''))
+                || this.lists.find(list => (list.tasks || []).some(task => task._id === taskData._id));
             const normalizedTask = this.normalizeTask({
                 ...taskData,
-                taskListId: this.detailList?._id || taskData.taskListId
+                taskListId: targetList?._id || taskData.taskListId
             });
-            if (this.detailList) {
-                const arr = this.detailList.tasks || [];
+            if (targetList) {
+                const arr = targetList.tasks || [];
                 const idx = arr.findIndex(t => t._id === normalizedTask._id);
                 if (idx >= 0) Object.assign(arr[idx], normalizedTask);
-                this.detailList.doneCount = arr.filter(t => t.status === 'Terminé').length;
+                targetList.doneCount = arr.filter(t => t.status === 'Terminé').length;
             }
             if (this.detailTask && this.detailTask._id === normalizedTask._id) Object.assign(this.detailTask, normalizedTask);
             return normalizedTask;
@@ -2974,6 +3183,8 @@ document.addEventListener('alpine:init', () => {
             this.detailNewComment = '';
             this.detailPostingComment = false;
             this.detailUploadBusy = false;
+            this.detailReminderDraft = { date: '', time: '', dirty: false };
+            this.detailReminderSaving = false;
         },
 
         // ─── Status Manager ───
@@ -3738,11 +3949,14 @@ document.addEventListener('alpine:init', () => {
             this._detailDescriptionSaveTimer = null;
             if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
             this.detailDescriptionEditor = null;
+            this.detailReminderSaving = false;
+            this.detailReminderDraft = { date: '', time: '', dirty: false };
             const sourceList = this.resolveTaskList(task, list);
             const sourceTask = sourceList?.tasks?.find(t => t._id === task?._id) || task;
             this.detailList = sourceList;
             this.detailTask = this.normalizeTask({ ...sourceTask, taskListId: sourceList?._id || sourceTask?.taskListId || '' });
             this._detailDescriptionSavedHtml = this.normalizeDescriptionHtml(this.detailTask.description || '');
+            this.syncDetailReminderDraft({ force: true });
             this.detailComments = [];
             this.detailNewComment = '';
             this.loadComments(task._id);

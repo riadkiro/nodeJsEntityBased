@@ -1,6 +1,9 @@
 .dx-card {
     --ov-color: #805dca;
 }
+.dx-priority-card {
+    container-type: inline-size;
+}
 .dx-card-header {
     display: flex;
     align-items: center;
@@ -129,7 +132,7 @@
 }
 .dx-priority-body {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
     gap: 24px;
     align-items: stretch;
     padding: 14px 2px 0;
@@ -439,6 +442,21 @@
     padding-left: 20px;
     min-width: 0;
 }
+.dx-completed-today-inline {
+    display: none;
+    border-left: 0;
+    padding-left: 0;
+}
+.dx-completed-details {
+    width: 100%;
+}
+.dx-completed-details > summary {
+    list-style: none;
+    cursor: pointer;
+}
+.dx-completed-details > summary::-webkit-details-marker {
+    display: none;
+}
 .dx-completed-header {
     display: flex;
     align-items: center;
@@ -447,6 +465,18 @@
     margin-bottom: 10px;
     color: #0f172a;
     font-size: 12px;
+}
+.dx-completed-toggle-icon {
+    margin-left: auto;
+    color: #94a3b8;
+    transition: transform .16s ease;
+}
+.dx-completed-details[open] .dx-completed-toggle-icon {
+    transform: rotate(180deg);
+}
+.dx-completed-list {
+    overflow: visible;
+    max-height: none;
 }
 .dx-completed-row {
     display: grid;
@@ -609,15 +639,40 @@
 .dx-task-switch.is-on::after {
     left: 14px;
 }
-@media (max-width: 900px) {
+@container (max-width: 760px) {
     .dx-priority-body {
         grid-template-columns: 1fr;
     }
+    .dx-completed-today-side {
+        display: none !important;
+    }
+    .dx-completed-today-inline {
+        display: flex !important;
+        border-top: 1px solid #eef2f8;
+        padding-top: 12px;
+        margin-top: 8px;
+    }
     .dx-completed-today {
         border-left: 0;
-        border-top: 1px solid #eef2f8;
         padding-left: 0;
+    }
+}
+@media (max-width: 700px) {
+    .dx-priority-body {
+        grid-template-columns: 1fr;
+    }
+    .dx-completed-today-side {
+        display: none !important;
+    }
+    .dx-completed-today-inline {
+        display: flex !important;
+        border-top: 1px solid #eef2f8;
         padding-top: 12px;
+        margin-top: 8px;
+    }
+    .dx-completed-today {
+        border-left: 0;
+        padding-left: 0;
     }
 }
 @media (max-width: 700px) {
@@ -652,6 +707,9 @@
 }
 .dark .dx-completed-today {
     border-left-color: #253b5c;
+}
+.dark .dx-completed-today-inline {
+    border-top-color: #253b5c;
 }
 .dark .dx-shopping-row.dx-task-row,
 .dark .dx-completed-row {

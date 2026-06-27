@@ -1964,7 +1964,7 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
 router.put('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const { TaskList, RecordTask, TaskComment } = await taskTenantModels(req)
-        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId']
+        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId', 'completedAt']
         const updates = {}
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
@@ -1995,18 +1995,31 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             }
         }
 
+        // Handle null dates
+        if (updates.startDate === '' || updates.startDate === null) updates.startDate = null
+        if (updates.dueDate === '' || updates.dueDate === null) updates.dueDate = null
+        if (updates.completedAt === '' || updates.completedAt === null) {
+            updates.completedAt = null
+        } else if (updates.completedAt !== undefined) {
+            const completedAt = new Date(updates.completedAt)
+            if (Number.isNaN(completedAt.getTime())) return res.status(400).json({ error: 'Date de fin invalide' })
+            updates.completedAt = completedAt
+        }
+
         // Auto-set color fields and completedAt
         if (updates.status) {
             updates.statusColor = optionColor(getListStatuses(targetList), updates.status, '#9ca3af')
-            updates.completedAt = cleanTaskText(updates.status, '').toLowerCase().includes('termin') ? new Date() : null
+            const isDone = cleanTaskText(updates.status, '').toLowerCase().includes('termin')
+            if (req.body.completedAt === undefined) updates.completedAt = isDone ? new Date() : null
+            else if (!isDone) updates.completedAt = null
         }
         if (updates.priority) {
             updates.priorityColor = optionColor(getListPriorities(targetList), updates.priority, '')
         }
-
-        // Handle null dates
-        if (updates.startDate === '' || updates.startDate === null) updates.startDate = null
-        if (updates.dueDate === '' || updates.dueDate === null) updates.dueDate = null
+        if (updates.completedAt !== undefined) {
+            const nextStatus = updates.status || oldTask.status
+            if (!cleanTaskText(nextStatus, '').toLowerCase().includes('termin')) updates.completedAt = null
+        }
 
         if (Object.keys(updates).length === 0 && !reminderInput) {
             return res.status(400).json({ error: 'No valid fields to update' })

@@ -709,11 +709,12 @@ async function taskBoard(req) {
         })
         .sort(compareBoardTasks);
 
-    const completedToday = rows.filter(task => {
-        if (!isDone(task)) return false;
-        const checkDate = task.completedAt || task.updatedAt;
-        return checkDate && formatKey(checkDate) === tools.dateKey;
-    }).sort(compareCompletedTasks);
+	    const completedToday = rows.filter(task => {
+	        if (!isDone(task)) return false;
+	        const key = taskDateKey(task, tools);
+	        if (key) return key === tools.dateKey;
+	        return task.isDayPriority || task.listIsToday;
+	    }).sort(compareCompletedTasks);
 
     const tasksByList = {};
     rows.forEach(task => {
@@ -1171,16 +1172,31 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         if (req.body?.status !== undefined) {
             updates.status = normalizeStatus(req.body.status);
             updates.statusColor = optionColor(statuses, updates.status, '#9ca3af');
-            updates.completedAt = updates.status === STATUS_DONE ? new Date() : null;
+            if (req.body.completedAt === undefined) updates.completedAt = updates.status === STATUS_DONE ? new Date() : null;
+            else if (updates.status !== STATUS_DONE) updates.completedAt = null;
         }
         if (req.body?.done !== undefined) {
             updates.status = req.body.done ? STATUS_DONE : STATUS_TODO;
             updates.statusColor = optionColor(statuses, updates.status, '#9ca3af');
-            updates.completedAt = req.body.done ? new Date() : null;
+            if (req.body.completedAt === undefined) updates.completedAt = req.body.done ? new Date() : null;
+            else if (!req.body.done) updates.completedAt = null;
         }
         if (req.body?.isDayPriority !== undefined) updates.isDayPriority = !!req.body.isDayPriority;
         if (req.body?.startDate !== undefined) updates.startDate = req.body.startDate || null;
         if (req.body?.dueDate !== undefined) updates.dueDate = req.body.dueDate || null;
+        if (req.body?.completedAt !== undefined) {
+            if (!req.body.completedAt) {
+                updates.completedAt = null;
+            } else {
+                const completedAt = new Date(req.body.completedAt);
+                if (Number.isNaN(completedAt.getTime())) return sendError(res, 400, 'Date de fin invalide', 'VALIDATION_ERROR');
+                updates.completedAt = completedAt;
+            }
+        }
+        if (updates.completedAt !== undefined) {
+            const nextStatus = updates.status || task.status;
+            if (nextStatus !== STATUS_DONE) updates.completedAt = null;
+        }
         if (req.body?.assignedTo !== undefined) updates.assignedTo = cleanText(req.body.assignedTo, '');
 
         if (!Object.keys(updates).length && !reminderInput) {

@@ -469,6 +469,22 @@
                                 </div>
                             </div>
 
+                            <div class="tdm-prop" x-show="$store.taskModal.task.status === 'Terminé'">
+                                <span class="tdm-prop-icon"><iconify-icon icon="solar:check-circle-bold" width="15"></iconify-icon></span>
+                                <span class="tdm-prop-label">Terminé le</span>
+                                <div class="tdm-prop-value">
+                                    <span class="tdm-prop-datetime">
+                                        <input type="date" class="tdm-prop-date"
+                                               :value="$store.taskModal.toDateVal($store.taskModal.task.completedAt)"
+                                               @change="$store.taskModal.updateCompletedAtPart('date', $event.target.value || '')">
+                                        <input type="time" class="tdm-prop-time"
+                                               :value="$store.taskModal.toTimeVal($store.taskModal.task.completedAt)"
+                                               :disabled="!$store.taskModal.toDateVal($store.taskModal.task.completedAt)"
+                                               @change="$store.taskModal.updateCompletedAtPart('time', $event.target.value || '')">
+                                    </span>
+                                </div>
+                            </div>
+
                             <div class="tdm-prop">
                                 <span class="tdm-prop-icon tdm-reminder-icon"><iconify-icon icon="solar:bell-bing-bold-duotone" width="15"></iconify-icon></span>
                                 <span class="tdm-prop-label">Rappel</span>
@@ -916,6 +932,11 @@ document.addEventListener('alpine:init', () => {
             if (!this.task || !option?.label) return;
             this.task[meta.field] = option.label;
             this.task[meta.colorField] = option.color || meta.fallbackColor;
+            if (kind === 'status') {
+                this.task.completedAt = String(option.label || '').toLowerCase().includes('termin')
+                    ? (this.task.completedAt || new Date().toISOString())
+                    : null;
+            }
             this.closeMenus();
             await this.updateField(meta.field, option.label);
         },
@@ -1509,6 +1530,17 @@ document.addEventListener('alpine:init', () => {
             const nextValue = this.composeDateTime(nextDate, nextTime);
             this.task[field] = nextValue;
             this.updateField(field, nextValue);
+        },
+
+        updateCompletedAtPart(part, value) {
+            if (!this.task || this.task.status !== 'Terminé') return;
+            const currentDate = this.toDateVal(this.task.completedAt);
+            const currentTime = this.toTimeVal(this.task.completedAt);
+            const nextDate = part === 'date' ? String(value || '') : currentDate;
+            const nextTime = part === 'time' ? String(value || '') : currentTime;
+            const nextValue = this.composeDateTime(nextDate, nextTime);
+            this.task.completedAt = nextValue;
+            this.updateField('completedAt', nextValue);
         },
 
         syncReminderDraft({ force = false } = {}) {

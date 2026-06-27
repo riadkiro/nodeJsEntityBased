@@ -995,8 +995,9 @@ router.get("/api/home-overview", async (req, res) => {
 	        const completedToday = taskRows
 	            .filter(task => {
 	                if (task.status !== 'Terminé') return false;
-	                const checkDate = task.completedAt || task.updatedAt;
-	                return checkDate && formatDateKeyInTimeZone(checkDate) === todayKey;
+	                const key = taskScheduleDateKey(task);
+	                if (key) return key === todayKey;
+	                return task.isDayPriority || task.listIsToday;
 	            })
 	            .sort(compareCompletedTasks);
 		        const openTasksSorted = taskRows

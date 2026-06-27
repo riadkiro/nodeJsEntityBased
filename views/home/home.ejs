@@ -736,9 +736,12 @@
         align-items: center;
         gap: 12px;
     }
+    .dx-priority-card {
+        container-type: inline-size;
+    }
     .dx-priority-body {
         display: grid;
-        grid-template-columns: minmax(0, 1fr) 260px;
+        grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
         gap: 24px;
         align-items: stretch;
         padding: 8px 22px 22px;
@@ -884,6 +887,22 @@
         gap: 6px;
         min-height: 80px;
     }
+    .dx-completed-today-inline {
+        display: none;
+        border-left: 0;
+        padding-left: 0;
+        min-height: 0;
+    }
+    .dx-completed-details {
+        width: 100%;
+    }
+    .dx-completed-details > summary {
+        list-style: none;
+        cursor: pointer;
+    }
+    .dx-completed-details > summary::-webkit-details-marker {
+        display: none;
+    }
     .dx-completed-header {
         display: flex;
         align-items: center;
@@ -895,12 +914,20 @@
         font-weight: 700;
         color: #34405a;
     }
+    .dx-completed-toggle-icon {
+        margin-left: auto;
+        color: #94a3b8;
+        transition: transform .16s ease;
+    }
+    .dx-completed-details[open] .dx-completed-toggle-icon {
+        transform: rotate(180deg);
+    }
     .dx-completed-list {
         display: flex;
         flex-direction: column;
         gap: 0;
-        overflow-y: auto;
-        max-height: 180px;
+        overflow: visible;
+        max-height: none;
     }
     .dx-completed-row {
         display: flex;
@@ -2096,6 +2123,7 @@
     .dark .dx-time,
     .dark .dx-week-event em { color: #f1f5f9; }
     .dark .dx-completed-today { border-left-color: #253b5c; }
+    .dark .dx-completed-today-inline { border-top-color: #253b5c; }
     .dark .dx-shopping-row.dx-task-row,
     .dark .dx-completed-row { border-bottom-color: #1b2e4b; }
     .dark .dx-shopping-list > .dx-task-row:last-of-type,
@@ -2280,10 +2308,19 @@
         color: #e0e6ed;
     }
     .dark .dx-progress { background: #253b5c; }
-    @media (max-width: 1180px) {
+    @container (max-width: 760px) {
         .dx-priority-body { grid-template-columns: 1fr; }
+        .dx-completed-today-side { display: none !important; }
+        .dx-completed-today-inline {
+            display: flex !important;
+            border-top: 1px solid #eef2f8;
+            padding-top: 12px;
+            margin-top: 8px;
+        }
+        .dx-completed-today { border-left: 0; padding-left: 0; }
+    }
+    @media (max-width: 1180px) {
         .dx-productivity { border-left: 0; border-top: 1px solid #eef2f8; padding-top: 18px; }
-        .dx-completed-today { border-left: 0; border-top: 1px solid #eef2f8; padding-left: 0; padding-top: 12px; }
     }
     @media (max-width: 1024px) {
         .ov-add-choice { grid-template-columns: 1fr; }
@@ -3093,7 +3130,7 @@ document.addEventListener('alpine:init', () => {
 		                    if (syncedTask.isDayPriority && !(this.todayTasks || []).some(item => this.homeTaskId(item) === id)) {
 		                        this.todayTasks = [...(this.todayTasks || []), this.normalizeHomeTask(syncedTask)];
 		                    }
-		                    if (field === 'status') this.syncCompletedTodayData(id, syncedTask);
+		                    if (field === 'status' || field === 'completedAt') this.syncCompletedTodayData(id, syncedTask);
 		                    if (field === 'isDayPriority') {
 		                        if (!patch.isDayPriority && !syncedTask.listIsToday) {
 		                            this.todayTasks = (this.todayTasks || []).filter(item => this.homeTaskId(item) !== id);
@@ -3292,7 +3329,7 @@ document.addEventListener('alpine:init', () => {
 	                handle: '.dx-task-drag',
 	                draggable: '.dx-task-row',
 	                ghostClass: 'dx-task-ghost',
-		                filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-subtitle-attachment, .dx-task-menu-btn, .dx-task-edit, .dx-inline-add, .dx-shopping-foot, .ov-custom-empty',
+                filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-subtitle-attachment, .dx-task-menu-btn, .dx-task-edit, .dx-inline-add, .dx-completed-today-inline, .dx-shopping-foot, .ov-custom-empty',
 	                preventOnFilter: false,
 	                onEnd: (evt) => this.reorderHomeTaskWidgetFromDom(evt, wid)
 	            });
@@ -3315,9 +3352,10 @@ document.addEventListener('alpine:init', () => {
 	                        .map(row => [String(row.dataset.taskId || ''), row])
 	                        .filter(([id]) => id)
 	                );
-	                const anchor = container.querySelector(':scope > .dx-inline-add')
-	                    || container.querySelector(':scope > .dx-shopping-foot')
-	                    || null;
+                const anchor = container.querySelector(':scope > .dx-completed-today-inline')
+                    || container.querySelector(':scope > .dx-inline-add')
+                    || container.querySelector(':scope > .dx-shopping-foot')
+                    || null;
 	                tasks.forEach(task => {
 	                    const row = rowsById.get(this.homeTaskId(task));
 	                    if (row) container.insertBefore(row, anchor);
@@ -4591,7 +4629,7 @@ document.addEventListener('alpine:init', () => {
 	            return 'Ajouter une tâche pour ' + this.todayWidgetDatePhrase(wid) + '...';
 	        },
 	        taskScheduleDateKey(task = {}) {
-	            const value = task.dueDate || task.startDate;
+	            const value = task.startDate || task.dueDate;
 	            if (!value) return '';
 	            const useLocal = this.dateValueHasExplicitTime(value);
 	            return this.taskDateKey(value, useLocal);
@@ -4613,6 +4651,9 @@ document.addEventListener('alpine:init', () => {
 	            };
 	            (this.todayTasks || []).forEach(addTask);
 	            (this.allTasks || []).forEach(task => {
+	                if (this.taskScheduleDateKey(task) === selected) addTask(task);
+	            });
+	            (this.completedTodayData || []).forEach(task => {
 	                if (this.taskScheduleDateKey(task) === selected) addTask(task);
 	            });
 	            const source = Array.from(byId.values());
@@ -4661,9 +4702,7 @@ document.addEventListener('alpine:init', () => {
 	            return all.filter(t => t.status !== 'Terminé');
 	        },
 	        completedTodayTasks() {
-	            const now = new Date();
-	            const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-	            const todayEnd = todayStart + 86400000;
+	            const todayKey = this.todayDateKey();
 	            const allSources = [...(this.completedTodayData || []), ...(this.todayTasks || []), ...(this.allTasks || [])];
 	            // De-duplicate by id
 	            const seen = new Set();
@@ -4673,10 +4712,8 @@ document.addEventListener('alpine:init', () => {
 	                if (!id || seen.has(id)) continue;
 	                seen.add(id);
 	                if (t.status !== 'Terminé') continue;
-	                const cAt = t.completedAt ? new Date(t.completedAt).getTime() : 0;
-	                const uAt = t.updatedAt ? new Date(t.updatedAt).getTime() : 0;
-	                const checkTime = cAt || uAt;
-	                if (checkTime >= todayStart && checkTime < todayEnd) {
+	                const key = this.taskScheduleDateKey(t);
+	                if (key ? key === todayKey : (t.isDayPriority || t.listIsToday)) {
 	                    result.push(t);
 	                }
 	            }
@@ -4696,7 +4733,7 @@ document.addEventListener('alpine:init', () => {
 	            return this.completedHomeTaskTimestamp(b.createdAt) - this.completedHomeTaskTimestamp(a.createdAt);
 	        },
 	        completedTodayDayTasks(wid = null) {
-	            if (!wid || this.todayWidgetIsToday(wid)) {
+	            if (!wid) {
 	                return this.completedTodayTasks();
 	            }
 	            const source = wid ? this.todayWidgetDateTasks(wid) : (this.todayTasks || []);

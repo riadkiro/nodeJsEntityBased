@@ -124,12 +124,40 @@
                 <template x-if="todayWidgetVisibleTasks(wid).length === 0">
                     <div class="ov-custom-empty" x-text="todayWidgetEmptyLabel(wid)"></div>
                 </template>
+                <div class="dx-completed-today dx-completed-today-inline" x-show="todayWidgetCompletedPanelEnabled(wid)">
+                    <details class="dx-completed-details">
+                        <summary class="dx-completed-header">
+                            <iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;font-size:15px;"></iconify-icon>
+                            <strong x-text="completedDayTitle(wid)"></strong>
+                            <iconify-icon class="dx-completed-toggle-icon" icon="solar:alt-arrow-down-linear" width="14"></iconify-icon>
+                        </summary>
+                        <div class="dx-completed-list">
+                            <template x-for="item in completedTodayDayTasks(wid)" :key="item._id || item.id">
+                                <div class="dx-completed-row">
+                                    <button type="button"
+                                            class="dx-done-action"
+                                            title="Remettre à faire"
+                                            aria-label="Remettre à faire"
+                                            @click.stop="toggleTodayTaskItem(wid, item)">
+                                        <iconify-icon icon="solar:check-circle-bold" class="dx-done-icon"></iconify-icon>
+                                        <iconify-icon icon="solar:close-circle-bold" class="dx-done-remove-icon"></iconify-icon>
+                                    </button>
+                                    <span class="dx-done-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" style="cursor:pointer;"></span>
+                                    <span class="dx-done-record" x-show="item.recordTitle && item.recordTitle !== 'Espace perso'" x-text="item.recordTitle"></span>
+                                </div>
+                            </template>
+                            <template x-if="completedTodayDayTasks(wid).length === 0">
+                                <div class="dx-completed-empty" x-text="completedDayEmptyLabel(wid)"></div>
+                            </template>
+                        </div>
+                    </details>
+                </div>
                 <form class="dx-inline-add" x-show="!todayWidgetIsOverdue(wid)" @submit.prevent="addTodayTask(wid)">
                     <input type="text" :value="newTaskTitleFor(wid)" @input="setNewTaskTitle(wid, $event.target.value)" :placeholder="todayWidgetAddPlaceholder(wid)">
                     <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
                 </form>
             </div>
-            <div class="dx-completed-today" x-show="todayWidgetCompletedPanelEnabled(wid)">
+            <div class="dx-completed-today dx-completed-today-side" x-show="todayWidgetCompletedPanelEnabled(wid)">
                 <div class="dx-completed-header">
                     <iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;font-size:15px;"></iconify-icon>
                     <strong x-text="completedDayTitle(wid)"></strong>

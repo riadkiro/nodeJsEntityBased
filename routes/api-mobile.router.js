@@ -9,33 +9,17 @@ const { convertPendingInvitesToGrants } = require('../services/record-access-inv
 const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
+const TaskOverview = require('../services/task-overview.service');
 
 const router = express.Router();
 
-const STATUS_TODO = '\u00c0 faire';
-const STATUS_DONE = 'Termin\u00e9';
+const { STATUS_TODO, STATUS_DONE, defaultStatuses, defaultPriorities } = TaskOverview;
 const TOKEN_TTL_SECONDS = Number(process.env.MOBILE_TOKEN_TTL_SECONDS || 60 * 60 * 24 * 30);
 const EMAIL_VERIFICATION_TTL_HOURS = 24;
 const EMAIL_VERIFICATION_TTL_MS = EMAIL_VERIFICATION_TTL_HOURS * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
 const PASSWORD_RESET_SENT_MESSAGE = "Si un compte existe avec cet email, un lien de reinitialisation vient d'etre envoye.";
-
-const defaultStatuses = [
-    { label: STATUS_TODO, color: '#9ca3af', order: 0 },
-    { label: 'En cours', color: '#3b82f6', order: 1 },
-    { label: 'En revue', color: '#f59e0b', order: 2 },
-    { label: STATUS_DONE, color: '#22c55e', order: 3 },
-    { label: 'Bloque', color: '#ef4444', order: 4 },
-];
-
-const defaultPriorities = [
-    { label: 'Aucune', color: '#cbd5e1', order: 0 },
-    { label: 'Basse', color: '#22c55e', order: 1 },
-    { label: 'Moyenne', color: '#f59e0b', order: 2 },
-    { label: 'Haute', color: '#ef4444', order: 3 },
-    { label: 'Urgente', color: '#dc2626', order: 4 },
-];
 
 router.use((req, res, next) => {
     const origin = req.get('origin') || '';
@@ -258,61 +242,23 @@ function cleanText(value, fallback = '') {
 }
 
 function normalizeOptions(options, fallback) {
-    const source = Array.isArray(options) && options.length ? options : fallback;
-    return source
-        .map((item, index) => ({
-            label: cleanText(item?.label, ''),
-            color: typeof item?.color === 'string' ? item.color : '',
-            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
-        }))
-        .filter(item => item.label)
-        .sort((a, b) => a.order - b.order);
+    return TaskOverview.normalizeOptions(options, fallback);
 }
 
 function optionColor(options, label, fallback = '#9ca3af') {
-    const found = (options || []).find(item => item.label === label);
-    return found?.color || fallback;
+    return TaskOverview.optionColor(options, label, fallback);
 }
 
 function normalizeStatus(value) {
-    const text = cleanText(value, STATUS_TODO).toLowerCase();
-    if (text.includes('termin') || text === 'done' || text === 'completed') return STATUS_DONE;
-    return STATUS_TODO;
+    return TaskOverview.normalizeStatus(value);
 }
 
 function normalizePriority(value) {
-    const raw = cleanText(value, 'Aucune');
-    const text = raw
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-
-    if (text.includes('urgent')) return 'Urgente';
-    if (text.includes('important') || text.includes('haute') || text.includes('high')) return 'Haute';
-    if (text.includes('normal') || text.includes('moyenne') || text.includes('medium')) return 'Moyenne';
-    if (text.includes('basse') || text.includes('low')) return 'Basse';
-    return 'Aucune';
+    return TaskOverview.normalizePriority(value);
 }
 
 function cleanListLabel(label) {
-    const text = cleanText(label, 'Taches du jour');
-    const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (normalized === 'general' || /^taches?\s+du\s+jour$/.test(normalized)) return 'T\u00e2ches du jour';
-    return text;
-}
-
-function isTodayList(list) {
-    const normalized = cleanText(list?.label, '')
-        .normalize('NFD')
-        .replace(/[\u0300-\u036f]/g, '')
-        .toLowerCase();
-    return normalized === 'general' || /^taches?\s+du\s+jour$/.test(normalized);
-}
-
-function parseColorInt(color, fallback = 0xFF6F55DC) {
-    const hex = cleanText(color, '').replace('#', '');
-    if (!/^[0-9a-f]{6}$/i.test(hex)) return fallback;
-    return Number.parseInt(`FF${hex}`, 16);
+    return TaskOverview.cleanListLabel(label);
 }
 
 function formatReminderTime(date, timeZone) {
@@ -385,54 +331,6 @@ function resolveTimeZone(value) {
     } catch (_) {
         return fallback;
     }
-}
-
-function dayTools(req) {
-    const timeZone = resolveTimeZone(req.query?.tz || 'Africa/Casablanca');
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    });
-    const formatKey = value => {
-        const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return '';
-        const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
-        return `${parts.year}-${parts.month}-${parts.day}`;
-    };
-    const addDays = days => {
-        const date = new Date();
-        date.setUTCDate(date.getUTCDate() + days);
-        return formatKey(date);
-    };
-    const requestedDate = cleanText(req.query?.date, '');
-    const day = cleanText(req.query?.day, 'today').toLowerCase();
-    const dateKey = /^\d{4}-\d{2}-\d{2}$/.test(requestedDate)
-        ? requestedDate
-        : day === 'tomorrow'
-            ? addDays(1)
-            : formatKey(new Date());
-
-    return { timeZone, dateKey, day };
-}
-
-function taskDateKey(task, tools) {
-    const value = task.startDate || task.dueDate || null;
-    return value ? tools.formatKey?.(value) || '' : '';
-}
-
-function taskOverdueDateKey(task, tools) {
-    const value = task.dueDate || task.startDate || null;
-    return value ? tools.formatKey?.(value) || '' : '';
-}
-
-function taskMatchesDate(task, targetKey, tools) {
-    const value = task.startDate || task.dueDate || null;
-    if (!value) return false;
-    const date = value instanceof Date ? value : new Date(value);
-    if (Number.isNaN(date.getTime())) return false;
-    return tools.formatKey(date) === targetKey;
 }
 
 async function ensurePersonalTaskRecord(req) {
@@ -521,251 +419,11 @@ async function serializeSingleTask(req, task) {
         targetType: 'task',
         targetId: task._id,
     });
-    return serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder);
-}
-
-function serializeTaskRow(req, task, list, record, entity, reminder = null) {
-    const statuses = normalizeOptions(list?.statuses, defaultStatuses);
-    const priorities = normalizeOptions(list?.priorities, defaultPriorities);
-    const status = cleanText(task.status, STATUS_TODO);
-    const priority = cleanText(task.priority, 'Aucune');
-    const done = status === STATUS_DONE;
-    const recordTitle = record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
-    const listId = list?._id?.toString?.() || task.taskListId?.toString?.() || '';
-    const recordId = record?._id?.toString?.() || task.recordId?.toString?.() || '';
-    const entitySlug = entity?.slug || '';
-    const taskId = task._id?.toString?.() || String(task._id || '');
-
-    return {
-        id: taskId,
-        _id: taskId,
-        title: cleanText(task.title, 'Sans titre'),
-        description: task.description || '',
-        status,
-        statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
-        priority,
-        priorityColor: task.priorityColor || optionColor(priorities, priority, ''),
-        done,
-        isDayPriority: !!task.isDayPriority,
-        dueDate: task.dueDate || null,
-        startDate: task.startDate || null,
-        createdAt: task.createdAt || null,
-        updatedAt: task.updatedAt || null,
-        completedAt: task.completedAt || null,
-        assignedTo: task.assignedTo || '',
-        order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
-        attachments: Array.isArray(task.attachments) ? task.attachments.map(att => ({
-            _id: att._id?.toString?.() || String(att._id || ''),
-            filename: att.filename || '',
-            originalName: att.originalName || att.filename || 'Fichier',
-            mimeType: att.mimeType || '',
-            size: Number(att.size || 0),
-        })) : [],
-        hasAttachment: Array.isArray(task.attachments) && task.attachments.length > 0,
-        listId,
-        taskListId: listId,
-        listLabel: cleanListLabel(list?.label),
-        listColor: list?.color || '#6366f1',
-        listIcon: list?.icon || 'solar:checklist-bold-duotone',
-        listIsToday: isTodayList(list),
-        recordId,
-        recordTitle,
-        recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
-        recordColor: record?.color || entity?.color || '#4361ee',
-        recordColorInt: parseColorInt(record?.color || entity?.color || '#4361ee'),
-        entityName: entity?.name || 'Sans entite',
-        entitySlug,
-        entityIcon: entity?.icon || 'solar:folder-bold-duotone',
-        entityColor: entity?.color || '#4361ee',
-        reminder: ReminderService.serializeReminder(reminder),
-        link: recordId && entitySlug
-            ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}`
-            : `/account/${req.account_number}/tasks`,
-    };
+    return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder);
 }
 
 async function taskBoard(req) {
-    const Entity = await tenantCollection(req, 'Entity');
-    const Record = await tenantCollection(req, 'Record');
-    const toolsBase = dayTools(req);
-    const formatter = new Intl.DateTimeFormat('en-US', {
-        timeZone: toolsBase.timeZone,
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-    });
-    const formatKey = value => {
-        const date = value instanceof Date ? value : new Date(value);
-        if (Number.isNaN(date.getTime())) return '';
-        const parts = Object.fromEntries(formatter.formatToParts(date).map(part => [part.type, part.value]));
-        return `${parts.year}-${parts.month}-${parts.day}`;
-    };
-    const tools = { ...toolsBase, formatKey };
-
-    const recordIds = await Record.find({}).distinct('_id');
-    if (!recordIds.length) {
-        return {
-            success: true,
-            schedule: tools.day,
-            dateKey: tools.dateKey,
-            todayTasks: [],
-            tasks: [],
-            completedToday: [],
-            taskLists: [],
-            stats: { totalTasks: 0, doneTasks: 0, openTasks: 0, todayTasks: 0, overdueCount: 0, listsCount: 0 },
-            overdueTasks: [],
-        };
-    }
-
-    const { TaskList, RecordTask } = await taskTenantModels(req);
-    const [allLists, allTasks] = await Promise.all([
-        TaskList.find({ recordId: { $in: recordIds } }).sort({ order: 1, createdAt: 1 }).lean(),
-        RecordTask.find({ recordId: { $in: recordIds } }).sort({ order: 1, createdAt: -1 }).lean(),
-    ]);
-
-    const recordIdSet = new Set();
-    allLists.forEach(list => { if (list?.recordId) recordIdSet.add(list.recordId.toString()); });
-    allTasks.forEach(task => { if (task?.recordId) recordIdSet.add(task.recordId.toString()); });
-
-    const records = recordIdSet.size
-        ? await Record.find({ _id: { $in: [...recordIdSet] } })
-            .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
-            .lean()
-        : [];
-    const recordMap = new Map(records.map(record => [record._id.toString(), record]));
-    const entityIds = [...new Set(records.map(record => record.entityId?.toString()).filter(Boolean))];
-    const entities = entityIds.length
-        ? await Entity.find({ _id: { $in: entityIds } }).select('name slug icon color').lean()
-        : [];
-    const entityMap = new Map(entities.map(entity => [entity._id.toString(), entity]));
-    const listMap = new Map(allLists.map(list => [list._id.toString(), list]));
-    const reminderMap = await ReminderService.scheduledReminderMap({
-        accountNumber: req.account_number,
-        userId: req.user._id,
-        targetType: 'task',
-        targetIds: allTasks.map(task => task._id),
-    });
-
-    const rows = allTasks
-        .filter(task => recordMap.has(task.recordId?.toString?.() || ''))
-        .map(task => {
-            const record = recordMap.get(task.recordId?.toString?.() || '');
-            const entity = record?.entityId ? entityMap.get(record.entityId.toString()) : null;
-            return serializeTaskRow(
-                req,
-                task,
-                listMap.get(task.taskListId?.toString?.() || ''),
-                record,
-                entity,
-                reminderMap.get(task._id?.toString?.() || '')
-            );
-        });
-
-    const isDone = task => task.status === STATUS_DONE || task.done;
-    const isBeforeTarget = task => {
-        const key = taskOverdueDateKey(task, tools);
-        return !!key && key < tools.dateKey;
-    };
-    const isOverdue = task => !isDone(task) && isBeforeTarget(task);
-    const compareBoardTasks = (a, b) => {
-        const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
-        const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
-        if (ao !== bo) return ao - bo;
-        const ad = new Date(a.startDate || a.dueDate || 8640000000000000).getTime();
-        const bd = new Date(b.startDate || b.dueDate || 8640000000000000).getTime();
-        if (ad !== bd) return ad - bd;
-        return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-    };
-    const taskTimestamp = value => {
-        const time = new Date(value || 0).getTime();
-        return Number.isNaN(time) ? 0 : time;
-    };
-    const compareCompletedTasks = (a, b) => {
-        const at = taskTimestamp(a.completedAt || a.updatedAt);
-        const bt = taskTimestamp(b.completedAt || b.updatedAt);
-        if (at !== bt) return bt - at;
-        const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
-        const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
-        if (ao !== bo) return ao - bo;
-        return taskTimestamp(b.createdAt) - taskTimestamp(a.createdAt);
-    };
-
-    const overdueTasks = rows
-        .filter(isOverdue)
-        .sort(compareBoardTasks);
-
-    const selected = rows
-        .filter(task => {
-            if (tools.day === 'overdue') {
-                return isOverdue(task);
-            }
-            if (tools.day === 'tomorrow' || req.query?.date) {
-                return taskMatchesDate(task, tools.dateKey, tools);
-            }
-            const key = taskDateKey(task, tools);
-            if (isOverdue(task)) return false;
-            if (key) return key === tools.dateKey;
-            return task.isDayPriority || task.listIsToday;
-        })
-        .sort(compareBoardTasks);
-
-	    const completedToday = rows.filter(task => {
-	        if (!isDone(task)) return false;
-	        const key = taskDateKey(task, tools);
-	        if (key) return key === tools.dateKey;
-	        return task.isDayPriority || task.listIsToday;
-	    }).sort(compareCompletedTasks);
-
-    const tasksByList = {};
-    rows.forEach(task => {
-        if (!task.listId) return;
-        if (!tasksByList[task.listId]) tasksByList[task.listId] = [];
-        tasksByList[task.listId].push(task);
-    });
-
-    const taskLists = allLists.map(list => {
-        const record = recordMap.get(list.recordId?.toString?.() || '');
-        const entity = record?.entityId ? entityMap.get(record.entityId.toString()) : null;
-        const tasks = (tasksByList[list._id.toString()] || []).slice().sort((a, b) => a.order - b.order);
-        return {
-            id: list._id.toString(),
-            _id: list._id.toString(),
-            label: cleanListLabel(list.label),
-            rawLabel: list.label || '',
-            color: list.color || '#6366f1',
-            icon: list.icon || 'solar:checklist-bold-duotone',
-            statuses: normalizeOptions(list.statuses, defaultStatuses),
-            priorities: normalizeOptions(list.priorities, defaultPriorities),
-            recordId: record?._id?.toString?.() || '',
-            recordTitle: record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre',
-            entityName: entity?.name || 'Sans entite',
-            count: tasks.length,
-            doneCount: tasks.filter(isDone).length,
-            tasks,
-        };
-    });
-
-    const doneTasks = rows.filter(isDone).length;
-    const overdueCount = rows.filter(isOverdue).length;
-
-    return {
-        success: true,
-        schedule: tools.day,
-        dateKey: tools.dateKey,
-        todayTasks: selected,
-        tasks: selected.filter(task => !isDone(task)),
-        overdueTasks,
-        completedToday,
-        taskLists,
-        stats: {
-            totalTasks: rows.length,
-            doneTasks,
-            openTasks: rows.length - doneTasks,
-            todayTasks: selected.length,
-            overdueCount,
-            listsCount: allLists.length,
-        },
-    };
+    return TaskOverview.buildTaskBoard(req);
 }
 
 router.post('/auth/login', async (req, res) => {

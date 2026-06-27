@@ -142,6 +142,7 @@ router.get("/api/agenda-hub", async (req, res) => {
 // Tasks Hub API — must be before api-account (has /:id catch-all)
 const ReminderService = require('../services/reminders/reminder.service');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
+const TaskOverview = require('../services/task-overview.service');
 const hubTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback;
     const text = value.trim();
@@ -802,285 +803,15 @@ router.get("/api/home-overview", async (req, res) => {
 
         const start = new Date();
         start.setHours(0, 0, 0, 0);
-        const end = new Date(start);
-        end.setDate(end.getDate() + 1);
-        const requestedTimeZone = String(req.query?.tz || '').trim();
-        const resolveTimeZone = value => {
-            if (!value) return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-            try {
-                new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date());
-                return value;
-            } catch (_) {
-                return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
-            }
-        };
-        const clientTimeZone = resolveTimeZone(requestedTimeZone);
-        const dayFormatter = new Intl.DateTimeFormat('en-US', {
-            timeZone: clientTimeZone,
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit'
+        const taskBoard = await TaskOverview.buildTaskBoard(req, {
+            preferredListId: shoppingTarget.list._id,
+            listTaskLimit: 40,
+            tasksByRecordLimit: 8,
+            includeAllTasks: true,
+            includeOpenTasksSorted: true,
+            includeTasksByRecord: true
         });
-        const formatDateKeyInTimeZone = value => {
-            const date = value instanceof Date ? value : new Date(value);
-            if (Number.isNaN(date.getTime())) return '';
-            const parts = Object.fromEntries(dayFormatter.formatToParts(date).map(part => [part.type, part.value]));
-            return `${parts.year}-${parts.month}-${parts.day}`;
-        };
-        const valueHasExplicitTime = value => {
-            if (!value) return false;
-            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
-            const date = value instanceof Date ? value : new Date(value);
-            if (Number.isNaN(date.getTime())) return false;
-            return date.getUTCHours() !== 0
-                || date.getUTCMinutes() !== 0
-                || date.getUTCSeconds() !== 0
-                || date.getUTCMilliseconds() !== 0;
-        };
-        const dateOnlyKey = value => {
-            if (!value) return '';
-            if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-            const date = value instanceof Date ? value : new Date(value);
-            if (Number.isNaN(date.getTime())) return '';
-            return date.toISOString().split('T')[0];
-        };
-        const calendarDateKey = value => valueHasExplicitTime(value)
-            ? formatDateKeyInTimeZone(value)
-            : dateOnlyKey(value);
-        const todayKey = formatDateKeyInTimeZone(new Date());
-
-        // Scope to tenant: get all record IDs belonging to this tenant first
-        const tenantRecordIds = await Record.find({}).distinct('_id');
-        const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
-
-        const [allLists, allTasks] = await Promise.all([
-            tenantRecordIds.length ? TaskListModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([]),
-            tenantRecordIds.length ? RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).lean() : Promise.resolve([])
-        ]);
-        const reminderMap = await ReminderService.scheduledReminderMap({
-            accountNumber: req.account_number,
-            userId: req.user._id,
-            targetType: 'task',
-            targetIds: allTasks.map(task => task._id),
-        });
-
-        const recordIds = new Set();
-        allLists.forEach(list => { if (list?.recordId) recordIds.add(list.recordId.toString()); });
-        allTasks.forEach(task => { if (task?.recordId) recordIds.add(task.recordId.toString()); });
-
-        const records = recordIds.size
-            ? await Record.find({ _id: { $in: [...recordIds] } })
-                .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
-                .lean()
-            : [];
-        const recordMap = {};
-        records.forEach(record => { recordMap[record._id.toString()] = record; });
-
-        const entityIds = [...new Set(records.map(record => record.entityId?.toString()).filter(Boolean))];
-        const entities = entityIds.length
-            ? await Entity.find({ _id: { $in: entityIds } }).select('name slug icon color').lean()
-            : [];
-        const entityMap = {};
-        entities.forEach(entity => { entityMap[entity._id.toString()] = entity; });
-
-        const listMap = {};
-        allLists.forEach(list => { listMap[list._id.toString()] = list; });
-
-        const isDone = task => String(task?.status || '') === 'Terminé';
-        const isBeforeToday = value => {
-            const key = calendarDateKey(value);
-            return !!key && key < todayKey;
-        };
-        const taskScheduleDateKey = task => {
-            const value = task?.startDate || task?.dueDate || null;
-            return value ? calendarDateKey(value) : '';
-        };
-        const overdueReferenceDate = task => task?.dueDate || task?.startDate || null;
-        const isTaskOverdue = task => !isDone(task) && isBeforeToday(overdueReferenceDate(task));
-        const isTodayList = list => /^(g[eé]n[eé]ral|t[âa]ches?\s+du\s+jour)$/i.test(String(list?.label || '').trim());
-        const cleanLabel = label => String(label || '').trim().toLowerCase() === 'général' ? 'Tâches du jour' : (String(label || '').trim() || 'Tâches du jour');
         const recordTitle = record => record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
-
-        // Filter tasks to only those whose record exists in this tenant
-        const taskRows = allTasks
-            .filter(task => {
-                const rId = task.recordId?.toString?.() || '';
-                return rId && recordMap[rId];
-            })
-            .map(task => {
-            const list = listMap[task.taskListId?.toString?.() || ''];
-            const record = recordMap[task.recordId?.toString?.() || ''];
-            const entity = record?.entityId ? entityMap[record.entityId.toString()] : null;
-            const entitySlug = entity?.slug || '';
-            const taskId = task._id.toString();
-            const recordId = record?._id?.toString?.() || '';
-            const listId = list?._id?.toString?.() || task.taskListId?.toString?.() || '';
-            return {
-                id: taskId,
-                _id: taskId,
-                title: String(task.title || '').trim() || 'Sans titre',
-                status: task.status || 'À faire',
-                statusColor: task.statusColor || '#9ca3af',
-                priority: task.priority || 'Aucune',
-                priorityColor: task.priorityColor || '',
-                dueDate: task.dueDate || null,
-                startDate: task.startDate || null,
-                createdAt: task.createdAt || null,
-                updatedAt: task.updatedAt || null,
-                completedAt: task.completedAt || null,
-	                isDayPriority: !!task.isDayPriority,
-	                assignedTo: task.assignedTo || '',
-	                attachments: Array.isArray(task.attachments) ? task.attachments.map(att => ({
-	                    _id: att._id?.toString?.() || String(att._id || ''),
-	                    filename: att.filename || '',
-	                    originalName: att.originalName || att.filename || 'Fichier',
-	                    mimeType: att.mimeType || '',
-	                    size: Number(att.size || 0)
-	                })) : [],
-	                order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
-                listId,
-                taskListId: listId,
-                listLabel: cleanLabel(list?.label),
-                listColor: list?.color || '#6366f1',
-                listIcon: list?.icon || 'solar:checklist-bold-duotone',
-                listIsToday: isTodayList(list),
-                recordId,
-                recordTitle: recordTitle(record),
-                recordIcon: record?.icon || '',
-                recordColor: record?.color || '',
-                entityName: entity?.name || 'Sans entité',
-                entitySlug,
-                entityIcon: entity?.icon || 'solar:folder-bold-duotone',
-                entityColor: entity?.color || '#4361ee',
-                reminder: ReminderService.serializeReminder(reminderMap.get(taskId)),
-                link: recordId && entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}` : `/account/${req.account_number}/tasks`
-            };
-        });
-
-	        const compareHomeTasks = (a, b) => {
-	            const aOverdue = isTaskOverdue(a) ? 0 : 1;
-	            const bOverdue = isTaskOverdue(b) ? 0 : 1;
-	            if (aOverdue !== bOverdue) return aOverdue - bOverdue;
-	            const ad = new Date(a.dueDate || a.startDate || 8640000000000000).getTime();
-	            const bd = new Date(b.dueDate || b.startDate || 8640000000000000).getTime();
-	            if (ad !== bd) return ad - bd;
-	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
-	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
-	            if (ao !== bo) return ao - bo;
-	            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
-	        };
-	        const taskTimestamp = value => {
-	            const time = new Date(value || 0).getTime();
-	            return Number.isNaN(time) ? 0 : time;
-	        };
-	        const compareCompletedTasks = (a, b) => {
-	            const at = taskTimestamp(a.completedAt || a.updatedAt);
-	            const bt = taskTimestamp(b.completedAt || b.updatedAt);
-	            if (at !== bt) return bt - at;
-	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
-	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
-	            if (ao !== bo) return ao - bo;
-	            return taskTimestamp(b.createdAt) - taskTimestamp(a.createdAt);
-	        };
-
-	        const isSelectedTodayTask = task => {
-	            if (isTaskOverdue(task)) return false;
-	            const key = taskScheduleDateKey(task);
-	            if (key) return key === todayKey;
-	            return task.isDayPriority || task.listIsToday;
-	        };
-		        const todayTasks = taskRows
-		            .filter(isSelectedTodayTask)
-		            .sort(compareHomeTasks);
-	        const completedToday = taskRows
-	            .filter(task => {
-	                if (task.status !== 'Terminé') return false;
-	                const key = taskScheduleDateKey(task);
-	                if (key) return key === todayKey;
-	                return task.isDayPriority || task.listIsToday;
-	            })
-	            .sort(compareCompletedTasks);
-		        const openTasksSorted = taskRows
-		            .filter(task => task.status !== 'Terminé')
-		            .sort(compareHomeTasks);
-	        const tasksByRecordMap = {};
-	        taskRows.forEach(task => {
-	            if (!task.recordId) return;
-	            if (!tasksByRecordMap[task.recordId]) {
-	                tasksByRecordMap[task.recordId] = {
-		                    id: task.recordId,
-		                    title: task.recordTitle,
-		                    entityName: task.entityName,
-		                    icon: task.recordIcon || task.entityIcon,
-		                    color: task.recordColor || task.entityColor,
-	                    link: task.entitySlug ? `/account/${req.account_number}/record/${task.entitySlug}/${task.recordId}/tasks` : `/account/${req.account_number}/tasks`,
-	                    totalTasks: 0,
-	                    doneTasks: 0,
-	                    openTasks: 0
-	                };
-	            }
-	            tasksByRecordMap[task.recordId].totalTasks += 1;
-	            if (isDone(task)) tasksByRecordMap[task.recordId].doneTasks += 1;
-	            else tasksByRecordMap[task.recordId].openTasks += 1;
-	        });
-		        const tasksByRecord = Object.values(tasksByRecordMap)
-		            .filter(group => group.openTasks > 0)
-		            .sort((a, b) => b.openTasks - a.openTasks || a.title.localeCompare(b.title))
-		            .slice(0, 8);
-
-            const taskSort = (a, b) => {
-                const aDone = isDone(a) ? 1 : 0;
-                const bDone = isDone(b) ? 1 : 0;
-                if (aDone !== bDone) return aDone - bDone;
-                const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
-                const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
-                if (ao !== bo) return ao - bo;
-                return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
-            };
-            const tasksByListIdForHome = {};
-            taskRows.forEach(task => {
-                if (!task.listId) return;
-                if (!tasksByListIdForHome[task.listId]) tasksByListIdForHome[task.listId] = [];
-                tasksByListIdForHome[task.listId].push(task);
-            });
-            const taskLists = allLists
-                .filter(list => recordMap[list.recordId?.toString?.() || ''])
-                .map(list => {
-                    const listId = list._id.toString();
-                    const record = recordMap[list.recordId?.toString?.() || ''];
-                    const entity = record?.entityId ? entityMap[record.entityId.toString()] : null;
-                    const entitySlug = entity?.slug || '';
-                    const recordId = record?._id?.toString?.() || '';
-                    const tasks = (tasksByListIdForHome[listId] || []).slice().sort(taskSort);
-                    return {
-                        id: listId,
-                        _id: listId,
-                        label: cleanLabel(list.label),
-                        rawLabel: list.label || '',
-	                        color: list.color || '#6366f1',
-	                        icon: list.icon || 'solar:checklist-bold-duotone',
-	                        statuses: hubTaskOptions(list.statuses, hubDefaultStatuses),
-	                        priorities: hubTaskOptions(list.priorities, hubDefaultPriorities),
-	                        recordId,
-                        recordTitle: recordTitle(record),
-                        recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
-                        recordColor: record?.color || entity?.color || '#4361ee',
-                        entityName: entity?.name || 'Sans entité',
-                        entitySlug,
-                        entityIcon: entity?.icon || 'solar:folder-bold-duotone',
-                        entityColor: entity?.color || '#4361ee',
-                        link: recordId && entitySlug ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks` : `/account/${req.account_number}/tasks`,
-                        count: tasks.length,
-                        doneCount: tasks.filter(isDone).length,
-                        tasks: tasks.slice(0, 40)
-                    };
-                })
-                .sort((a, b) => {
-                    const aShopping = a.id === shoppingTarget.list._id.toString() ? 0 : 1;
-                    const bShopping = b.id === shoppingTarget.list._id.toString() ? 0 : 1;
-                    if (aShopping !== bShopping) return aShopping - bShopping;
-                    return a.label.localeCompare(b.label);
-                });
 
 	        const recentRecordsRaw = await Record.find({})
             .select('title computedTitle referenceTitle entityId icon color updatedAt createdAt')
@@ -1289,10 +1020,6 @@ router.get("/api/home-overview", async (req, res) => {
             .slice(0, 8)
             .map(event => formatHomeEvent(event, 'important'));
 
-	        const totalTasks = taskRows.length;
-	        const doneTasks = taskRows.filter(isDone).length;
-	        const openTasks = totalTasks - doneTasks;
-	        const overdueCount = taskRows.filter(isTaskOverdue).length;
 	        const weekEnd = new Date(start);
 	        weekEnd.setDate(weekEnd.getDate() + 7);
 	        const weekEvents = eventRecordsRaw.filter(event => {
@@ -1317,11 +1044,16 @@ router.get("/api/home-overview", async (req, res) => {
 
 	        res.json({
 	            success: true,
-	            todayTasks,
-	            completedToday,
-		            tasks: openTasksSorted.slice(0, 20),
-		            tasksByRecord,
-                    taskLists,
+	            schedule: taskBoard.schedule,
+	            dateKey: taskBoard.dateKey,
+	            timeZone: taskBoard.timeZone,
+	            todayTasks: taskBoard.todayTasks,
+	            completedToday: taskBoard.completedToday,
+		            tasks: taskBoard.openTasksSorted.slice(0, 20),
+		            allTasks: taskBoard.allTasks,
+		            overdueTasks: taskBoard.overdueTasks,
+		            tasksByRecord: taskBoard.tasksByRecord,
+                    taskLists: taskBoard.taskLists,
 		            recentRecords,
 		            upcomingEvents,
 	            importantDates,
@@ -1330,13 +1062,13 @@ router.get("/api/home-overview", async (req, res) => {
                     shoppingListId: shoppingTarget.list._id.toString()
                 },
 	            stats: {
-                totalTasks,
-                doneTasks,
-                openTasks,
-	                todayTasks: todayTasks.length,
-	                overdueCount,
+                totalTasks: taskBoard.stats.totalTasks,
+                doneTasks: taskBoard.stats.doneTasks,
+                openTasks: taskBoard.stats.openTasks,
+	                todayTasks: taskBoard.todayTasks.length,
+	                overdueCount: taskBoard.stats.overdueCount,
 	                weekEvents,
-	                listsCount: allLists.length,
+	                listsCount: taskBoard.stats.listsCount,
                 recordsCount: await Record.countDocuments({})
             }
         });

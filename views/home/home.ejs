@@ -2641,7 +2641,7 @@ document.addEventListener('alpine:init', () => {
 	                if (data.success) {
 		                    this.todayTasks = data.todayTasks || [];
 		                    this.completedTodayData = data.completedToday || [];
-		                    this.allTasks = data.tasks || [];
+		                    this.allTasks = data.allTasks || data.tasks || [];
 		                    this.tasksByRecord = data.tasksByRecord || [];
 		                    this.homeTaskLists = (data.taskLists || []).map(list => this.normalizeHomeTaskList(list));
 		                    this.defaultWidgets = data.defaultWidgets || {};

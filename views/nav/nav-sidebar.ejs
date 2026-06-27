@@ -1,7 +1,9 @@
 <div>
   <nav x-data="{ sidebar }"
     class="sidebar fixed top-0 bottom-0 z-50 h-full min-h-screen transition-all duration-300"
-    style="width:256px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);">
+    style="width:256px;display:flex;flex-direction:row;overflow:hidden;box-shadow:5px 0 25px 0 rgba(94,92,154,0.1);"
+    @mouseenter="$store.app.cancelSidebarPreviewClose()"
+    @mouseleave="$store.app.scheduleSidebarPreviewClose()">
     <style>
       /* ═══════════════════════════════════════════
          THEME 1: Galaxy Gray (Samsung S11+ File Manager)
@@ -473,7 +475,9 @@
         <!-- Dynamic Environment Icons -->
         <template x-for="env in environments" :key="env.id">
           <a href="javascript:;"
-             @click="selectEnvironment(env); $dispatch('show-spaces')"
+             @mouseenter="previewEnvironment(env)"
+             @focus="previewEnvironment(env)"
+             @click="selectEnvironment(env, true); $store.app.openSidebarPreview(env.id)"
              @contextmenu.prevent.stop="showEnvContextMenu($event, env)"
              :data-active="activeEnvId === env.id"
              :data-env-id="env.id"
@@ -553,8 +557,8 @@
         <span class="mini-rail-label">Admin</span>
       </a>
     </div>
-    <div class="h-full bg-white dark:bg-[#0e1726]" style="flex:1;min-width:0;overflow:hidden;"
-      x-show="!$store.app.sidebar" x-transition>
+    <div x-cloak class="h-full bg-white dark:bg-[#0e1726]" style="flex:1;min-width:0;overflow:hidden;"
+      x-show="!$store.app.sidebar || $store.app.sidebarHoverPreview" x-transition>
       <div class="flex items-center justify-between px-4 py-3">
         <a href="index.html" class="main-logo flex shrink-0 items-center">
           <!-- <img class="ml-[5px] flex-none" src="assets/images/logo-v1.jpg" alt="image" /> -->
@@ -5090,11 +5094,19 @@
                 }
               },
 
+              previewEnvironment(env) {
+                if (!env) return;
+                if (Alpine.store('app').sidebar) {
+                  Alpine.store('app').openSidebarPreview(env.id);
+                }
+                this.selectEnvironment(env, true, true);
+              },
+
               selectEnvironment(env, skipSidebarToggle, showSpaces = true) {
-                // If sidebar is closed, open it even when the active environment is clicked again.
-                // (skip when called from modal save to avoid breaking modal reactivity)
-                if (!skipSidebarToggle && Alpine.store('app').sidebar) {
-                  Alpine.store('app').toggleSidebar();
+                // When the rail is collapsed, interactions can reveal the panel
+                // temporarily without changing the persisted sidebar state.
+                if (!skipSidebarToggle && showSpaces && Alpine.store('app').sidebar) {
+                  Alpine.store('app').openSidebarPreview(env.id);
                 }
                 if (showSpaces) {
                   window.dispatchEvent(new CustomEvent('show-spaces'));

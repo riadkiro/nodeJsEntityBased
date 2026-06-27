@@ -46,12 +46,27 @@ body {
   -webkit-backdrop-filter: blur(20px);
 }
 
-/* Mini-rail sidebar: when toggled (closed), show only the 48px icon rail */
+/* Mini-rail sidebar: when toggled (closed), show only the 56px icon rail */
 .toggle-sidebar .sidebar {
-  width: 48px !important;
+  width: 56px !important;
   left: 0 !important;
   right: auto !important;
   overflow: visible !important;
+}
+
+html.sidebar-collapsed-boot .sidebar {
+  width: 56px !important;
+  left: 0 !important;
+  right: auto !important;
+  overflow: visible !important;
+}
+
+.toggle-sidebar.sidebar-hover-preview .sidebar {
+  width: 256px !important;
+  left: 0 !important;
+  right: auto !important;
+  overflow: visible !important;
+  box-shadow: 8px 0 28px rgba(15, 23, 42, 0.14) !important;
 }
 
 /* Hide horizontal-logo in topbar when sidebar is toggled */
@@ -60,7 +75,18 @@ body {
 }
 
 .toggle-sidebar .main-container .main-content {
-  margin-left: 48px !important;
+  margin-left: 56px !important;
+}
+
+html.sidebar-collapsed-boot .main-container .main-content,
+.toggle-sidebar.sidebar-hover-preview .main-container .main-content {
+  margin-left: 56px !important;
+}
+
+html.sidebar-collapsed-boot .main-container .main-content:where([dir="rtl"], [dir="rtl"] *),
+.toggle-sidebar.sidebar-hover-preview .main-container .main-content:where([dir="rtl"], [dir="rtl"] *) {
+  margin-left: 0 !important;
+  margin-right: 56px !important;
 }
 
 hr {

@@ -43,13 +43,15 @@
             </div>
             <a class="ov-card-link dx-link" href="<%= _todayTasksHref %>" x-show="widgetShowLink(wid, true)">Voir tout</a>
         </div>
-        <div class="ov-card-body dx-priority-body">
+        <div class="ov-card-body dx-priority-body"
+             :class="{ 'is-completed-panel-hidden': !todayWidgetCompletedPanelEnabled(wid) }">
             <div class="dx-shopping-list dx-priority-task-list"
                  :data-task-widget-id="wid"
                  x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
                 <template x-for="item in todayWidgetVisibleTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                     <div class="dx-shopping-row dx-task-row dx-single-line"
-                         :class="{ 'is-done': item.status === 'Terminé' }"
+                         :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid) }"
+                         :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
                          :data-task-id="item._id || item.id"
                          @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
                         <span class="dx-task-drag" title="Réordonner" @click.stop>
@@ -61,7 +63,31 @@
                                 :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                                 @click.stop="toggleTodayTaskItem(wid, item)"></button>
                         <template x-if="editingHomeTaskId !== (item._id || item.id)">
-                            <span class="dx-task-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" @dblclick.stop="startEditTodayTask(wid, item)" style="cursor:pointer;"></span>
+                            <span class="dx-task-title-stack">
+                                <span class="dx-task-title" x-text="item.title" @click.stop="openHomeTaskModal(wid, item)" @dblclick.stop="startEditTodayTask(wid, item)" style="cursor:pointer;"></span>
+                                <span class="dx-task-subtitle-row"
+                                      x-show="homeTaskSubtitleRowVisible(wid, item)"
+                                      :style="'--task-record-color:' + homeTaskSubtitleColor(wid, item)">
+                                    <span class="dx-task-subtitle"
+                                          x-show="homeTaskSubtitleVisible(wid, item)"
+                                          :title="homeTaskSubtitleLabel(wid, item)">
+                                        <span class="dx-task-record-mini">
+                                            <iconify-icon :icon="homeTaskSubtitleIcon(wid, item)" width="10"></iconify-icon>
+                                        </span>
+                                        <span class="dx-task-subtitle-label" x-text="homeTaskSubtitleLabel(wid, item)"></span>
+                                    </span>
+                                    <span class="dx-task-subtitle-reminder"
+                                          x-show="taskHasReminder(item)"
+                                          :title="taskReminderLabel(item)">
+                                        <iconify-icon icon="solar:bell-linear" width="11"></iconify-icon>
+                                    </span>
+                                    <span class="dx-task-subtitle-attachment"
+                                          x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+                                          title="Pièce jointe">
+                                        <iconify-icon icon="solar:paperclip-rounded-linear" width="11"></iconify-icon>
+                                    </span>
+                                </span>
+                            </span>
                         </template>
                         <template x-if="editingHomeTaskId === (item._id || item.id)">
                             <input class="dx-task-edit"
@@ -80,25 +106,6 @@
                                   :title="taskDueTitle(item)">
                                 <iconify-icon icon="solar:clock-circle-linear" width="12"></iconify-icon>
                                 <span x-text="taskDueLabel(item)"></span>
-                            </span>
-                            <span class="dx-task-attachment-badge"
-                                  x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
-                                  title="Pièce jointe">
-                                <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
-                            </span>
-                            <span class="dx-task-reminder-badge"
-                                  x-show="taskHasReminder(item)"
-                                  :title="taskReminderLabel(item)">
-                                <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
-                            </span>
-                            <span class="dx-task-record-line"
-                                  x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
-                                  :style="'--task-record-color:' + taskRecordColor(item)"
-                                  :title="taskRecordLabel(item)">
-                                <span class="dx-task-record-mini">
-                                    <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
-                                </span>
-                                <span x-text="taskRecordLabel(item)"></span>
                             </span>
                             <button type="button"
                                     class="dx-task-priority dx-day-row-priority"
@@ -122,7 +129,7 @@
                     <button type="submit" title="Ajouter"><iconify-icon icon="tabler:plus" width="15"></iconify-icon></button>
                 </form>
             </div>
-            <div class="dx-completed-today">
+            <div class="dx-completed-today" x-show="todayWidgetCompletedPanelEnabled(wid)">
                 <div class="dx-completed-header">
                     <iconify-icon icon="solar:check-circle-bold" style="color:#22c55e;font-size:15px;"></iconify-icon>
                     <strong x-text="completedDayTitle(wid)"></strong>

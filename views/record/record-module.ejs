@@ -1775,8 +1775,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             widgetSettings: {},
             _defaultWidgetCatalog: {
                 fields: { type: 'overview-fields', label: <%- JSON.stringify(entity.nameSingular || entity.name || 'Informations').replace(/</g, '\\u003C') %>, icon: 'solar:card-bold-duotone', color: '#4361ee', config: { limit: 12, showLink: true } },
-                tasks: { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true } },
-                'today-tasks': { type: 'overview-today-tasks', label: 'Tâches du jour', icon: 'solar:bolt-bold-duotone', color: '#805dca', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: false } },
+                tasks: { type: 'overview-tasks', label: 'Tâches', icon: 'solar:checklist-minimalistic-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showLink: true, showPriority: true, showList: true, accentStyle: false } },
+                'today-tasks': { type: 'overview-today-tasks', label: 'Tâches du jour', icon: 'solar:bolt-bold-duotone', color: '#805dca', config: { limit: 5, showCompleted: false, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: false, showList: true, accentStyle: false } },
                 docs: { type: 'overview-docs', label: 'Documents modèles', icon: 'solar:document-text-bold-duotone', color: '#f59e0b', config: { limit: 3, showLink: true } },
                 drive: { type: 'overview-drive', label: 'Fichiers récents', icon: 'solar:cloud-storage-bold-duotone', color: '#ec4899', config: { limit: 4, showLink: true } },
                 agenda: { type: 'overview-agenda', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#14b8a6', config: { limit: 4, showLink: true, allowAdd: true } },
@@ -2713,8 +2713,34 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 return this.homeTaskDisplayOption(wid, 'showRecord', false);
             },
 
+            homeTaskListEnabled(wid) {
+                return this.homeTaskDisplayOption(wid, 'showList', true);
+            },
+
+            homeTaskAccentStyleEnabled(wid) {
+                return this.homeTaskDisplayOption(wid, 'accentStyle', false);
+            },
+
             taskHasAttachments(task = {}) {
                 return Array.isArray(task.attachments) && task.attachments.length > 0;
+            },
+
+            taskHasReminder(task = {}) {
+                const raw = task?.reminder?.scheduledAt;
+                if (!raw) return false;
+                const date = new Date(raw);
+                return !Number.isNaN(date.getTime());
+            },
+
+            taskReminderLabel(task = {}) {
+                if (!this.taskHasReminder(task)) return 'Rappel';
+                const date = new Date(task.reminder.scheduledAt);
+                return 'Rappel ' + date.toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                }).replace('.', '');
             },
 
             homeTaskPriorityVisible(wid, task = {}) {
@@ -3016,7 +3042,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     handle: '.dx-task-drag',
                     draggable: '.dx-task-row',
                     ghostClass: 'dx-task-ghost',
-                    filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-edit, .dx-inline-add, .ov-custom-empty',
+                    filter: '.dx-check, .dx-task-priority, .dx-task-attachment-badge, .dx-task-subtitle-attachment, .dx-task-edit, .dx-inline-add, .ov-custom-empty',
                     preventOnFilter: false,
                     onEnd: (evt) => this.reorderHomeTaskWidgetFromDom(evt, wid)
                 });
@@ -3330,6 +3356,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     || this.widgetOption(wid, 'showCompleted', false) === true;
             },
 
+            todayWidgetCompletedPanelEnabled(wid) {
+                return this.widgetOption(wid, 'showCompletedPanel', true) !== false;
+            },
+
             todayWidgetVisibleTasks(wid) {
                 const all = this.todayWidgetTasks(wid);
                 if (this.todayWidgetShowCompletedInline(wid)) return all;
@@ -3419,6 +3449,57 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             taskRecordLabel(task) {
                 const label = String(task?.recordTitle || '').trim();
                 return label && label !== 'Record' ? label : '';
+            },
+
+            taskListLabel(task) {
+                const label = String(task?.listLabel || '').trim();
+                if (label && !['Record inconnu', 'Sans titre', 'Espace perso'].includes(label)) return label;
+                return 'Liste des t\u00e2ches';
+            },
+
+            homeTaskSubtitleVisible(wid, task) {
+                return !!this.homeTaskSubtitleLabel(wid, task);
+            },
+
+            homeTaskSubtitleRowVisible(wid, task) {
+                return this.homeTaskSubtitleVisible(wid, task)
+                    || this.taskHasReminder(task)
+                    || (this.homeTaskAttachmentsEnabled(wid) && this.taskHasAttachments(task));
+            },
+
+            homeTaskSubtitleLabel(wid, task) {
+                const record = this.taskRecordLabel(task);
+                if (record && this.homeTaskRecordEnabled(wid)) return record;
+                return this.homeTaskListEnabled(wid) ? this.taskListLabel(task) : '';
+            },
+
+            homeTaskSubtitleIcon(wid, task) {
+                const record = this.taskRecordLabel(task);
+                return record && this.homeTaskRecordEnabled(wid) ? this.taskRecordIcon(task) : 'solar:list-check-bold-duotone';
+            },
+
+            homeTaskSubtitleColor(wid, task) {
+                const record = this.taskRecordLabel(task);
+                if (record && this.homeTaskRecordEnabled(wid)) return this.taskRecordColor(task);
+                return task?.listColor || '#805dca';
+            },
+
+            homeTaskRowAccentColor(task) {
+                const label = this.homeTaskPriorityLabel(task?.priority);
+                if (!label || label === 'Aucune') return '#cbd5e1';
+                return task?.priorityColor || this.homeTaskPriorityColor(task?.priority, task) || '#ef4444';
+            },
+
+            taskRecordSubtitle(task) {
+                return this.taskRecordLabel(task) || 'Liste des t\u00e2ches';
+            },
+
+            taskRecordSubtitleIcon(task) {
+                return this.taskRecordLabel(task) ? this.taskRecordIcon(task) : 'solar:list-check-bold-duotone';
+            },
+
+            taskRecordSubtitleColor(task) {
+                return this.taskRecordLabel(task) ? this.taskRecordColor(task) : '#805dca';
             },
 
             taskRecordIcon(task) {

@@ -116,6 +116,18 @@
         // main - custom functions
         Alpine.data('main', (value) => ({}));
 
+        const savedSidebarCollapsed = (() => {
+            try {
+                const saved = localStorage.getItem('dexapp-sidebar-collapsed');
+                if (saved !== null) return JSON.parse(saved);
+                const legacy = localStorage.getItem('_x_sidebar');
+                if (legacy !== null) return JSON.parse(legacy);
+            } catch (e) {
+                console.warn('[Sidebar] Failed to read persisted state:', e);
+            }
+            return false;
+        })();
+
         Alpine.store('app', {
             // theme — persisted server-side (user.preferences.theme)
             theme: window.__USER_THEME__ || 'light',
@@ -130,6 +142,11 @@
                     } else {
                         document.documentElement.classList.remove('dark');
                     }
+                });
+                Alpine.effect(() => {
+                    const collapsed = this.sidebar === true;
+                    document.documentElement.classList.toggle('sidebar-collapsed-boot', collapsed);
+                    if (!collapsed) this.closeSidebarPreview();
                 });
             },
             toggleTheme(val) {
@@ -227,9 +244,37 @@
             },
 
             // sidebar
-            sidebar: Alpine.$persist(false),
-            toggleSidebar() {
-                this.sidebar = !this.sidebar;
+            sidebar: Alpine.$persist(savedSidebarCollapsed).as('dexapp-sidebar-collapsed'),
+            sidebarHoverPreview: false,
+            sidebarHoverEnvId: null,
+            sidebarHoverCloseTimer: null,
+            toggleSidebar(val) {
+                this.sidebar = typeof val === 'boolean' ? val : !this.sidebar;
+                if (!this.sidebar) this.closeSidebarPreview();
+            },
+            openSidebarPreview(envId = null) {
+                if (!this.sidebar) return;
+                this.cancelSidebarPreviewClose();
+                this.sidebarHoverEnvId = envId;
+                this.sidebarHoverPreview = true;
+            },
+            scheduleSidebarPreviewClose() {
+                if (!this.sidebarHoverPreview) return;
+                this.cancelSidebarPreviewClose();
+                this.sidebarHoverCloseTimer = setTimeout(() => {
+                    this.closeSidebarPreview();
+                }, 180);
+            },
+            cancelSidebarPreviewClose() {
+                if (this.sidebarHoverCloseTimer) {
+                    clearTimeout(this.sidebarHoverCloseTimer);
+                    this.sidebarHoverCloseTimer = null;
+                }
+            },
+            closeSidebarPreview() {
+                this.cancelSidebarPreviewClose();
+                this.sidebarHoverPreview = false;
+                this.sidebarHoverEnvId = null;
             },
 
             // layout design mode

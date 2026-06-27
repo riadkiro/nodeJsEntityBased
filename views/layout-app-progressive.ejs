@@ -32,11 +32,17 @@ window.__ACCOUNT_NUMBER__ = '<%= typeof account_number !== "undefined" ? account
   if (window.__USER_THEME__ === 'dark') {
     document.documentElement.classList.add('dark');
   }
+  try {
+    const savedSidebar = localStorage.getItem('dexapp-sidebar-collapsed') || localStorage.getItem('_x_sidebar');
+    if (savedSidebar === 'true') {
+      document.documentElement.classList.add('sidebar-collapsed-boot');
+    }
+  } catch (e) {}
 })();
 </script>
 
 <body x-data="main" class="relative font-nunito text-sm font-normal antialiased"
-  :class="[ $store.app.sidebar ? 'toggle-sidebar' : '', $store.app.theme, $store.app.menu, $store.app.layout,$store.app.rtlClass]">
+  :class="[ $store.app.sidebar ? 'toggle-sidebar' : '', $store.app.sidebarHoverPreview ? 'sidebar-hover-preview' : '', $store.app.theme, $store.app.menu, $store.app.layout,$store.app.rtlClass]">
   <!-- sidebar menu overlay -->
   <div x-cloak class="fixed inset-0 z-50 bg-[black]/60 lg:hidden" :class="{'hidden' : !$store.app.sidebar}"
     @click="$store.app.toggleSidebar()"></div>

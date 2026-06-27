@@ -381,50 +381,118 @@
 	                                           style="width:120px;padding:9px 12px;border:1px solid #e5e7eb;border-radius:10px;font-size:13px;outline:none;">
 	                                </div>
 	                            </template>
-	                            <div style="display:flex;flex-wrap:wrap;gap:12px 16px;">
-	                                <label x-show="$store.widgetPicker.supportsShowLink()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showLink" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher “Voir tout”</span>
+	                            <div class="wp-option-grid">
+	                                <label x-show="$store.widgetPicker.supportsShowLink()" class="wp-option-switch" style="--wp-option-color:#4361ee">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:link-round-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Afficher Voir tout</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showLink" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.supportsShowCompleted()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showCompleted" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher terminées</span>
+	                                <label x-show="$store.widgetPicker.supportsShowCompleted()" class="wp-option-switch" style="--wp-option-color:#22c55e">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:check-circle-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Afficher terminées</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showCompleted" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.supportsInlineAdd()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.allowAdd" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Ajout rapide</span>
+	                                <label x-show="$store.widgetPicker.supportsCompletedPanel()" class="wp-option-switch" style="--wp-option-color:#22c55e">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:checklist-minimalistic-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Panel tâches terminées</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showCompletedPanel" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-		                                <label x-show="$store.widgetPicker.supportsShowPriority()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showPriority" class="form-checkbox" style="accent-color:#f59e0b;">
-		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher la priorité</span>
-		                                </label>
-		                                <label x-show="$store.widgetPicker.supportsShowAttachments()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showAttachments" class="form-checkbox" style="accent-color:#64748b;">
-		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher les pièces jointes</span>
-		                                </label>
-		                                <label x-show="$store.widgetPicker.supportsShowRecord()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showRecord" class="form-checkbox" style="accent-color:#4361ee;">
-		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Afficher le record</span>
-		                                </label>
-		                                <label x-show="$store.widgetPicker.supportsSharing()" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.shared" class="form-checkbox" style="accent-color:#10b981;">
-		                                    <span style="font-size:12px;font-weight:600;color:#475569;">Activer le partage</span>
+	                                <label x-show="$store.widgetPicker.supportsInlineAdd()" class="wp-option-switch" style="--wp-option-color:#4361ee">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Ajout rapide</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.allowAdd" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.hideCompleted" class="form-checkbox" style="accent-color:#805dca;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Barrer les tâches terminées</span>
+		                            <label x-show="$store.widgetPicker.supportsShowPriority()" class="wp-option-switch" style="--wp-option-color:#f59e0b">
+		                                <span class="wp-option-icon"><iconify-icon icon="solar:flag-linear" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Afficher la priorité</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showPriority" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
+		                            </label>
+		                            <label x-show="$store.widgetPicker.supportsShowAttachments()" class="wp-option-switch" style="--wp-option-color:#64748b">
+		                                <span class="wp-option-icon"><iconify-icon icon="solar:paperclip-rounded-linear" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Afficher les pièces jointes</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showAttachments" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
+		                            </label>
+		                            <label x-show="$store.widgetPicker.supportsShowRecord()" class="wp-option-switch" style="--wp-option-color:#4361ee">
+		                                <span class="wp-option-icon"><iconify-icon icon="solar:folder-with-files-linear" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Afficher le record</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showRecord" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
+		                            </label>
+		                            <label x-show="$store.widgetPicker.supportsShowList()" class="wp-option-switch" style="--wp-option-color:#805dca">
+		                                <span class="wp-option-icon"><iconify-icon icon="solar:list-check-linear" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Afficher la liste</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showList" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
+		                            </label>
+		                            <label x-show="$store.widgetPicker.supportsTaskAccentStyle()" class="wp-option-switch" style="--wp-option-color:#ef4444">
+		                                <span class="wp-option-icon"><iconify-icon icon="tabler:color-swatch" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Style accentué</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.accentStyle" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
+		                            </label>
+		                            <label x-show="$store.widgetPicker.supportsSharing()" class="wp-option-switch" style="--wp-option-color:#10b981">
+		                                <span class="wp-option-icon"><iconify-icon icon="solar:users-group-rounded-linear" width="14"></iconify-icon></span>
+		                                <span class="wp-option-text">Activer le partage</span>
+		                                <span class="wp-option-control">
+		                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.shared" class="wp-switch-input">
+		                                    <span class="wp-switch-track"><span></span></span>
+		                                </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showTasks" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien tâches</span>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'priority-day'" class="wp-option-switch" style="--wp-option-color:#805dca">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:text-cross-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Barrer les tâches terminées</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.hideCompleted" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showNotes" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien notes</span>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" class="wp-option-switch" style="--wp-option-color:#4361ee">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:checklist-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Lien tâches</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showTasks" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
-	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-	                                    <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showDocuments" class="form-checkbox" style="accent-color:#4361ee;">
-	                                    <span style="font-size:12px;font-weight:600;color:#475569;">Lien documents</span>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" class="wp-option-switch" style="--wp-option-color:#8b5cf6">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:notes-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Lien notes</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showNotes" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
+	                                </label>
+	                                <label x-show="$store.widgetPicker.newWidget.type === 'quick-links'" class="wp-option-switch" style="--wp-option-color:#0ea5e9">
+	                                    <span class="wp-option-icon"><iconify-icon icon="solar:document-text-linear" width="14"></iconify-icon></span>
+	                                    <span class="wp-option-text">Lien documents</span>
+	                                    <span class="wp-option-control">
+	                                        <input type="checkbox" x-model="$store.widgetPicker.newWidget.config.showDocuments" class="wp-switch-input">
+	                                        <span class="wp-switch-track"><span></span></span>
+	                                    </span>
 	                                </label>
 	                            </div>
 	                        </div>
@@ -868,19 +936,19 @@
 	            defaultConfigForType(type, catalogType = type) {
 	                const defaults = {
 	                    'overview-fields': { limit: 12, showLink: true },
-	                    'overview-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true },
-	                    'overview-today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: false },
+	                    'overview-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showList: true, accentStyle: false },
+	                    'overview-today-tasks': { limit: 5, showCompleted: false, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: false, showList: true, accentStyle: false },
 	                    'overview-docs': { limit: 3, showLink: true },
 	                    'overview-drive': { limit: 4, showLink: true },
 	                    'overview-agenda': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-important-dates': { limit: 4, showLink: true, allowAdd: true },
 	                    'overview-notes': { showLink: true },
-		                    'home-priority-day': { limit: 4, hideCompleted: false, showPriority: true, showAttachments: true, showRecord: true },
-		                    'home-today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
+		                    'home-priority-day': { limit: 4, hideCompleted: false, showCompletedPanel: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
+		                    'home-today-tasks': { limit: 5, showCompleted: false, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
 	                    'home-objectives': { limit: 6, showLink: true },
-		                    'home-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
+		                    'home-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
 	                    'home-finance': { limit: 4, period: 'Ce mois-ci' },
-		                    'home-shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false },
+		                    'home-shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false, showList: true, accentStyle: false },
 	                    'home-tasks-by-record': { limit: 4, showLink: true },
 	                    'home-activity-timeline': { limit: 5, showLink: true },
 	                    'home-ai-feed': { limit: 3 },
@@ -890,12 +958,12 @@
 	                    'home-upcoming-events': { limit: 4, showLink: true },
 	                    'home-important-dates': { limit: 4, showLink: true },
 	                    'home-quick-links': { showTasks: true, showNotes: true, showDocuments: true },
-		                    'priority-day': { limit: 4, hideCompleted: false, showPriority: true, showAttachments: true, showRecord: true },
-		                    'today-tasks': { limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
+		                    'priority-day': { limit: 4, hideCompleted: false, showCompletedPanel: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
+		                    'today-tasks': { limit: 5, showCompleted: false, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
 	                    objectives: { limit: 6, showLink: true },
-		                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true },
+		                    tasks: { tasks: [], limit: 5, showCompleted: false, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
 	                    finance: { limit: 4, period: 'Ce mois-ci' },
-		                    'shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false },
+		                    'shopping-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: true, showPriority: true, showAttachments: true, showRecord: false, showList: true, accentStyle: false },
 	                    'tasks-by-record': { limit: 4, showLink: true },
 	                    'activity-timeline': { limit: 5, showLink: true },
 	                    'recent-records': { limit: 5, showLink: true },
@@ -907,7 +975,7 @@
 	                    'quick-links': { showTasks: true, showNotes: true, showDocuments: true },
 	                    note: { content: '' },
 	                    notes: { content: '' },
-		                    'task-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: false, showPriority: true, showAttachments: true, showRecord: true },
+		                    'task-list': { taskListId: '', showCompleted: true, limit: 8, allowAdd: true, shared: false, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false },
 	                    html: { content: '', minHeight: 120 },
 	                    iframe: { url: '', height: 300 },
 	                    video: { url: '', height: 320 },
@@ -936,16 +1004,28 @@
 	                return ['overview-tasks','overview-today-tasks','tasks','today-tasks','task-list','shopping-list'].includes(String(type || ''));
 	            },
 
+	            supportsCompletedPanel(type = this.newWidget.type) {
+	                return ['overview-today-tasks','priority-day','today-tasks','home-priority-day','home-today-tasks'].includes(String(type || ''));
+	            },
+
 		            supportsShowPriority(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks','home-priority-day','home-today-tasks','home-tasks','home-shopping-list'].includes(String(type || ''));
 		            },
 
 		            supportsShowAttachments(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks','home-priority-day','home-today-tasks','home-tasks','home-shopping-list'].includes(String(type || ''));
 		            },
 
 		            supportsShowRecord(type = this.newWidget.type) {
-		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks'].includes(String(type || ''));
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks','home-priority-day','home-today-tasks','home-tasks','home-shopping-list'].includes(String(type || ''));
+		            },
+
+		            supportsShowList(type = this.newWidget.type) {
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks','home-priority-day','home-today-tasks','home-tasks','home-shopping-list'].includes(String(type || ''));
+		            },
+
+		            supportsTaskAccentStyle(type = this.newWidget.type) {
+		                return this.isTaskListWidgetType(type) || ['overview-tasks','overview-today-tasks','priority-day','today-tasks','tasks','home-priority-day','home-today-tasks','home-tasks','home-shopping-list'].includes(String(type || ''));
 		            },
 
 	            supportsInlineAdd(type = this.newWidget.type) {
@@ -1551,9 +1631,86 @@
 
 <style>
 .wp-catalog-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.wp-option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.wp-option-switch {
+    min-width: 0;
+    min-height: 38px;
+    display: grid;
+    grid-template-columns: 24px minmax(0, 1fr) 34px;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 8px;
+    border: 1px solid #edf2f7;
+    border-radius: 10px;
+    background: #fff;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+}
+.wp-option-switch:hover {
+    border-color: color-mix(in srgb, var(--wp-option-color, #4361ee) 26%, #e5e7eb);
+    background: color-mix(in srgb, var(--wp-option-color, #4361ee) 5%, #fff);
+}
+.wp-option-icon {
+    width: 24px;
+    height: 24px;
+    border-radius: 7px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--wp-option-color, #4361ee);
+    background: color-mix(in srgb, var(--wp-option-color, #4361ee) 10%, #fff);
+    flex: 0 0 auto;
+}
+.wp-option-icon iconify-icon { display: block; pointer-events: none; }
+.wp-option-text {
+    min-width: 0;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 650;
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+}
+.wp-option-control {
+    position: relative;
+    width: 34px;
+    height: 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.wp-switch-input {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    margin: 0;
+}
+.wp-switch-track {
+    width: 34px;
+    height: 20px;
+    border-radius: 999px;
+    background: #d8dee8;
+    display: inline-flex;
+    align-items: center;
+    padding: 2px;
+    transition: background .16s;
+    pointer-events: none;
+}
+.wp-switch-track span {
+    width: 16px;
+    height: 16px;
+    border-radius: 999px;
+    background: #fff;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, .22);
+    transform: translateX(0);
+    transition: transform .16s;
+}
+.wp-switch-input:checked + .wp-switch-track { background: var(--wp-option-color, #4361ee); }
+.wp-switch-input:checked + .wp-switch-track span { transform: translateX(14px); }
 .custom-scrollbar::-webkit-scrollbar { width: 5px; }
 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
 .custom-scrollbar::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 10px; }
 .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; }
 @media (max-width: 520px) { .wp-catalog-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 520px) { .wp-option-grid { grid-template-columns: 1fr; } }
 </style>

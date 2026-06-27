@@ -109,7 +109,8 @@
              x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
             <template x-for="item in allWidgetTasks(wid).slice(0, widgetLimit(wid, 6))" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                 <div class="dx-shopping-row dx-task-row dx-single-line"
-                     :class="{ 'is-done': item.status === 'Terminé' }"
+                     :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid) }"
+                     :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
                      :data-task-id="item._id || item.id"
                      @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
                     <span class="dx-task-drag" title="Réordonner" @click.stop>
@@ -121,10 +122,34 @@
                             :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                             @click.stop="toggleTodayTaskItem(wid, item)"></button>
 	                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
-	                        <span class="dx-task-title-wrap">
-	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditTodayTask(wid, item)"></span>
-	                            <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
-	                                <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                        <span class="dx-task-title-stack">
+	                            <span class="dx-task-title-line">
+	                                <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditTodayTask(wid, item)"></span>
+	                                <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+	                                    <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                                </span>
+	                            </span>
+	                            <span class="dx-task-subtitle-row"
+	                                  x-show="homeTaskSubtitleRowVisible(wid, item)"
+	                                  :style="'--task-record-color:' + homeTaskSubtitleColor(wid, item)">
+	                                <span class="dx-task-subtitle"
+	                                      x-show="homeTaskSubtitleVisible(wid, item)"
+	                                      :title="homeTaskSubtitleLabel(wid, item)">
+	                                    <span class="dx-task-record-mini">
+	                                        <iconify-icon :icon="homeTaskSubtitleIcon(wid, item)" width="10"></iconify-icon>
+	                                    </span>
+	                                    <span class="dx-task-subtitle-label" x-text="homeTaskSubtitleLabel(wid, item)"></span>
+	                                </span>
+	                                <span class="dx-task-subtitle-reminder"
+	                                      x-show="taskHasReminder(item)"
+	                                      :title="taskReminderLabel(item)">
+	                                    <iconify-icon icon="solar:bell-linear" width="11"></iconify-icon>
+	                                </span>
+	                                <span class="dx-task-subtitle-attachment"
+	                                      x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+	                                      title="Pièce jointe">
+	                                    <iconify-icon icon="solar:paperclip-rounded-linear" width="11"></iconify-icon>
+	                                </span>
 	                            </span>
 	                        </span>
 	                    </template>
@@ -139,16 +164,6 @@
                                @blur="saveEditTodayTask(wid, item)">
                     </template>
 		                    <span class="dx-row-meta dx-task-row-actions">
-		                        <span class="dx-task-reminder-badge"
-		                              x-show="taskHasReminder(item)"
-		                              :title="taskReminderLabel(item)">
-		                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
-		                        </span>
-		                        <span class="dx-task-attachment-badge"
-		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
-		                              title="Pièce jointe">
-		                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
-		                        </span>
 		                        <button type="button"
 		                                class="dx-task-priority"
 		                                x-show="homeTaskPriorityEnabled(wid)"
@@ -160,7 +175,6 @@
 		                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
 		                            <span x-show="homeTaskPriorityVisible(wid, item)" x-text="homeTaskPriorityVisible(wid, item) ? homeTaskPriorityLabel(item.priority) : ''"></span>
 		                        </button>
-		                        <span class="dx-tag" x-show="homeTaskRecordEnabled(wid) && item.recordTitle" :style="'--tag-color:' + (item.entityColor || '#805dca')" x-text="item.recordTitle"></span>
 		                        <span class="dx-date-badge" x-show="taskDateLabel(item)" x-text="taskDateLabel(item)"></span>
 	                    </span>
                 </div>
@@ -211,7 +225,8 @@
              x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
             <template x-for="item in homeTaskWidgetItems(wid)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                 <div class="dx-shopping-row dx-task-row"
-                     :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item) }"
+                     :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item), 'is-accented': homeTaskAccentStyleEnabled(wid) }"
+                     :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
                      :data-task-id="item._id || item.id"
                      @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
                     <span class="dx-task-drag" title="Réordonner" @click.stop>
@@ -223,10 +238,34 @@
                             :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
                             @click.stop="toggleHomeTaskItem(wid, item)"></button>
 	                    <template x-if="editingHomeTaskId !== (item._id || item.id)">
-	                        <span class="dx-task-title-wrap">
-	                            <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
-	                            <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
-	                                <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                        <span class="dx-task-title-stack">
+	                            <span class="dx-task-title-line">
+	                                <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+	                                <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+	                                    <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+	                                </span>
+	                            </span>
+	                            <span class="dx-task-subtitle-row"
+	                                  x-show="homeTaskSubtitleRowVisible(wid, item)"
+	                                  :style="'--task-record-color:' + homeTaskSubtitleColor(wid, item)">
+	                                <span class="dx-task-subtitle"
+	                                      x-show="homeTaskSubtitleVisible(wid, item)"
+	                                      :title="homeTaskSubtitleLabel(wid, item)">
+	                                    <span class="dx-task-record-mini">
+	                                        <iconify-icon :icon="homeTaskSubtitleIcon(wid, item)" width="10"></iconify-icon>
+	                                    </span>
+	                                    <span class="dx-task-subtitle-label" x-text="homeTaskSubtitleLabel(wid, item)"></span>
+	                                </span>
+	                                <span class="dx-task-subtitle-reminder"
+	                                      x-show="taskHasReminder(item)"
+	                                      :title="taskReminderLabel(item)">
+	                                    <iconify-icon icon="solar:bell-linear" width="11"></iconify-icon>
+	                                </span>
+	                                <span class="dx-task-subtitle-attachment"
+	                                      x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+	                                      title="Pièce jointe">
+	                                    <iconify-icon icon="solar:paperclip-rounded-linear" width="11"></iconify-icon>
+	                                </span>
 	                            </span>
 	                        </span>
 	                    </template>
@@ -241,25 +280,6 @@
                                @blur="saveEditHomeTask(wid, item)">
 	                    </template>
 		                    <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
-		                        <span class="dx-task-reminder-badge"
-		                              x-show="taskHasReminder(item)"
-		                              :title="taskReminderLabel(item)">
-		                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
-		                        </span>
-		                        <span class="dx-task-attachment-badge"
-		                              x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
-		                              title="Pièce jointe">
-		                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
-		                        </span>
-		                        <span class="dx-task-record-line"
-		                              x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
-		                              :style="'--task-record-color:' + taskRecordColor(item)"
-		                              :title="taskRecordLabel(item)">
-		                            <span class="dx-task-record-mini">
-		                                <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
-		                            </span>
-		                            <span x-text="taskRecordLabel(item)"></span>
-		                        </span>
 		                        <button type="button"
 		                                class="dx-task-priority"
 		                                x-show="homeTaskPriorityEnabled(wid)"
@@ -500,7 +520,8 @@
 	                 x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
 	                <template x-for="item in homeTaskWidgetItems(wid)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
 	                    <div class="dx-shopping-row dx-task-row"
-	                         :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item) }"
+	                         :class="{ 'is-done': item.status === 'Terminé', 'has-priority': homeTaskPriorityVisible(wid, item), 'is-accented': homeTaskAccentStyleEnabled(wid) }"
+	                         :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
 	                         :data-task-id="item._id || item.id"
 	                         @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
 	                        <span class="dx-task-drag" title="Réordonner" @click.stop>
@@ -512,10 +533,34 @@
 	                                :title="item.status === 'Terminé' ? 'Marquer à faire' : 'Marquer terminé'"
 	                                @click.stop="toggleHomeTaskItem(wid, item)"></button>
 		                        <template x-if="editingHomeTaskId !== (item._id || item.id)">
-		                            <span class="dx-task-title-wrap">
-		                                <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
-		                                <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
-		                                    <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+		                            <span class="dx-task-title-stack">
+		                                <span class="dx-task-title-line">
+		                                    <span class="dx-task-title" x-text="item.title" @dblclick.stop="startEditHomeTask(wid, item)"></span>
+		                                    <span class="dx-day-priority-badge" x-show="item.isDayPriority" title="À faire aujourd'hui">
+		                                        <iconify-icon icon="solar:bolt-bold-duotone" width="12"></iconify-icon>
+		                                    </span>
+		                                </span>
+		                                <span class="dx-task-subtitle-row"
+		                                      x-show="homeTaskSubtitleRowVisible(wid, item)"
+		                                      :style="'--task-record-color:' + homeTaskSubtitleColor(wid, item)">
+		                                    <span class="dx-task-subtitle"
+		                                          x-show="homeTaskSubtitleVisible(wid, item)"
+		                                          :title="homeTaskSubtitleLabel(wid, item)">
+		                                        <span class="dx-task-record-mini">
+		                                            <iconify-icon :icon="homeTaskSubtitleIcon(wid, item)" width="10"></iconify-icon>
+		                                        </span>
+		                                        <span class="dx-task-subtitle-label" x-text="homeTaskSubtitleLabel(wid, item)"></span>
+		                                    </span>
+		                                    <span class="dx-task-subtitle-reminder"
+		                                          x-show="taskHasReminder(item)"
+		                                          :title="taskReminderLabel(item)">
+		                                        <iconify-icon icon="solar:bell-linear" width="11"></iconify-icon>
+		                                    </span>
+		                                    <span class="dx-task-subtitle-attachment"
+		                                          x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
+		                                          title="Pièce jointe">
+		                                        <iconify-icon icon="solar:paperclip-rounded-linear" width="11"></iconify-icon>
+		                                    </span>
 		                                </span>
 		                            </span>
 		                        </template>
@@ -530,25 +575,6 @@
 	                                   @blur="saveEditHomeTask(wid, item)">
 		                        </template>
 			                        <span class="dx-row-meta dx-task-row-actions" x-show="homeTaskRowMetaEnabled(wid, item)">
-			                            <span class="dx-task-reminder-badge"
-			                                  x-show="taskHasReminder(item)"
-			                                  :title="taskReminderLabel(item)">
-			                                <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
-			                            </span>
-			                            <span class="dx-task-attachment-badge"
-			                                  x-show="homeTaskAttachmentsEnabled(wid) && taskHasAttachments(item)"
-			                                  title="Pièce jointe">
-			                                <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
-			                            </span>
-			                            <span class="dx-task-record-line"
-			                                  x-show="homeTaskRecordEnabled(wid) && taskRecordLabel(item)"
-			                                  :style="'--task-record-color:' + taskRecordColor(item)"
-			                                  :title="taskRecordLabel(item)">
-			                                <span class="dx-task-record-mini">
-			                                    <iconify-icon :icon="taskRecordIcon(item)" width="10"></iconify-icon>
-			                                </span>
-			                                <span x-text="taskRecordLabel(item)"></span>
-			                            </span>
 			                            <button type="button"
 			                                    class="dx-task-priority"
 			                                    x-show="homeTaskPriorityEnabled(wid)"

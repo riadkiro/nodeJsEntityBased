@@ -1294,6 +1294,9 @@
     .dx-shopping-list > .dx-task-row:last-of-type {
         border-bottom-color: transparent;
     }
+    .dx-shopping-row.dx-task-row.is-last-visible {
+        border-bottom-color: transparent;
+    }
     .dx-shopping-row.dx-task-row.is-accented::before {
         content: '';
         position: absolute;
@@ -2127,6 +2130,7 @@
     .dark .dx-shopping-row.dx-task-row,
     .dark .dx-completed-row { border-bottom-color: #1b2e4b; }
     .dark .dx-shopping-list > .dx-task-row:last-of-type,
+    .dark .dx-shopping-row.dx-task-row.is-last-visible,
     .dark .dx-completed-list > .dx-completed-row:last-of-type { border-bottom-color: transparent; }
     .dark .dx-completed-row:hover { background: rgba(34, 197, 94, .08); }
     .dark .dx-done-title { color: #64748b; }
@@ -2525,7 +2529,7 @@ document.addEventListener('alpine:init', () => {
 	        customWidgets: {},
 	        widgetSettings: {},
 	        _viewId: 'home_overview',
-	        _layoutVersion: 3,
+	        _layoutVersion: 4,
 	        _sortables: [],
 	        _sortableTimer: null,
 	        _observer: null,
@@ -2594,8 +2598,8 @@ document.addEventListener('alpine:init', () => {
 	            ] }
 	        ],
 	        _defaultWidgetCatalog: {
-		            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true, hideCompleted: false, showCompletedPanel: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false } },
-		            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', config: { limit: 5, showCompleted: false, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false } },
+		            'priority-day': { type: 'priority-day', label: 'Priorités du jour', icon: 'solar:star-bold-duotone', color: '#805dca', config: { limit: 4, showProductivity: true, hideCompleted: true, showCompletedPanel: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false } },
+		            'today-tasks': { type: 'today-tasks', label: 'Tâches du jour', icon: 'solar:calendar-date-bold-duotone', color: '#10b981', config: { limit: 5, hideCompleted: true, showCompletedPanel: true, showLink: true, showPriority: true, showAttachments: true, showRecord: true, showList: true, accentStyle: false } },
 	            'upcoming-events': { type: 'upcoming-events', label: 'Prochains événements', icon: 'solar:calendar-bold-duotone', color: '#8b5cf6', config: { limit: 4, showLink: true } },
 	            'important-dates': { type: 'important-dates', label: 'Dates importantes', icon: 'solar:calendar-mark-bold-duotone', color: '#f59e0b', config: { limit: 4 } },
 	            objectives: { type: 'objectives', label: 'Objectifs', icon: 'solar:target-bold-duotone', color: '#4361ee', config: { limit: 6, showLink: true } },
@@ -3670,6 +3674,10 @@ document.addEventListener('alpine:init', () => {
 	            const widgetSettings = this._normalizeWidgetSettings(preferences.widgetSettings);
 	            const storedVersion = Number(preferences.homeLayoutVersion || preferences.overviewLayoutVersion || 0);
 	            let changed = storedVersion !== this._layoutVersion;
+	            if (storedVersion < 4) {
+	                const completionMigration = this._migrateHomeTaskCompletionOptions(widgetSettings, customWidgets);
+	                if (completionMigration.changed) changed = true;
+	            }
 
 	            if ((storedVersion > 0 && storedVersion < 3) || (!storedVersion && savedRows && !this._looksLikeCurrentHomeLayout(rows))) {
 	                rows = JSON.parse(JSON.stringify(this._defaultRows));
@@ -3772,6 +3780,38 @@ document.addEventListener('alpine:init', () => {
 	                };
 	                return acc;
 	            }, {});
+	        },
+
+	        _migrateHomeTaskCompletionOptions(widgetSettings = {}, customWidgets = {}) {
+	            let changed = false;
+	            const migrateConfig = (config = {}) => {
+	                if (!config || typeof config !== 'object') return false;
+	                let touched = false;
+	                if (Object.prototype.hasOwnProperty.call(config, 'hideCompleted')) {
+	                    config.hideCompleted = config.hideCompleted !== true;
+	                    touched = true;
+	                } else if (Object.prototype.hasOwnProperty.call(config, 'showCompleted')) {
+	                    config.hideCompleted = config.showCompleted !== true;
+	                    touched = true;
+	                } else {
+	                    config.hideCompleted = true;
+	                    touched = true;
+	                }
+	                if (Object.prototype.hasOwnProperty.call(config, 'showCompleted')) {
+	                    delete config.showCompleted;
+	                    touched = true;
+	                }
+	                return touched;
+	            };
+	            ['priority-day', 'today-tasks'].forEach(id => {
+	                const settings = widgetSettings?.[id];
+	                if (settings?.config && migrateConfig(settings.config)) changed = true;
+	            });
+	            Object.values(customWidgets || {}).forEach(widget => {
+	                if (!['priority-day', 'today-tasks', 'home-priority-day', 'home-today-tasks'].includes(String(widget?.type || ''))) return;
+	                if (migrateConfig(widget.config || (widget.config = {}))) changed = true;
+	            });
+	            return { changed };
 	        },
 
 	        // ── Row/Column management ──
@@ -4689,17 +4729,32 @@ document.addEventListener('alpine:init', () => {
 		        todayWidgetOverdueCount(wid) {
 		            return this.todayWidgetOverdueTasks(wid).length;
 		        },
-		        todayWidgetShowCompletedInline(wid) {
-		            return this.widgetOption(wid, 'hideCompleted', false) === true
-		                || this.widgetOption(wid, 'showCompleted', false) === true;
+		        todayWidgetHideCompletedTasks(wid) {
+		            const savedCfg = this.savedHomeTaskWidgetConfig(wid);
+		            if (Object.prototype.hasOwnProperty.call(savedCfg, 'hideCompleted')) {
+		                return savedCfg.hideCompleted !== false;
+		            }
+		            if (Object.prototype.hasOwnProperty.call(savedCfg, 'showCompleted')) {
+		                return savedCfg.showCompleted !== true;
+		            }
+		            const cfg = this.customWidgetConfig(wid);
+		            if (Object.prototype.hasOwnProperty.call(cfg, 'hideCompleted')) {
+		                return cfg.hideCompleted !== false;
+		            }
+		            if (Object.prototype.hasOwnProperty.call(cfg, 'showCompleted')) {
+		                return cfg.showCompleted !== true;
+		            }
+		            return true;
 	        },
 	        todayWidgetCompletedPanelEnabled(wid) {
 	            return this.widgetOption(wid, 'showCompletedPanel', true) !== false;
 	        },
 	        todayWidgetVisibleTasks(wid) {
 	            const all = this.todayWidgetTasks(wid);
-	            if (this.todayWidgetShowCompletedInline(wid)) return all;
-	            return all.filter(t => t.status !== 'Terminé');
+	            if (this.todayWidgetHideCompletedTasks(wid)) {
+	                return all.filter(t => t.status !== 'Terminé');
+	            }
+	            return all;
 	        },
 	        completedTodayTasks() {
 	            const todayKey = this.todayDateKey();
@@ -4906,6 +4961,12 @@ document.addEventListener('alpine:init', () => {
 	        },
 	        homeTaskSubtitleVisible(wid, task) {
 	            return !!this.homeTaskSubtitleLabel(wid, task);
+	        },
+	        homeTaskSubtitleTextVisible(wid, task) {
+	            const record = this.taskRecordLabel(task);
+	            if (record && this.homeTaskRecordEnabled(wid)) return true;
+	            const label = this.homeTaskSubtitleLabel(wid, task);
+	            return !!label && label !== 'Liste des t\u00e2ches';
 	        },
 	        homeTaskSubtitleRowVisible(wid, task) {
 	            return this.homeTaskSubtitleVisible(wid, task)

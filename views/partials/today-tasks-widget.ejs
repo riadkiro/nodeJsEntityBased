@@ -48,9 +48,9 @@
             <div class="dx-shopping-list dx-priority-task-list"
                  :data-task-widget-id="wid"
                  x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
-                <template x-for="item in todayWidgetVisibleTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+                <template x-for="(item, index) in todayWidgetVisibleTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                     <div class="dx-shopping-row dx-task-row dx-single-line"
-                         :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid) }"
+                         :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid), 'is-last-visible': index === todayWidgetVisibleTasks(wid).slice(0, 40).length - 1 }"
                          :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
                          :data-task-id="item._id || item.id"
                          @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
@@ -74,7 +74,9 @@
                                         <span class="dx-task-record-mini">
                                             <iconify-icon :icon="homeTaskSubtitleIcon(wid, item)" width="10"></iconify-icon>
                                         </span>
-                                        <span class="dx-task-subtitle-label" x-text="homeTaskSubtitleLabel(wid, item)"></span>
+                                        <span class="dx-task-subtitle-label"
+                                              x-show="homeTaskSubtitleTextVisible(wid, item)"
+                                              x-text="homeTaskSubtitleLabel(wid, item)"></span>
                                     </span>
                                     <span class="dx-task-subtitle-reminder"
                                           x-show="taskHasReminder(item)"

@@ -676,6 +676,19 @@ async function taskBoard(req) {
         if (ad !== bd) return ad - bd;
         return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
     };
+    const taskTimestamp = value => {
+        const time = new Date(value || 0).getTime();
+        return Number.isNaN(time) ? 0 : time;
+    };
+    const compareCompletedTasks = (a, b) => {
+        const at = taskTimestamp(a.completedAt || a.updatedAt);
+        const bt = taskTimestamp(b.completedAt || b.updatedAt);
+        if (at !== bt) return bt - at;
+        const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+        const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+        if (ao !== bo) return ao - bo;
+        return taskTimestamp(b.createdAt) - taskTimestamp(a.createdAt);
+    };
 
     const overdueTasks = rows
         .filter(isOverdue)
@@ -700,7 +713,7 @@ async function taskBoard(req) {
         if (!isDone(task)) return false;
         const checkDate = task.completedAt || task.updatedAt;
         return checkDate && formatKey(checkDate) === tools.dateKey;
-    });
+    }).sort(compareCompletedTasks);
 
     const tasksByList = {};
     rows.forEach(task => {

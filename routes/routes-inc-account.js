@@ -969,6 +969,19 @@ router.get("/api/home-overview", async (req, res) => {
 	            if (ao !== bo) return ao - bo;
 	            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
 	        };
+	        const taskTimestamp = value => {
+	            const time = new Date(value || 0).getTime();
+	            return Number.isNaN(time) ? 0 : time;
+	        };
+	        const compareCompletedTasks = (a, b) => {
+	            const at = taskTimestamp(a.completedAt || a.updatedAt);
+	            const bt = taskTimestamp(b.completedAt || b.updatedAt);
+	            if (at !== bt) return bt - at;
+	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+	            if (ao !== bo) return ao - bo;
+	            return taskTimestamp(b.createdAt) - taskTimestamp(a.createdAt);
+	        };
 
 	        const isSelectedTodayTask = task => {
 	            if (isTaskOverdue(task)) return false;
@@ -984,7 +997,8 @@ router.get("/api/home-overview", async (req, res) => {
 	                if (task.status !== 'Terminé') return false;
 	                const checkDate = task.completedAt || task.updatedAt;
 	                return checkDate && formatDateKeyInTimeZone(checkDate) === todayKey;
-	            });
+	            })
+	            .sort(compareCompletedTasks);
 		        const openTasksSorted = taskRows
 		            .filter(task => task.status !== 'Terminé')
 		            .sort(compareHomeTasks);

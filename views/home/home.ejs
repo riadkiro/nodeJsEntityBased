@@ -4680,14 +4680,29 @@ document.addEventListener('alpine:init', () => {
 	                    result.push(t);
 	                }
 	            }
-	            return result;
+	            return result.sort((a, b) => this.compareCompletedHomeTasks(a, b));
+	        },
+	        completedHomeTaskTimestamp(value) {
+	            const time = new Date(value || 0).getTime();
+	            return Number.isNaN(time) ? 0 : time;
+	        },
+	        compareCompletedHomeTasks(a = {}, b = {}) {
+	            const at = this.completedHomeTaskTimestamp(a.completedAt || a.updatedAt);
+	            const bt = this.completedHomeTaskTimestamp(b.completedAt || b.updatedAt);
+	            if (at !== bt) return bt - at;
+	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+	            if (ao !== bo) return ao - bo;
+	            return this.completedHomeTaskTimestamp(b.createdAt) - this.completedHomeTaskTimestamp(a.createdAt);
 	        },
 	        completedTodayDayTasks(wid = null) {
 	            if (!wid || this.todayWidgetIsToday(wid)) {
 	                return this.completedTodayTasks();
 	            }
 	            const source = wid ? this.todayWidgetDateTasks(wid) : (this.todayTasks || []);
-	            return source.filter(t => t && t.status === 'Terminé');
+	            return source
+	                .filter(t => t && t.status === 'Terminé')
+	                .sort((a, b) => this.compareCompletedHomeTasks(a, b));
 	        },
 	        completedDayTitle(wid) {
 	            const phrase = this.todayWidgetDatePhrase(wid);

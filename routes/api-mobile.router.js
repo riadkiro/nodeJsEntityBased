@@ -394,6 +394,65 @@ async function ensurePersonalTaskList(req) {
     return { entity, record, list };
 }
 
+function cleanTaskListColor(value, fallback = '#6366f1') {
+    const color = cleanText(value, fallback);
+    return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+}
+
+function cleanTaskListIcon(value, fallback = 'list') {
+    const icon = cleanText(value, fallback).toLowerCase();
+    return /^[a-z0-9_-]{2,40}$/.test(icon) ? icon : fallback;
+}
+
+function taskListTaskStats(tasks = []) {
+    const totalTasks = tasks.length;
+    const doneTasks = tasks.filter(task => task.status === STATUS_DONE || task.done === true).length;
+    const members = [...new Set(tasks
+        .map(task => cleanText(task.assignedTo, ''))
+        .filter(Boolean))]
+        .slice(0, 4);
+    return {
+        totalTasks,
+        doneTasks,
+        openTasks: Math.max(0, totalTasks - doneTasks),
+        members,
+    };
+}
+
+function serializeMobileTaskList(list, tasks = []) {
+    const stats = taskListTaskStats(tasks);
+    const listId = list._id?.toString?.() || String(list._id || '');
+    return {
+        id: listId,
+        _id: listId,
+        label: cleanListLabel(list.label),
+        color: cleanTaskListColor(list.color, '#6366f1'),
+        icon: cleanTaskListIcon(list.icon, 'list'),
+        order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0,
+        isShared: false,
+        isFavorite: false,
+        ...stats,
+    };
+}
+
+async function personalTaskLists(req) {
+    await ensurePersonalTaskList(req);
+    const { record } = await ensurePersonalTaskRecord(req);
+    const { TaskList, RecordTask } = await taskTenantModels(req);
+    const lists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 }).lean();
+    const listIds = lists.map(list => list._id);
+    const tasks = listIds.length
+        ? await RecordTask.find({ taskListId: { $in: listIds } }).select('taskListId status done assignedTo').lean()
+        : [];
+    const tasksByListId = new Map();
+    for (const task of tasks) {
+        const listId = task.taskListId?.toString?.() || '';
+        if (!tasksByListId.has(listId)) tasksByListId.set(listId, []);
+        tasksByListId.get(listId).push(task);
+    }
+    return lists.map(list => serializeMobileTaskList(list, tasksByListId.get(list._id.toString()) || []));
+}
+
 async function tenantRecordIds(req) {
     const Record = await tenantCollection(req, 'Record');
     return Record.find({}).distinct('_id');
@@ -660,6 +719,45 @@ router.get('/accounts/:accountNumber/tasks/priorities', async (req, res) => {
     } catch (error) {
         console.error('[MobileAPI] Task priorities error:', error);
         sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
+router.get('/accounts/:accountNumber/task-lists', async (req, res) => {
+    try {
+        res.json({ success: true, lists: await personalTaskLists(req) });
+    } catch (error) {
+        console.error('[MobileAPI] Task lists error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
+    try {
+        const label = cleanText(req.body?.label, '');
+        if (!label) return sendError(res, 400, 'Nom de liste requis', 'VALIDATION_ERROR');
+
+        const { record } = await ensurePersonalTaskRecord(req);
+        const { TaskList, RecordTask } = await taskTenantModels(req);
+        const existingLists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
+        const duplicate = existingLists.find(list => cleanListLabel(list.label).toLowerCase() === label.toLowerCase());
+        if (duplicate) return sendError(res, 409, 'Une liste porte déjà ce nom', 'TASK_LIST_EXISTS');
+
+        const priorities = await getAccountTaskPriorities(req);
+        const list = await TaskList.create({
+            recordId: record._id,
+            label,
+            color: cleanTaskListColor(req.body?.color),
+            icon: cleanTaskListIcon(req.body?.icon),
+            order: existingLists.length,
+            statuses: defaultStatuses,
+            priorities,
+        });
+
+        const tasks = await RecordTask.find({ taskListId: list._id }).select('taskListId status done assignedTo').lean();
+        res.status(201).json({ success: true, list: serializeMobileTaskList(list, tasks) });
+    } catch (error) {
+        console.error('[MobileAPI] Create task list error:', error);
+        sendCaughtError(res, error);
     }
 });
 

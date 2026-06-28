@@ -2442,11 +2442,10 @@ document.addEventListener('alpine:init', () => {
             { label: 'Bloqué',   color: '#ef4444' },
         ],
         priorities: [
-            { label: 'Aucune',  color: '' },
-            { label: 'Basse',   color: '#22c55e' },
-            { label: 'Moyenne', color: '#f59e0b' },
-            { label: 'Haute',   color: '#ef4444' },
-            { label: 'Urgente', color: '#dc2626' },
+            { label: 'Aucune', color: '#cbd5e1', order: 0 },
+            { label: 'Normal', color: '#3b82f6', order: 1 },
+            { label: 'Important', color: '#f59e0b', order: 2 },
+            { label: 'Urgent', color: '#ef4444', order: 3 },
         ],
         _accountNumber: '<%= account_number %>',
         _recordId: '<%= record._id %>',
@@ -2995,6 +2994,7 @@ document.addEventListener('alpine:init', () => {
                 rawLabel: list.rawLabel || list.label || label,
                 isLegacyDayPriorityList: legacyDayPriority,
                 color: typeof list.color === 'string' && list.color ? list.color : '#6366f1',
+                priorities: Array.isArray(list.priorities) && list.priorities.length ? list.priorities : this.priorities,
                 tasks: (list.tasks || []).map(task => {
                     const normalized = this.normalizeTask({ ...task, taskListId: id });
                     if (legacyDayPriority) normalized.isDayPriority = true;
@@ -3036,10 +3036,13 @@ document.addEventListener('alpine:init', () => {
 
         priorityStyle(priority) {
             const map = {
+                Urgent: ['#fee2e2', '#ef4444'],
+                Important: ['#fff7ed', '#f59e0b'],
+                Normal: ['#eff6ff', '#3b82f6'],
                 Urgente: ['#fee2e2', '#dc2626'],
                 Haute: ['#fef2f2', '#ef4444'],
                 Moyenne: ['#fff7ed', '#f97316'],
-                Basse: ['#ecfdf5', '#10b981'],
+                Basse: ['#eff6ff', '#3b82f6'],
                 Aucune: ['#f1f5f9', '#64748b']
             };
             const [bg, color] = map[priority || 'Aucune'] || map.Aucune;
@@ -3053,8 +3056,9 @@ document.addEventListener('alpine:init', () => {
 
         taskAccent(task = {}, list = {}) {
             if (this.isTaskOverdue(task)) return '#ef4444';
-            if (task.priority === 'Haute' || task.priority === 'Urgente') return '#ef4444';
-            if (task.priority === 'Moyenne') return '#f97316';
+            if (['Urgent', 'Haute', 'Urgente'].includes(task.priority)) return '#ef4444';
+            if (['Important', 'Moyenne'].includes(task.priority)) return '#f59e0b';
+            if (['Normal', 'Basse'].includes(task.priority)) return '#3b82f6';
             if (task.status === 'Terminé') return '#10b981';
             return list.color || task.statusColor || '#6366f1';
         },
@@ -3079,6 +3083,12 @@ document.addEventListener('alpine:init', () => {
             // Get current user ID for chat bubble alignment
             const userEl = document.querySelector('[data-user-id]');
             if (userEl) this._currentUserId = userEl.dataset.userId || '';
+            window.addEventListener('task-priorities-updated', (e) => {
+                const priorities = Array.isArray(e.detail?.priorities) ? e.detail.priorities : [];
+                if (!priorities.length) return;
+                this.priorities = priorities;
+                this.lists = (this.lists || []).map(list => ({ ...list, priorities }));
+            });
             await this.loadLists();
             // Auto-open specific task if coming from chat link (?openTask=taskId)
             const params = new URLSearchParams(window.location.search);
@@ -3134,13 +3144,18 @@ document.addEventListener('alpine:init', () => {
                 if (s) return s.color;
             }
             // Fallback: priority colors
-            const prio = { 'Aucune': '#9ca3af', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626' };
+            const prio = { 'Aucune': '#9ca3af', 'Normal': '#3b82f6', 'Important': '#f59e0b', 'Urgent': '#ef4444', 'Basse': '#3b82f6', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626' };
             return prio[statusLabel] || '#9ca3af';
         },
 
         // Helper: get color for priority label
         getPriorityColor(priorityLabel) {
-            const p = this.priorities.find(p => p.label === priorityLabel);
+            const list = this.detailList || this.kanbanList;
+            const found = list ? this.lists.find(l => l._id === list._id) : null;
+            const source = (found?.priorities && found.priorities.length)
+                ? found.priorities
+                : this.priorities;
+            const p = source.find(p => p.label === priorityLabel);
             return p ? p.color : '';
         },
 
@@ -3248,6 +3263,9 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, { credentials: 'include' });
                 const data = await res.json();
                 if (data.success) {
+                    if (Array.isArray(data.priorities) && data.priorities.length) {
+                        this.priorities = data.priorities;
+                    }
                     this.lists = (data.lists || []).map(list => this.normalizeList(list));
                     // Auto-create the real default list if no lists exist.
                     if (this.lists.length === 0) {

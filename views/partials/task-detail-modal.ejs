@@ -663,10 +663,9 @@ document.addEventListener('alpine:init', () => {
             ],
             priorities: [
                 { label: 'Aucune', color: '#cbd5e1', order: 0 },
-                { label: 'Basse', color: '#22c55e', order: 1 },
-                { label: 'Moyenne', color: '#f59e0b', order: 2 },
-                { label: 'Haute', color: '#ef4444', order: 3 },
-                { label: 'Urgente', color: '#dc2626', order: 4 },
+                { label: 'Normal', color: '#3b82f6', order: 1 },
+                { label: 'Important', color: '#f59e0b', order: 2 },
+                { label: 'Urgent', color: '#ef4444', order: 3 },
             ]
         },
         colorPalette: ['#6366f1','#3b82f6','#06b6d4','#10b981','#22c55e','#f59e0b','#f97316','#ef4444','#dc2626','#ec4899','#8b5cf6','#64748b'],
@@ -1026,9 +1025,12 @@ document.addEventListener('alpine:init', () => {
 	            const cleaned = this.normalizeOptions(options, this.defaults[meta.payload]);
 	            const previous = this[meta.optionsKey] || [];
 	            this[meta.optionsKey] = cleaned;
-	            if (!this.task?.taskListId) return cleaned;
+	            if (kind !== 'priority' && !this.task?.taskListId) return cleaned;
 	            try {
-                const res = await fetch(API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint, {
+                const endpoint = kind === 'priority'
+                    ? API + '/api/task-priorities'
+                    : API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint;
+                const res = await fetch(endpoint, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1039,6 +1041,9 @@ document.addEventListener('alpine:init', () => {
                 this[meta.optionsKey] = this.normalizeOptions(data[meta.payload], cleaned);
                 this.task[meta.payload] = this[meta.optionsKey];
                 if (this._onUpdate) this._onUpdate(this.task._id, meta.payload, this[meta.optionsKey], this.task);
+                if (kind === 'priority') {
+                    window.dispatchEvent(new CustomEvent('task-priorities-updated', { detail: { priorities: this[meta.optionsKey] } }));
+                }
 	                return this[meta.optionsKey];
 	            } catch (e) {
 	                this[meta.optionsKey] = previous;

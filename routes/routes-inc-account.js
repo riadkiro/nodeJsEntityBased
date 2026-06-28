@@ -143,6 +143,10 @@ router.get("/api/agenda-hub", async (req, res) => {
 const ReminderService = require('../services/reminders/reminder.service');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
+const {
+    getAccountTaskPriorities,
+    priorityOptionFor,
+} = require('../services/task-priorities.service');
 const hubTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback;
     const text = value.trim();
@@ -168,18 +172,6 @@ const hubStatusColors = {
     'Terminé': '#22c55e',
     'Bloqué': '#ef4444'
 };
-const hubPriorityColors = {
-    Aucune: '',
-    Basse: '#22c55e',
-    Moyenne: '#f59e0b',
-    Haute: '#ef4444',
-    Urgente: '#dc2626'
-};
-const hubDefaultPriorities = Object.entries(hubPriorityColors).map(([label, color], order) => ({
-    label,
-    color: color || '#cbd5e1',
-    order
-}));
 const hubResolveTimeZone = (value) => {
     const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
     const zone = hubTaskText(value, '');
@@ -326,6 +318,7 @@ async function ensurePersonalTaskRecord(req) {
 
 async function ensurePersonalTaskList(req, options = {}) {
     const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
+    const accountPriorities = await getAccountTaskPriorities(req);
     const label = hubTaskListLabel(options.label || 'Liste des tâches');
     const color = options.color || '#6366f1';
     const icon = options.icon || 'solar:checklist-bold-duotone';
@@ -339,7 +332,8 @@ async function ensurePersonalTaskList(req, options = {}) {
             color,
             icon,
             order: lists.length,
-            statuses: hubDefaultStatuses
+            statuses: hubDefaultStatuses,
+            priorities: accountPriorities
         });
     } else if (!list.icon || list.color !== color) {
         list = await TaskListModel.findByIdAndUpdate(
@@ -358,6 +352,7 @@ async function ensurePersonalTaskList(req, options = {}) {
                     const title = hubTaskText(item?.title || item?.label, '');
                     if (!title) return null;
                     const done = !!item?.done;
+                    const priorityOption = priorityOptionFor('Aucune', accountPriorities);
                     return {
                         taskListId: list._id,
                         recordId: record._id,
@@ -365,8 +360,8 @@ async function ensurePersonalTaskList(req, options = {}) {
                         description: hubTaskText(item?.description, ''),
                         status: done ? 'Terminé' : 'À faire',
                         statusColor: done ? hubStatusColors['Terminé'] : hubStatusColors['À faire'],
-                        priority: 'Aucune',
-                        priorityColor: '',
+                        priority: priorityOption.label,
+                        priorityColor: priorityOption.color || '',
                         order: index
                     };
                 })
@@ -461,7 +456,8 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
 
         const status = hubStatusColors[req.body?.status] ? req.body.status : 'À faire';
-        const priority = hubPriorityColors.hasOwnProperty(req.body?.priority) ? req.body.priority : 'Aucune';
+        const accountPriorities = await getAccountTaskPriorities(req);
+        const priorityOption = priorityOptionFor(req.body?.priority, accountPriorities);
         const target = await resolveHubTaskTarget(req, req.body?.taskListId);
         if (!target) return res.status(404).json({ error: 'Liste de tâches introuvable' });
         const { entity, record, list } = target;
@@ -474,11 +470,11 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             description: hubTaskText(req.body?.description, ''),
             status,
             statusColor: hubStatusColors[status] || '#9ca3af',
-	            priority,
-	            priorityColor: hubPriorityColors[priority] || '',
-	            isDayPriority: !!req.body?.isDayPriority,
-	            startDate: req.body?.startDate || null,
-	            dueDate: req.body?.dueDate || null,
+            priority: priorityOption.label,
+            priorityColor: priorityOption.color || '',
+            isDayPriority: !!req.body?.isDayPriority,
+            startDate: req.body?.startDate || null,
+            dueDate: req.body?.dueDate || null,
             assignedTo: hubTaskText(req.body?.assignedTo, ''),
             order
         });
@@ -494,14 +490,14 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
                 description: task.description || '',
                 status: task.status,
                 statusColor: task.statusColor,
-                priority: task.priority || 'Aucune',
-                priorityColor: task.priorityColor || '',
+                priority: priorityOption.label,
+                priorityColor: priorityOption.color || '',
                 isDayPriority: !!task.isDayPriority,
                 startDate: task.startDate || null,
-	                dueDate: task.dueDate || null,
-	                assignedTo: task.assignedTo || '',
-	                attachments: [],
-	                createdAt: task.createdAt || null,
+                dueDate: task.dueDate || null,
+                assignedTo: task.assignedTo || '',
+                attachments: [],
+                createdAt: task.createdAt || null,
                 updatedAt: task.updatedAt || null,
                 listId: list._id.toString(),
                 listLabel: hubTaskListLabel(list.label),
@@ -613,18 +609,19 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
         const _tc = require('../middleware/tenant').tenantCollection;
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
+        const accountPriorities = await getAccountTaskPriorities(req);
 
         // Scope to tenant: get all record IDs belonging to this tenant first
         const tenantRecords = await Record.find({}).select('_id title computedTitle referenceTitle entityId icon color slug image').lean();
         const tenantRecordIds = tenantRecords.map(r => r._id);
         if (tenantRecordIds.length === 0) {
-            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
+            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
         }
 
         const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: 1 }).lean();
         if (allLists.length === 0) {
-            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0 });
+            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
         }
 
         const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: -1 }).lean();
@@ -694,50 +691,53 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             const listColor = list.color || '#6366f1';
             const listIcon = list.icon || 'solar:checklist-bold-duotone';
             const listStatuses = hubTaskOptions(list.statuses, hubDefaultStatuses);
-            const listPriorities = hubTaskOptions(list.priorities, hubDefaultPriorities);
+            const listPriorities = accountPriorities;
             const listTasks = (tasksByListId[listId] || []).slice().sort((a, b) => {
                 const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
                 const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
                 if (ao !== bo) return ao - bo;
                 return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
             });
-            const normalizedTasks = listTasks.map(t => ({
-                _id: t._id.toString(),
-                title: hubTaskText(t.title, 'Sans titre'),
-                description: t.description || '',
-                status: hubTaskText(t.status, 'À faire'),
-                statusColor: t.statusColor || '#9ca3af',
-                priority: hubTaskText(t.priority, 'Aucune'),
-                priorityColor: t.priorityColor || '',
-                isDayPriority: !!t.isDayPriority,
-                startDate: t.startDate || null,
-                dueDate: t.dueDate || null,
-                assignedTo: t.assignedTo || '',
-                createdAt: t.createdAt || null,
-                updatedAt: t.updatedAt || null,
-	                completedAt: t.completedAt || null,
-	                attachments: Array.isArray(t.attachments) ? t.attachments.map(att => ({
-	                    _id: att._id?.toString?.() || String(att._id || ''),
-	                    filename: att.filename || '',
-	                    originalName: att.originalName || att.filename || 'Fichier',
-	                    mimeType: att.mimeType || '',
-	                    size: Number(att.size || 0)
-	                })) : [],
-	                listId,
-                listLabel,
-                listColor,
-                listIcon,
-                recordId: rId,
-                recordTitle: entityGroups[eId].records[rId].recordTitle,
-                recordIcon: entityGroups[eId].records[rId].recordIcon,
-                recordColor: entityGroups[eId].records[rId].recordColor,
-                entityId: eId,
-                entityName: entity?.name || 'Sans entité',
-                entitySlug: entity?.slug || '',
-                entityIcon: entity?.icon || 'solar:folder-bold-duotone',
-                entityColor: entity?.color || '#4361ee',
-                reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
-            }));
+            const normalizedTasks = listTasks.map(t => {
+                const priorityOption = priorityOptionFor(t.priority, accountPriorities);
+                return {
+                    _id: t._id.toString(),
+                    title: hubTaskText(t.title, 'Sans titre'),
+                    description: t.description || '',
+                    status: hubTaskText(t.status, 'À faire'),
+                    statusColor: t.statusColor || '#9ca3af',
+                    priority: priorityOption.label,
+                    priorityColor: priorityOption.color || '',
+                    isDayPriority: !!t.isDayPriority,
+                    startDate: t.startDate || null,
+                    dueDate: t.dueDate || null,
+                    assignedTo: t.assignedTo || '',
+                    createdAt: t.createdAt || null,
+                    updatedAt: t.updatedAt || null,
+                    completedAt: t.completedAt || null,
+                    attachments: Array.isArray(t.attachments) ? t.attachments.map(att => ({
+                        _id: att._id?.toString?.() || String(att._id || ''),
+                        filename: att.filename || '',
+                        originalName: att.originalName || att.filename || 'Fichier',
+                        mimeType: att.mimeType || '',
+                        size: Number(att.size || 0)
+                    })) : [],
+                    listId,
+                    listLabel,
+                    listColor,
+                    listIcon,
+                    recordId: rId,
+                    recordTitle: entityGroups[eId].records[rId].recordTitle,
+                    recordIcon: entityGroups[eId].records[rId].recordIcon,
+                    recordColor: entityGroups[eId].records[rId].recordColor,
+                    entityId: eId,
+                    entityName: entity?.name || 'Sans entité',
+                    entitySlug: entity?.slug || '',
+                    entityIcon: entity?.icon || 'solar:folder-bold-duotone',
+                    entityColor: entity?.color || '#4361ee',
+                    reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
+                };
+            });
             const done = listTasks.filter(t => t.status === 'Terminé').length;
             entityGroups[eId].records[rId].totalTasks += normalizedTasks.length;
             entityGroups[eId].records[rId].doneTasks += done;
@@ -747,9 +747,9 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 label: listLabel,
                 color: listColor,
                 icon: listIcon,
-	                statuses: listStatuses,
-	                priorities: listPriorities,
-	                totalTasks: normalizedTasks.length,
+                statuses: listStatuses,
+                priorities: listPriorities,
+                totalTasks: normalizedTasks.length,
                 doneTasks: done,
                 tasks: normalizedTasks
             });
@@ -774,7 +774,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 }))
         })).sort((a, b) => b.totalTasks - a.totalTasks);
 
-        res.json({ success: true, entities: result, totalTasks, doneTasks: totalDone });
+        res.json({ success: true, entities: result, totalTasks, doneTasks: totalDone, priorities: accountPriorities });
     } catch (error) {
         console.error('[TasksHub] Error:', error);
         res.status(500).json({ error: error.message });

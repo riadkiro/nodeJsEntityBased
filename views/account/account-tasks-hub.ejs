@@ -507,16 +507,16 @@ document.addEventListener('alpine:init', () => {
         addError: '',
         priorityChoices: [
             { label: 'Aucune', color: '#cbd5e1', order: 0 },
-            { label: 'Normal', color: '#06b6d4', order: 1 },
+            { label: 'Normal', color: '#3b82f6', order: 1 },
             { label: 'Important', color: '#f59e0b', order: 2 },
             { label: 'Urgent', color: '#ef4444', order: 3 }
         ],
         fallbackTasks: [
-            { _id:'static-1', title:'Pédiatre Adam', status:'À faire', priority:'Haute', dueDate:'2026-06-16', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' },
-            { _id:'static-2', title:'Renouveler assurance Clio 4', status:'À faire', priority:'Basse', dueDate:'2026-06-20', startDate:'2026-06-18', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:'Cette semaine', recordTitle:'Clio 4', recordIcon:'solar:car-bold-duotone', recordColor:'#3b82f6', entityName:'Voiture', entitySlug:'voiture', entityIcon:'solar:car-bold-duotone', entityColor:'#3b82f6', scope:'personal' },
-            { _id:'static-3', title:'Préparer réunion client', status:'En cours', priority:'Moyenne', dueDate:'2026-06-18', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Yanis', listLabel:'À venir', recordTitle:'Lotissement Saidia', recordIcon:'solar:buildings-2-bold-duotone', recordColor:'#0284c7', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
-            { _id:'static-4', title:'Envoyer devis #2026-045', status:'En revue', priority:'Moyenne', dueDate:'2026-06-16', startDate:'2026-06-15', createdAt:'2026-06-15', assignedTo:'Sofia', listLabel:'Priorités', recordTitle:'CSA', recordIcon:'solar:buildings-bold-duotone', recordColor:'#7c3aed', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
-            { _id:'static-5', title:'Tache test 2', status:'À faire', priority:'Moyenne', dueDate:'2026-06-15', startDate:'2026-06-14', createdAt:'2026-06-15', assignedTo:'Ben', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' }
+            { _id:'static-1', title:'Pédiatre Adam', status:'À faire', priority:'Urgent', dueDate:'2026-06-16', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' },
+            { _id:'static-2', title:'Renouveler assurance Clio 4', status:'À faire', priority:'Normal', dueDate:'2026-06-20', startDate:'2026-06-18', createdAt:'2026-06-15', assignedTo:'Moi', listLabel:'Cette semaine', recordTitle:'Clio 4', recordIcon:'solar:car-bold-duotone', recordColor:'#3b82f6', entityName:'Voiture', entitySlug:'voiture', entityIcon:'solar:car-bold-duotone', entityColor:'#3b82f6', scope:'personal' },
+            { _id:'static-3', title:'Préparer réunion client', status:'En cours', priority:'Important', dueDate:'2026-06-18', startDate:'2026-06-16', createdAt:'2026-06-15', assignedTo:'Yanis', listLabel:'À venir', recordTitle:'Lotissement Saidia', recordIcon:'solar:buildings-2-bold-duotone', recordColor:'#0284c7', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
+            { _id:'static-4', title:'Envoyer devis #2026-045', status:'En revue', priority:'Important', dueDate:'2026-06-16', startDate:'2026-06-15', createdAt:'2026-06-15', assignedTo:'Sofia', listLabel:'Priorités', recordTitle:'CSA', recordIcon:'solar:buildings-bold-duotone', recordColor:'#7c3aed', entityName:'Société', entitySlug:'societe', entityIcon:'solar:buildings-2-bold-duotone', entityColor:'#0284c7', scope:'company' },
+            { _id:'static-5', title:'Tache test 2', status:'À faire', priority:'Important', dueDate:'2026-06-15', startDate:'2026-06-14', createdAt:'2026-06-15', assignedTo:'Ben', listLabel:"Aujourd'hui", recordTitle:'Papa', recordIcon:'solar:user-rounded-bold-duotone', recordColor:'#8b5cf6', entityName:'Famille', entitySlug:'famille', entityIcon:'solar:users-group-rounded-bold-duotone', entityColor:'#8b5cf6', scope:'personal' }
         ],
 
         async init() {
@@ -532,6 +532,9 @@ document.addEventListener('alpine:init', () => {
                 const res = await fetch(API + '/api/tasks-hub', { credentials:'include' });
                 const data = await res.json();
                 if (data.success) {
+                    if (Array.isArray(data.priorities) && data.priorities.length) {
+                        this.priorityChoices = this.normalizePriorityOptions(data.priorities);
+                    }
                     this.entities = data.entities || [];
                     if (!this.activeScope) this.activeScope = 'personal';
                 }
@@ -682,18 +685,18 @@ document.addEventListener('alpine:init', () => {
         // Priority filtered tasks
         get priorityFilteredTasks() {
             if (this.priorityFilter === 'all') return this.visibleTasks;
-            if (this.priorityFilter === 'Haute') return this.visibleTasks.filter(t => t.priority === 'Haute' || t.priority === 'Urgente');
-            if (this.priorityFilter === 'Moyenne') return this.visibleTasks.filter(t => t.priority === 'Moyenne');
-            if (this.priorityFilter === 'Normale') return this.visibleTasks.filter(t => !t.priority || t.priority === 'Aucune' || t.priority === 'Basse' || t.priority === 'Normale');
+            if (['Urgent','Haute'].includes(this.priorityFilter)) return this.visibleTasks.filter(t => ['Urgent','Haute','Urgente'].includes(t.priority));
+            if (['Important','Moyenne'].includes(this.priorityFilter)) return this.visibleTasks.filter(t => ['Important','Moyenne'].includes(t.priority));
+            if (['Normal','Normale'].includes(this.priorityFilter)) return this.visibleTasks.filter(t => !t.priority || ['Aucune','Normal','Basse','Normale'].includes(t.priority));
             return this.visibleTasks;
         },
 
-        // Priority sections: Haute, Moyenne, Normale
+        // Priority sections: Urgent, Important, Normal
         get prioritySections() {
             const groups = [
-                { key:'high', title:'Priorité haute', icon:'solar:flag-bold', color:'#ef4444', bg:'#fef2f2', priorities:['Haute','Urgente'] },
-                { key:'medium', title:'Priorité moyenne', icon:'solar:flag-bold', color:'#f97316', bg:'#fff7ed', priorities:['Moyenne'] },
-                { key:'normal', title:'Priorité normale', icon:'solar:flag-bold', color:'#10b981', bg:'#ecfdf5', priorities:['Basse','Normale','Aucune',''] }
+                { key:'urgent', title:'Priorité urgente', icon:'solar:flag-bold', color:'#ef4444', bg:'#fef2f2', priorities:['Urgent','Haute','Urgente'] },
+                { key:'medium', title:'Priorité importante', icon:'solar:flag-bold', color:'#f97316', bg:'#fff7ed', priorities:['Important','Moyenne'] },
+                { key:'normal', title:'Priorité normale', icon:'solar:flag-bold', color:'#3b82f6', bg:'#eff6ff', priorities:['Normal','Basse','Normale','Aucune',''] }
             ];
             const tasks = this.priorityFilteredTasks.filter(t => !this.isDone(t));
             return groups.map(g => ({ ...g, tasks: tasks.filter(t => g.priorities.includes(t.priority || 'Aucune')).sort((a, b) => this.sortDate(a) - this.sortDate(b)) }));
@@ -1067,7 +1070,7 @@ document.addEventListener('alpine:init', () => {
             if (task.priorityColor) return task.priorityColor;
             if (label === 'Urgente' || label === 'Haute' || label === 'Urgent') return '#ef4444';
             if (label === 'Moyenne' || label === 'Important') return '#f59e0b';
-            if (label === 'Basse' || label === 'Normal' || label === 'Normale') return '#06b6d4';
+            if (label === 'Basse' || label === 'Normal' || label === 'Normale') return '#3b82f6';
             return '#cbd5e1';
         },
         async createTodayTask() {
@@ -1342,14 +1345,16 @@ document.addEventListener('alpine:init', () => {
             if (diff <= 7) return d.toLocaleDateString('fr-FR', { weekday: 'long' });
             return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit', year:'2-digit' });
         },
-        // Priority label: Basse → Normale
+        // Priority label: legacy labels -> global labels
         priorityLabel(priority) {
-            if (!priority || priority === 'Aucune') return 'Normale';
-            if (priority === 'Basse') return 'Normale';
+            if (!priority || priority === 'Aucune') return 'Normal';
+            if (priority === 'Basse' || priority === 'Normale') return 'Normal';
+            if (priority === 'Moyenne') return 'Important';
+            if (priority === 'Haute' || priority === 'Urgente') return 'Urgent';
             return priority;
         },
         priorityStyle(priority) {
-            const map = { Urgente:['#fee2e2','#dc2626'], Haute:['#fef2f2','#ef4444'], Moyenne:['#fff7ed','#f97316'], Basse:['#ecfdf5','#10b981'], Normale:['#ecfdf5','#10b981'], Aucune:['#f1f5f9','#64748b'] };
+            const map = { Urgent:['#fee2e2','#ef4444'], Important:['#fff7ed','#f59e0b'], Normal:['#eff6ff','#3b82f6'], Urgente:['#fee2e2','#dc2626'], Haute:['#fef2f2','#ef4444'], Moyenne:['#fff7ed','#f97316'], Basse:['#eff6ff','#3b82f6'], Normale:['#eff6ff','#3b82f6'], Aucune:['#f1f5f9','#64748b'] };
             const [bg, color] = map[priority || 'Aucune'] || map.Aucune;
             return `background:${bg};color:${color}`;
         },

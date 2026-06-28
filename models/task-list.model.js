@@ -31,10 +31,9 @@ const TaskListSchema = new mongoose.Schema({
         order: { type: Number, default: 0 }
     }], default: [
         { label: 'Aucune',  color: '#cbd5e1', order: 0 },
-        { label: 'Basse',   color: '#22c55e', order: 1 },
-        { label: 'Moyenne', color: '#f59e0b', order: 2 },
-        { label: 'Haute',   color: '#ef4444', order: 3 },
-        { label: 'Urgente', color: '#dc2626', order: 4 },
+        { label: 'Normal', color: '#3b82f6', order: 1 },
+        { label: 'Important', color: '#f59e0b', order: 2 },
+        { label: 'Urgent', color: '#ef4444', order: 3 },
     ]},
 }, { timestamps: true });
 

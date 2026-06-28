@@ -7,6 +7,10 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const { taskTenantModels } = require('../../services/task-tenant-models.service');
+const {
+    getAccountTaskPriorities,
+    priorityOptionFor,
+} = require('../../services/task-priorities.service');
 const { canAccessRecord, canEditRecordModule } = require('../../middleware/shared-records-helper');
 const { ensureEventsEntity } = require('../../services/events-entity.service');
 const OcrService = require('../../services/ocr.service');
@@ -5481,7 +5485,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
                     title,
                     description: agentSafeString(input.description || '', 4000),
                     dueDate: dueDate ? agentSafeString(dueDate, 80) : '',
-                    priority: ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority) ? input.priority : 'Moyenne',
+                    priority: ['Aucune', 'Normal', 'Important', 'Urgent', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(input.priority) ? input.priority : 'Normal',
                     listTitle
                 },
                 preview: { title, dueDate: dueDate || '', meta: listTitle ? `Liste: ${listTitle}` : '' },
@@ -5499,7 +5503,7 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             if (sourceFields.title !== undefined) fields.title = agentSafeString(sourceFields.title, 180);
             if (sourceFields.description !== undefined) fields.description = agentSafeString(sourceFields.description, 4000);
             if (sourceFields.status !== undefined) fields.status = agentSafeString(sourceFields.status, 80);
-            if (sourceFields.priority !== undefined && ['Aucune', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(sourceFields.priority)) fields.priority = sourceFields.priority;
+            if (sourceFields.priority !== undefined && ['Aucune', 'Normal', 'Important', 'Urgent', 'Basse', 'Moyenne', 'Haute', 'Urgente'].includes(sourceFields.priority)) fields.priority = sourceFields.priority;
             if (sourceFields.dueDate !== undefined || sourceFields.date !== undefined) fields.dueDate = agentSafeString(sourceFields.dueDate || sourceFields.date || '', 80);
             if (!Object.keys(fields).length) return;
             actions.push({
@@ -6310,7 +6314,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","type":"text","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Moyenne","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Haute","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","type":"text","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Important","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Urgent","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -8267,9 +8271,8 @@ async function applyAgentAction(req, record, entity, action) {
         if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
 
         const { list, created } = await agentEnsureTaskList(req, record._id, action.input?.listTitle);
-        const priorityColors = {
-            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
-        };
+        const accountPriorities = await getAccountTaskPriorities(req);
+        const priorityOption = priorityOptionFor(action.input?.priority, accountPriorities);
         const dueDate = action.input?.dueDate ? new Date(action.input.dueDate) : null;
         const { RecordTask } = await taskTenantModels(req);
         const task = await RecordTask.create({
@@ -8279,8 +8282,8 @@ async function applyAgentAction(req, record, entity, action) {
             description: action.input?.description || '',
             status: 'À faire',
             statusColor: '#9ca3af',
-            priority: action.input?.priority || 'Moyenne',
-            priorityColor: priorityColors[action.input?.priority] || '#f59e0b',
+            priority: priorityOption.label,
+            priorityColor: priorityOption.color || '',
             dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null
         });
 
@@ -8311,15 +8314,14 @@ async function applyAgentAction(req, record, entity, action) {
             dueDate: task.dueDate
         };
         const fields = agentObjectInput(action.input?.fields || {});
-        const priorityColors = {
-            'Aucune': '', 'Basse': '#22c55e', 'Moyenne': '#f59e0b', 'Haute': '#ef4444', 'Urgente': '#dc2626'
-        };
+        const accountPriorities = await getAccountTaskPriorities(req);
         if (fields.title !== undefined) task.title = agentSafeString(fields.title, 180) || task.title;
         if (fields.description !== undefined) task.description = agentSafeString(fields.description, 4000);
         if (fields.status !== undefined) task.status = agentSafeString(fields.status, 80) || task.status;
-        if (fields.priority !== undefined && priorityColors[fields.priority] !== undefined) {
-            task.priority = fields.priority;
-            task.priorityColor = priorityColors[fields.priority];
+        if (fields.priority !== undefined) {
+            const priorityOption = priorityOptionFor(fields.priority, accountPriorities);
+            task.priority = priorityOption.label;
+            task.priorityColor = priorityOption.color || '';
         }
         if (fields.dueDate !== undefined) {
             const dueDate = fields.dueDate ? new Date(fields.dueDate) : null;

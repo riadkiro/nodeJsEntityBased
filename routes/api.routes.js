@@ -16,6 +16,15 @@ const { tenantCollection } = require('../middleware/tenant')
 const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } = require('../services/record-filter-query')
 const { ensureEventsEntity } = require('../services/events-entity.service')
 const { taskTenantModels } = require('../services/task-tenant-models.service')
+const {
+    defaultTaskPriorities,
+    getAccountTaskPriorities,
+    normalizeTaskPriorityOptions,
+    priorityOptionFor,
+    priorityColorFor,
+    priorityLabelFor,
+    saveAccountTaskPriorities,
+} = require('../services/task-priorities.service')
 const { sanitizeUploadedFilename } = require('../utils/filename-encoding')
 
 /**
@@ -1031,14 +1040,6 @@ const defaultTaskStatuses = [
     { label: 'Bloqué',   color: '#ef4444', order: 4 },
 ]
 
-const defaultTaskPriorities = [
-    { label: 'Aucune',  color: '#cbd5e1', order: 0 },
-    { label: 'Basse',   color: '#22c55e', order: 1 },
-    { label: 'Moyenne', color: '#f59e0b', order: 2 },
-    { label: 'Haute',   color: '#ef4444', order: 3 },
-    { label: 'Urgente', color: '#dc2626', order: 4 },
-]
-
 const taskAttachmentUrl = (req, attachment = {}, { download = false } = {}) => {
     if (!attachment.filename) return ''
     const dl = download && attachment.originalName ? `?dl=${encodeURIComponent(attachment.originalName)}` : ''
@@ -1089,8 +1090,6 @@ const normalizeTaskOptions = (options, fallback) => {
 }
 
 const getListStatuses = (list) => normalizeTaskOptions(list?.statuses, defaultTaskStatuses)
-const getListPriorities = (list) => normalizeTaskOptions(list?.priorities, defaultTaskPriorities)
-
 const optionColor = (options, label, fallback = '#9ca3af') => {
     const cleanLabel = cleanTaskText(label, '')
     const found = (options || []).find(item => item.label === cleanLabel)
@@ -1238,9 +1237,9 @@ const syncTaskOptions = async ({ req, listId, kind, previousOptions, nextOptions
 const serializeRecordTask = (req, task, list = null, extra = {}) => {
     const taskList = list || {}
     const statuses = getListStatuses(taskList)
-    const priorities = getListPriorities(taskList)
+    const priorities = normalizeTaskPriorityOptions(extra.priorities || taskList.priorities, defaultTaskPriorities)
     const status = cleanTaskText(task.status, 'À faire')
-    const priority = cleanTaskText(task.priority, 'Aucune')
+    const priority = priorityLabelFor(task.priority, priorities)
     return {
         _id: task._id?.toString?.() || String(task._id || ''),
         title: cleanTaskText(task.title, 'Sans titre'),
@@ -1248,7 +1247,7 @@ const serializeRecordTask = (req, task, list = null, extra = {}) => {
         status,
         statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
         priority,
-        priorityColor: task.priorityColor || optionColor(priorities, priority, ''),
+        priorityColor: priorityColorFor(priority, priorities, task.priorityColor || ''),
         isDayPriority: !!task.isDayPriority,
         taskListId: task.taskListId?.toString?.() || String(task.taskListId || taskList._id || ''),
         startDate: task.startDate || null,
@@ -1349,6 +1348,7 @@ const removeTaskAttachmentFile = (req, filename) => {
 router.get('/api/record/:recordId/task-lists', async (req, res) => {
     try {
         const { TaskList, RecordTask } = await taskTenantModels(req)
+        const accountPriorities = await getAccountTaskPriorities(req)
         const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
         const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
 
@@ -1364,7 +1364,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 return new Date(b.createdAt) - new Date(a.createdAt)
             })
             const listStatuses = getListStatuses(l)
-            const listPriorities = getListPriorities(l)
+            const listPriorities = accountPriorities
             return {
                 _id: l._id.toString(),
                 label: cleanTaskListLabel(l.label),
@@ -1376,11 +1376,11 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 priorities: listPriorities,
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
-                tasks: sorted.slice(0, 10).map(t => serializeRecordTask(req, t, l))
+                tasks: sorted.slice(0, 10).map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities }))
             }
         })
 
-        res.json({ success: true, lists: result })
+        res.json({ success: true, lists: result, priorities: accountPriorities })
     } catch (error) {
         console.error('[API] Task lists error:', error)
         res.status(500).json({ error: error.message })
@@ -1446,30 +1446,46 @@ router.put('/api/task-lists/:listId/statuses', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/priorities', async (req, res) => {
     try {
-        const { TaskList } = await taskTenantModels(req)
         const { priorities, renames } = req.body
         if (!Array.isArray(priorities) || priorities.length === 0) {
             return res.status(400).json({ error: 'At least one priority is required' })
         }
-        const list = await TaskList.findById(req.params.listId).lean()
-        if (!list) return res.status(404).json({ error: 'List not found' })
-	        const previous = getListPriorities(list)
-	        const cleaned = cleanTaskOptionPayload(priorities, defaultTaskPriorities, '#cbd5e1')
-	        if (cleaned.length === 0) {
-	            return res.status(400).json({ error: 'At least one valid priority is required' })
-	        }
-	        await TaskList.findByIdAndUpdate(req.params.listId, { priorities: cleaned })
-        await syncTaskOptions({
-            req,
-            listId: req.params.listId,
-            kind: 'priority',
-            previousOptions: previous,
-            nextOptions: cleaned,
-            renames
-        })
+        const cleaned = await saveAccountTaskPriorities(req, priorities, { renames })
         res.json({ success: true, priorities: cleaned })
     } catch (error) {
         console.error('[API] Update priorities error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/task-priorities
+ * Fetch the account-wide task priorities shared by web and mobile.
+ */
+router.get('/api/task-priorities', async (req, res) => {
+    try {
+        const priorities = await getAccountTaskPriorities(req)
+        res.json({ success: true, priorities })
+    } catch (error) {
+        console.error('[API] Task priorities error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-priorities
+ * Update account-wide task priorities.
+ */
+router.put('/api/task-priorities', async (req, res) => {
+    try {
+        const { priorities, renames } = req.body
+        if (!Array.isArray(priorities) || priorities.length === 0) {
+            return res.status(400).json({ error: 'At least one priority is required' })
+        }
+        const cleaned = await saveAccountTaskPriorities(req, priorities, { renames })
+        res.json({ success: true, priorities: cleaned })
+    } catch (error) {
+        console.error('[API] Update task priorities error:', error)
         res.status(500).json({ error: error.message })
     }
 })
@@ -1483,10 +1499,11 @@ router.get('/api/task-lists/:listId/options', async (req, res) => {
         const { TaskList } = await taskTenantModels(req)
         const list = await TaskList.findById(req.params.listId).lean()
         if (!list) return res.status(404).json({ error: 'List not found' })
+        const priorities = await getAccountTaskPriorities(req)
         res.json({
             success: true,
             statuses: getListStatuses(list),
-            priorities: getListPriorities(list)
+            priorities
         })
     } catch (error) {
         console.error('[API] Task list options error:', error)
@@ -1504,13 +1521,15 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
         const { label, color } = req.body
         const cleanLabel = cleanTaskText(label)
         if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
+        const accountPriorities = await getAccountTaskPriorities(req)
 
         const maxOrder = await TaskList.findOne({ recordId: req.params.recordId }).sort({ order: -1 }).lean()
         const list = await TaskList.create({
             recordId: req.params.recordId,
             label: cleanLabel,
             color: color || '#6366f1',
-            order: (maxOrder?.order || 0) + 1
+            order: (maxOrder?.order || 0) + 1,
+            priorities: accountPriorities
         })
 
         res.json({
@@ -1521,7 +1540,7 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
                 color: list.color,
                 icon: list.icon || 'solar:checklist-bold-duotone',
                 statuses: getListStatuses(list),
-                priorities: getListPriorities(list),
+                priorities: accountPriorities,
                 count: 0,
                 doneCount: 0
             }
@@ -1640,6 +1659,7 @@ router.delete('/api/task-lists/:listId', async (req, res) => {
 router.get('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
         const { TaskList, RecordTask } = await taskTenantModels(req)
+        const accountPriorities = await getAccountTaskPriorities(req)
         const list = await TaskList.findById(req.params.listId).lean()
         const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
         const reminderMap = await ReminderService.scheduledReminderMap({
@@ -1651,6 +1671,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
         res.json({
             success: true,
             tasks: tasks.map(t => serializeRecordTask(req, t, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
             }))
         })
@@ -1676,9 +1697,9 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         if (!list) return res.status(404).json({ error: 'List not found' })
 
         const listStatuses = getListStatuses(list)
-        const listPriorities = getListPriorities(list)
+        const accountPriorities = await getAccountTaskPriorities(req)
         const taskStatus = cleanTaskText(status, 'À faire')
-        const taskPriority = cleanTaskText(priority, 'Aucune')
+        const taskPriorityOption = priorityOptionFor(priority, accountPriorities)
         const order = await RecordTask.countDocuments({ taskListId: req.params.listId })
 
         const task = await RecordTask.create({
@@ -1688,8 +1709,8 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             description: sanitizeTaskDescriptionHtml(description || ''),
             status: taskStatus,
             statusColor: optionColor(listStatuses, taskStatus, '#9ca3af'),
-            priority: taskPriority,
-            priorityColor: optionColor(listPriorities, taskPriority, ''),
+            priority: taskPriorityOption.label,
+            priorityColor: taskPriorityOption.color || '',
             isDayPriority: !!isDayPriority,
             startDate: startDate || null,
             dueDate: dueDate || null,
@@ -1703,6 +1724,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         res.json({
             success: true,
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -1745,6 +1767,7 @@ router.post('/api/record-tasks/:taskId/status', async (req, res) => {
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
         const list = await TaskList.findById(oldTask.taskListId).lean()
+        const accountPriorities = await getAccountTaskPriorities(req)
         const statusColor = optionColor(getListStatuses(list), status, '#9ca3af')
         const completedAt = cleanTaskText(status, '').toLowerCase().includes('termin') ? new Date() : null
         const task = await RecordTask.findByIdAndUpdate(req.params.taskId, { status, statusColor, completedAt }, { new: true })
@@ -1759,6 +1782,7 @@ router.post('/api/record-tasks/:taskId/status', async (req, res) => {
             statusColor: task.statusColor,
             completedAt: task.completedAt || null,
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -1808,10 +1832,12 @@ router.post('/api/record-tasks/:taskId/attachments', (req, res, next) => {
         await task.save()
 
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        const accountPriorities = await getAccountTaskPriorities(req)
         const reminder = await findRecordTaskReminder(req, task)
         res.json({
             success: true,
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             }),
             attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
@@ -1844,10 +1870,12 @@ router.delete('/api/record-tasks/:taskId/attachments/:attachmentId', async (req,
         removeTaskAttachmentFile(req, filename)
 
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
+        const accountPriorities = await getAccountTaskPriorities(req)
         const reminder = await findRecordTaskReminder(req, task)
         res.json({
             success: true,
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             }),
             attachments: (task.attachments || []).map(att => taskAttachmentPayload(req, att))
@@ -1896,10 +1924,12 @@ router.post('/api/record-tasks/:taskId/reminder', async (req, res) => {
             return res.status(400).json({ error: 'Date de rappel requise', code: 'VALIDATION_ERROR' })
         }
         const reminder = await upsertRecordTaskReminder(req, task, reminderInput)
+        const accountPriorities = await getAccountTaskPriorities(req)
         res.json({
             success: true,
             reminder: ReminderService.serializeReminder(reminder),
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -1921,10 +1951,11 @@ router.delete('/api/record-tasks/:taskId/reminder', async (req, res) => {
         if (!task) return res.status(404).json({ error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
         await cancelRecordTaskReminder(req, task)
+        const accountPriorities = await getAccountTaskPriorities(req)
         res.json({
             success: true,
             reminder: null,
-            task: serializeRecordTask(req, task, list, { reminder: null })
+            task: serializeRecordTask(req, task, list, { priorities: accountPriorities, reminder: null })
         })
     } catch (error) {
         if (taskReminderError(res, error)) return
@@ -1944,9 +1975,11 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
         if (!task) return res.status(404).json({ success: false, error: 'Task not found' })
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
         const reminder = await findRecordTaskReminder(req, task)
+        const accountPriorities = await getAccountTaskPriorities(req)
         res.json({
             success: true,
             task: serializeRecordTask(req, task, list, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -1970,6 +2003,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
         let targetList = oldTask.taskListId ? await TaskList.findById(oldTask.taskListId).lean() : null
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body)
+        const accountPriorities = await getAccountTaskPriorities(req)
 
         allowedFields.forEach(f => {
             if (req.body[f] !== undefined) {
@@ -2014,7 +2048,9 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             else if (!isDone) updates.completedAt = null
         }
         if (updates.priority) {
-            updates.priorityColor = optionColor(getListPriorities(targetList), updates.priority, '')
+            const priorityOption = priorityOptionFor(updates.priority, accountPriorities)
+            updates.priority = priorityOption.label
+            updates.priorityColor = priorityOption.color || ''
         }
         if (updates.completedAt !== undefined) {
             const nextStatus = updates.status || oldTask.status
@@ -2065,6 +2101,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         res.json({
             success: true,
             task: serializeRecordTask(req, task, targetList, {
+                priorities: accountPriorities,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })

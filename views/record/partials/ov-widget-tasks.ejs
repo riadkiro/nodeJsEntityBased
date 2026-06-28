@@ -168,7 +168,7 @@ function ovTasks() {
             return parts.join(', ');
         },
         priorityIcon(p) {
-            const map = { 'Urgente': 'solar:danger-triangle-bold', 'Haute': 'solar:arrow-up-bold', 'Moyenne': 'solar:minus-circle-bold', 'Basse': 'solar:arrow-down-bold' };
+            const map = { 'Urgent': 'solar:danger-triangle-bold', 'Important': 'solar:arrow-up-bold', 'Normal': 'solar:minus-circle-bold', 'Urgente': 'solar:danger-triangle-bold', 'Haute': 'solar:arrow-up-bold', 'Moyenne': 'solar:minus-circle-bold', 'Basse': 'solar:minus-circle-bold' };
             return map[p] || 'solar:flag-bold';
         },
         isOverdue(d) {

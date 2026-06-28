@@ -1,6 +1,14 @@
 const ReminderService = require('./reminders/reminder.service');
 const { tenantCollection } = require('../middleware/tenant');
 const { taskTenantModels } = require('./task-tenant-models.service');
+const {
+    defaultTaskPriorities,
+    getAccountTaskPriorities,
+    normalizeTaskPriorityOptions,
+    priorityOptionFor,
+    priorityColorFor,
+    priorityLabelFor,
+} = require('./task-priorities.service');
 
 const STATUS_TODO = 'À faire';
 const STATUS_DONE = 'Terminé';
@@ -13,13 +21,7 @@ const defaultStatuses = [
     { label: 'Bloqué', color: '#ef4444', order: 4 },
 ];
 
-const defaultPriorities = [
-    { label: 'Aucune', color: '#cbd5e1', order: 0 },
-    { label: 'Basse', color: '#22c55e', order: 1 },
-    { label: 'Moyenne', color: '#f59e0b', order: 2 },
-    { label: 'Haute', color: '#ef4444', order: 3 },
-    { label: 'Urgente', color: '#dc2626', order: 4 },
-];
+const defaultPriorities = defaultTaskPriorities;
 
 function cleanText(value, fallback = '') {
     const text = String(value ?? '').trim();
@@ -50,14 +52,8 @@ function normalizeStatus(value) {
     return STATUS_TODO;
 }
 
-function normalizePriority(value) {
-    const raw = cleanText(value, 'Aucune');
-    const text = raw.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (text.includes('urgent')) return 'Urgente';
-    if (text.includes('important') || text.includes('haute') || text.includes('high')) return 'Haute';
-    if (text.includes('normal') || text.includes('moyenne') || text.includes('medium')) return 'Moyenne';
-    if (text.includes('basse') || text.includes('low')) return 'Basse';
-    return 'Aucune';
+function normalizePriority(value, options = defaultPriorities) {
+    return priorityLabelFor(value, options);
 }
 
 function cleanListLabel(label, fallback = 'Tâches du jour') {
@@ -174,11 +170,12 @@ function isDone(task) {
     return task?.status === STATUS_DONE || task?.done === true;
 }
 
-function serializeTaskRow(req, task, list, record, entity, reminder = null) {
+function serializeTaskRow(req, task, list, record, entity, reminder = null, options = {}) {
     const statuses = normalizeOptions(list?.statuses, defaultStatuses);
-    const priorities = normalizeOptions(list?.priorities, defaultPriorities);
+    const priorities = normalizeTaskPriorityOptions(options.priorities || list?.priorities, defaultPriorities);
     const status = cleanText(task.status, STATUS_TODO);
-    const priority = cleanText(task.priority, 'Aucune');
+    const priorityOption = priorityOptionFor(task.priority, priorities);
+    const priority = priorityOption.label;
     const recordTitle = record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
     const listId = list?._id?.toString?.() || task.taskListId?.toString?.() || '';
     const recordId = record?._id?.toString?.() || task.recordId?.toString?.() || '';
@@ -194,7 +191,7 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null) {
         status,
         statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
         priority,
-        priorityColor: task.priorityColor || optionColor(priorities, priority, ''),
+        priorityColor: priorityColorFor(priority, priorities, task.priorityColor || ''),
         done: status === STATUS_DONE,
         isDayPriority: !!task.isDayPriority,
         dueDate: task.dueDate || null,
@@ -281,6 +278,7 @@ async function buildTaskBoard(req, options = {}) {
     const includeOpenTasksSorted = options.includeOpenTasksSorted === true;
     const includeTasksByRecord = options.includeTasksByRecord === true;
     const recordIds = await Record.find({}).distinct('_id');
+    const accountPriorities = await getAccountTaskPriorities(req);
     const empty = {
         success: true,
         schedule: tools.day,
@@ -291,6 +289,7 @@ async function buildTaskBoard(req, options = {}) {
         overdueTasks: [],
         completedToday: [],
         taskLists: [],
+        priorities: accountPriorities,
         stats: { totalTasks: 0, doneTasks: 0, openTasks: 0, todayTasks: 0, overdueCount: 0, listsCount: 0 },
     };
     if (includeTasksByRecord) empty.tasksByRecord = [];
@@ -338,7 +337,8 @@ async function buildTaskBoard(req, options = {}) {
                 listMap.get(task.taskListId?.toString?.() || ''),
                 record,
                 entity,
-                reminderMap.get(task._id?.toString?.() || '')
+                reminderMap.get(task._id?.toString?.() || ''),
+                { priorities: accountPriorities }
             );
         });
 
@@ -382,7 +382,7 @@ async function buildTaskBoard(req, options = {}) {
                 color: list.color || '#6366f1',
                 icon: list.icon || 'solar:checklist-bold-duotone',
                 statuses: normalizeOptions(list.statuses, defaultStatuses),
-                priorities: normalizeOptions(list.priorities, defaultPriorities),
+                priorities: accountPriorities,
                 recordId,
                 recordTitle: record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre',
                 recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
@@ -447,6 +447,7 @@ async function buildTaskBoard(req, options = {}) {
         overdueTasks,
         completedToday,
         taskLists,
+        priorities: accountPriorities,
         stats: {
             totalTasks: rows.length,
             doneTasks,

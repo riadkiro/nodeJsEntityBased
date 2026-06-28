@@ -10,10 +10,14 @@ const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
+const {
+    getAccountTaskPriorities,
+    priorityOptionFor,
+} = require('../services/task-priorities.service');
 
 const router = express.Router();
 
-const { STATUS_TODO, STATUS_DONE, defaultStatuses, defaultPriorities } = TaskOverview;
+const { STATUS_TODO, STATUS_DONE, defaultStatuses } = TaskOverview;
 const TOKEN_TTL_SECONDS = Number(process.env.MOBILE_TOKEN_TTL_SECONDS || 60 * 60 * 24 * 30);
 const EMAIL_VERIFICATION_TTL_HOURS = 24;
 const EMAIL_VERIFICATION_TTL_MS = EMAIL_VERIFICATION_TTL_HOURS * 60 * 60 * 1000;
@@ -253,10 +257,6 @@ function normalizeStatus(value) {
     return TaskOverview.normalizeStatus(value);
 }
 
-function normalizePriority(value) {
-    return TaskOverview.normalizePriority(value);
-}
-
 function cleanListLabel(label) {
     return TaskOverview.cleanListLabel(label);
 }
@@ -375,6 +375,7 @@ async function ensurePersonalTaskRecord(req) {
 async function ensurePersonalTaskList(req) {
     const { entity, record } = await ensurePersonalTaskRecord(req);
     const { TaskList } = await taskTenantModels(req);
+    const accountPriorities = await getAccountTaskPriorities(req);
     const lists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
     let list = lists.find(item => cleanListLabel(item.label).toLowerCase() === 't\u00e2ches du jour'.toLowerCase());
 
@@ -386,7 +387,7 @@ async function ensurePersonalTaskList(req) {
             icon: 'solar:checklist-bold-duotone',
             order: lists.length,
             statuses: defaultStatuses,
-            priorities: defaultPriorities,
+            priorities: accountPriorities,
         });
     }
 
@@ -419,7 +420,10 @@ async function serializeSingleTask(req, task) {
         targetType: 'task',
         targetId: task._id,
     });
-    return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder);
+    const accountPriorities = await getAccountTaskPriorities(req);
+    return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder, {
+        priorities: accountPriorities,
+    });
 }
 
 async function taskBoard(req) {
@@ -650,6 +654,15 @@ router.get('/accounts/:accountNumber/tasks/today', async (req, res) => {
     }
 });
 
+router.get('/accounts/:accountNumber/tasks/priorities', async (req, res) => {
+    try {
+        res.json({ success: true, priorities: await getAccountTaskPriorities(req) });
+    } catch (error) {
+        console.error('[MobileAPI] Task priorities error:', error);
+        sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
 router.get('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
     try {
         const task = await loadTenantTask(req, req.params.taskId);
@@ -708,8 +721,8 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const { RecordTask } = await taskTenantModels(req);
         const order = await RecordTask.countDocuments({ taskListId: target.list._id });
         const status = normalizeStatus(req.body?.status);
-        const priority = normalizePriority(req.body?.priority);
-        const priorities = normalizeOptions(target.list.priorities, defaultPriorities);
+        const priorities = await getAccountTaskPriorities(req);
+        const priorityOption = priorityOptionFor(req.body?.priority, priorities);
         const statuses = normalizeOptions(target.list.statuses, defaultStatuses);
 
         const schedule = cleanText(req.body?.schedule || req.query?.day, 'today').toLowerCase();
@@ -729,8 +742,8 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             description: cleanText(req.body?.description, ''),
             status,
             statusColor: optionColor(statuses, status, '#9ca3af'),
-            priority,
-            priorityColor: optionColor(priorities, priority, ''),
+            priority: priorityOption.label,
+            priorityColor: priorityOption.color || '',
             isDayPriority: req.body?.isDayPriority !== undefined ? !!req.body.isDayPriority : schedule !== 'tomorrow',
             startDate,
             dueDate: req.body?.dueDate || null,
@@ -815,7 +828,7 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         const { TaskList } = await taskTenantModels(req);
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
-        const priorities = normalizeOptions(list?.priorities, defaultPriorities);
+        const priorities = await getAccountTaskPriorities(req);
 
         if (req.body?.title !== undefined) {
             const title = cleanText(req.body.title, '');
@@ -824,8 +837,9 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         }
         if (req.body?.description !== undefined) updates.description = cleanText(req.body.description, '');
         if (req.body?.priority !== undefined) {
-            updates.priority = normalizePriority(req.body.priority);
-            updates.priorityColor = optionColor(priorities, updates.priority, '');
+            const priorityOption = priorityOptionFor(req.body.priority, priorities);
+            updates.priority = priorityOption.label;
+            updates.priorityColor = priorityOption.color || '';
         }
         if (req.body?.status !== undefined) {
             updates.status = normalizeStatus(req.body.status);

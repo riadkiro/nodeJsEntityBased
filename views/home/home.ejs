@@ -2549,11 +2549,10 @@ document.addEventListener('alpine:init', () => {
 	        editingHomeTaskWidgetId: '',
 	        editingHomeTaskTitle: '',
 	        homeTaskPriorityChoices: [
-	            { label: 'Aucune', color: '#94a3b8' },
-	            { label: 'Basse', color: '#3b82f6' },
-	            { label: 'Moyenne', color: '#f59e0b' },
-	            { label: 'Haute', color: '#ef4444' },
-	            { label: 'Urgente', color: '#dc2626' }
+	            { label: 'Aucune', color: '#94a3b8', order: 0 },
+	            { label: 'Normal', color: '#3b82f6', order: 1 },
+	            { label: 'Important', color: '#f59e0b', order: 2 },
+	            { label: 'Urgent', color: '#ef4444', order: 3 }
 	        ],
 	        goals: [
 	            { id: 'goal_saas', title: 'Lancer mon SaaS', value: 60, color: '#536cff' },
@@ -4498,11 +4497,11 @@ document.addEventListener('alpine:init', () => {
 	        },
 	        fallbackTasks() {
 	            return [
-	                { id: 't1', title: 'Appeler le pédiatre', tag: 'Adam', tagColor: '#a855f7', time: '09:00', priority: 'Haute', priorityColor: '#ef4444', link: `/account/${_accountNumber}/tasks` },
-	                { id: 't2', title: 'Préparer dossier beau-père', tag: 'Famille', tagColor: '#6478ff', time: '14:00', priority: 'Moyenne', priorityColor: '#f59e0b', link: `/account/${_accountNumber}/tasks` },
-	                { id: 't3', title: 'Réserver contrôle technique', tag: 'Clio 4', tagColor: '#f59e0b', time: '—', priority: 'Basse', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
-	                { id: 't4', title: 'Courses du week-end', tag: 'Maison', tagColor: '#10b981', time: '—', priority: 'Basse', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
-	                { id: 't5', title: "Répondre à l'assurance", tag: 'Clio 4', tagColor: '#6478ff', time: '—', priority: 'Moyenne', priorityColor: '#f97316', link: `/account/${_accountNumber}/tasks` }
+	                { id: 't1', title: 'Appeler le pédiatre', tag: 'Adam', tagColor: '#a855f7', time: '09:00', priority: 'Urgent', priorityColor: '#ef4444', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't2', title: 'Préparer dossier beau-père', tag: 'Famille', tagColor: '#6478ff', time: '14:00', priority: 'Important', priorityColor: '#f59e0b', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't3', title: 'Réserver contrôle technique', tag: 'Clio 4', tagColor: '#f59e0b', time: '—', priority: 'Normal', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't4', title: 'Courses du week-end', tag: 'Maison', tagColor: '#10b981', time: '—', priority: 'Normal', priorityColor: '#3b82f6', link: `/account/${_accountNumber}/tasks` },
+	                { id: 't5', title: "Répondre à l'assurance", tag: 'Clio 4', tagColor: '#6478ff', time: '—', priority: 'Important', priorityColor: '#f59e0b', link: `/account/${_accountNumber}/tasks` }
 	            ];
 	        },
 	        fallbackEvents(kind = 'upcoming') {
@@ -4535,8 +4534,8 @@ document.addEventListener('alpine:init', () => {
 	                tag: task.recordTitle || task.entityName || 'Record',
 	                tagColor: task.entityColor || '#805dca',
 	                time: this.taskTime(task),
-	                priority: task.priority && task.priority !== 'Aucune' ? task.priority : 'Basse',
-	                priorityColor: task.priorityColor || (task.priority === 'Haute' ? '#ef4444' : task.priority === 'Moyenne' ? '#f59e0b' : '#3b82f6'),
+	                priority: task.priority && task.priority !== 'Aucune' ? task.priority : 'Normal',
+	                priorityColor: task.priorityColor || (task.priority === 'Urgent' ? '#ef4444' : task.priority === 'Important' ? '#f59e0b' : '#3b82f6'),
 	                link: task.link || `/account/${_accountNumber}/tasks`
 	            }));
 	            return dynamic.length ? dynamic : this.fallbackTasks();

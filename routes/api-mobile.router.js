@@ -10,6 +10,7 @@ const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
+const TaskListsService = require('../services/task-lists.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -377,31 +378,37 @@ async function ensurePersonalTaskList(req) {
     const { TaskList } = await taskTenantModels(req);
     const accountPriorities = await getAccountTaskPriorities(req);
     const lists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
-    let list = lists.find(item => cleanListLabel(item.label).toLowerCase() === 't\u00e2ches du jour'.toLowerCase());
+    let list = lists.find(item => TaskListsService.cleanTaskListLabel(item.label).toLowerCase() === TaskListsService.DEFAULT_ACCOUNT_TASK_LIST_LABEL.toLowerCase());
 
     if (!list) {
         list = await TaskList.create({
             recordId: record._id,
-            label: 'T\u00e2ches du jour',
+            label: TaskListsService.DEFAULT_ACCOUNT_TASK_LIST_LABEL,
             color: '#6366f1',
             icon: 'solar:checklist-bold-duotone',
             order: lists.length,
+            contextType: 'account',
+            isDefault: true,
             statuses: defaultStatuses,
             priorities: accountPriorities,
         });
+    } else if (!list.contextType || !list.isDefault) {
+        list = await TaskList.findByIdAndUpdate(
+            list._id,
+            { $set: { contextType: 'account', isDefault: true } },
+            { new: true }
+        );
     }
 
     return { entity, record, list };
 }
 
 function cleanTaskListColor(value, fallback = '#6366f1') {
-    const color = cleanText(value, fallback);
-    return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+    return TaskListsService.cleanTaskListColor(value, fallback);
 }
 
 function cleanTaskListIcon(value, fallback = 'list') {
-    const icon = cleanText(value, fallback).toLowerCase();
-    return /^[a-z0-9_-]{2,40}$/.test(icon) ? icon : fallback;
+    return TaskListsService.cleanTaskListIcon(value, fallback);
 }
 
 function taskListTaskStats(tasks = []) {
@@ -429,6 +436,10 @@ function serializeMobileTaskList(list, tasks = []) {
         color: cleanTaskListColor(list.color, '#6366f1'),
         icon: cleanTaskListIcon(list.icon, 'list'),
         order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0,
+        contextType: list.contextType || 'account',
+        isDefault: !!list.isDefault,
+        showInMyLists: !!list.showInMyLists,
+        myListOrder: Number(list.myListOrder) || 0,
         isShared: false,
         isFavorite: false,
         ...stats,
@@ -437,20 +448,15 @@ function serializeMobileTaskList(list, tasks = []) {
 
 async function personalTaskLists(req) {
     await ensurePersonalTaskList(req);
-    const { record } = await ensurePersonalTaskRecord(req);
-    const { TaskList, RecordTask } = await taskTenantModels(req);
-    const lists = await TaskList.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 }).lean();
-    const listIds = lists.map(list => list._id);
-    const tasks = listIds.length
-        ? await RecordTask.find({ taskListId: { $in: listIds } }).select('taskListId status done assignedTo').lean()
-        : [];
-    const tasksByListId = new Map();
-    for (const task of tasks) {
-        const listId = task.taskListId?.toString?.() || '';
-        if (!tasksByListId.has(listId)) tasksByListId.set(listId, []);
-        tasksByListId.get(listId).push(task);
+    if (String(req.account_number) === '6804') {
+        await TaskListsService.createAccountTaskList(req, {
+            label: TaskListsService.SHOPPING_TASK_LIST_LABEL,
+            color: '#10b981',
+            icon: 'solar:cart-large-bold-duotone',
+            showInMyLists: true,
+        });
     }
-    return lists.map(list => serializeMobileTaskList(list, tasksByListId.get(list._id.toString()) || []));
+    return TaskListsService.listMyTaskLists(req);
 }
 
 async function tenantRecordIds(req) {
@@ -749,6 +755,10 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
             color: cleanTaskListColor(req.body?.color),
             icon: cleanTaskListIcon(req.body?.icon),
             order: existingLists.length,
+            contextType: 'account',
+            isDefault: false,
+            showInMyLists: true,
+            myListOrder: existingLists.length + 1,
             statuses: defaultStatuses,
             priorities,
         });

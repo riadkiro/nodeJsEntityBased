@@ -1172,7 +1172,7 @@
         transform:none;border-color:#d7deea;box-shadow:0 12px 24px rgba(15,23,42,.055);
     }
     .tl-record-section-head {
-        min-height:56px;display:grid;grid-template-columns:22px 34px minmax(0,1fr) 84px 24px;
+        min-height:56px;display:grid;grid-template-columns:22px 34px minmax(0,1fr) 84px auto 24px;
         gap:10px;align-items:center;padding:0 14px;background:#fff;cursor:pointer;border-radius:12px;
     }
     .tl-record-section.tl-card-expanded .tl-record-section-head { border-radius:12px 12px 0 0; }
@@ -1187,6 +1187,14 @@
         height:4px;border-radius:999px;background:#eef2f7;overflow:hidden;
     }
     .tl-record-progress > span { display:block;height:100%;border-radius:999px;transition:width .2s; }
+    .tl-my-list-toggle {
+        min-height:28px;border:1px solid #e5eaf3;border-radius:8px;background:#fff;color:#7c89a6;
+        padding:0 9px;display:inline-flex;align-items:center;justify-content:center;gap:5px;
+        font-family:inherit;font-size:11px;font-weight:700;white-space:nowrap;cursor:pointer;transition:all .15s;
+    }
+    .tl-my-list-toggle:hover { border-color:#c7d2fe;color:#4f46e5;background:#fbfcff; }
+    .tl-my-list-toggle.active { border-color:#ddd6fe;background:#f5f3ff;color:#6d5dfc; }
+    .tl-my-list-toggle:disabled { opacity:.55;cursor:wait; }
     .tl-record-chevron { color:#a7b3c8;transition:transform .18s,color .18s; }
     .tl-record-chevron.expanded { transform:rotate(180deg);color:#4f46e5; }
     .tl-table-body { border-top:1px solid #eef2f7;background:#fff;overflow:visible;border-radius:0 0 12px 12px; }
@@ -1334,6 +1342,8 @@
     .dark .tl-record-section,.dark .tl-record-section-head,.dark .tl-table-body,.dark .tl-side-panel {
         background:#0e1726;border-color:#253b5c;box-shadow:none;
     }
+    .dark .tl-my-list-toggle { background:#0e1726;border-color:#253b5c;color:#9fb0cb; }
+    .dark .tl-my-list-toggle.active { background:#1b2447;border-color:#4f46e5;color:#a5b4fc; }
     .dark .tl-record-section:hover,.dark .tl-record-row:hover { border-color:#355276;box-shadow:none; }
     .dark .tl-record-row:hover { background:#111f35; }
     .dark .tl-record-list-name,.dark .tl-row-title,.dark .tl-side-title,.dark .tl-side-donut-center b,.dark .tl-side-legend-row b,.dark .tl-side-metric b,.dark .tl-side-action-title { color:#e0e6ed; }
@@ -1482,14 +1492,14 @@
                 </div>
 
                 <!-- Day priority view (independent from the real task list) -->
-                <section class="tl-record-section tl-priority-section" x-show="!loading" :class="{'tl-record-section-menu-open': isSectionMenuOpen(null, 'priority'), 'tl-card-expanded': priorityExpanded}">
+                <section class="tl-record-section tl-priority-section" x-show="!loading && priorityTasks.length > 0" :class="{'tl-record-section-menu-open': isSectionMenuOpen(null, 'priority'), 'tl-card-expanded': priorityExpanded}">
                     <div class="tl-record-section-head" @click="priorityExpanded = !priorityExpanded" style="grid-template-columns:22px 34px minmax(0,1fr) 84px 24px">
                         <span></span>
                         <div class="tl-record-icon" style="background:#f5f3ff;color:#6366f1">
                             <iconify-icon icon="solar:star-bold-duotone" width="17"></iconify-icon>
                         </div>
                         <div style="min-width:0">
-                            <div class="tl-record-list-name">Priorité du jour</div>
+                            <div class="tl-record-list-name">À faire aujourd'hui</div>
                             <div class="tl-record-meta">
                                 <span><span x-text="priorityTasks.length"></span> tâche<span x-show="priorityTasks.length !== 1">s</span></span>
                                 <template x-if="priorityDoneCount > 0">
@@ -1551,11 +1561,11 @@
                             </div>
                         </template>
                         <template x-if="priorityTasks.length === 0">
-                            <div class="tl-record-empty">Aucune priorité pour aujourd'hui</div>
+                            <div class="tl-record-empty">Aucune tâche à faire aujourd'hui</div>
                         </template>
                         <div class="tl-record-add">
                             <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
-                            <input type="text" placeholder="Ajouter une priorité..." x-model="priorityNewTaskTitle"
+                            <input type="text" placeholder="Ajouter une tâche pour aujourd'hui..." x-model="priorityNewTaskTitle"
                                    x-init="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
                                    @input="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
                                    @keydown.enter="addPriorityTask()"
@@ -1597,6 +1607,15 @@
                                 <div class="tl-record-progress" x-show="listTaskCount(list) > 0">
                                     <span :style="'width:' + listCompletionPct(list) + '%;background:' + list.color"></span>
                                 </div>
+                                <button type="button"
+                                        class="tl-my-list-toggle"
+                                        :class="{ 'active': list.showInMyLists }"
+                                        :disabled="myListSavingId === list._id"
+                                        :title="list.showInMyLists ? 'Retirer de Mes listes' : 'Ajouter dans Mes listes'"
+                                        @click.stop="toggleMyList(list)">
+                                    <iconify-icon :icon="myListSavingId === list._id ? 'line-md:loading-twotone-loop' : (list.showInMyLists ? 'solar:bookmark-bold-duotone' : 'solar:bookmark-linear')" width="13"></iconify-icon>
+                                    <span x-text="list.showInMyLists ? 'Mes listes' : 'Ajouter'"></span>
+                                </button>
                                 <iconify-icon icon="solar:alt-arrow-down-linear" width="15" class="tl-record-chevron" :class="{'expanded': expandedListIds.includes(list._id)}" @click.stop="toggleExpand(list._id)"></iconify-icon>
                             </div>
 
@@ -2189,7 +2208,7 @@
                         <!-- Day priority -->
                         <div class="tl-detail-prop">
                             <div class="tl-detail-prop-icon"><iconify-icon icon="solar:star-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Priorité jour</div>
+                            <div class="tl-detail-prop-label">À faire aujourd'hui</div>
                             <div class="tl-detail-prop-value">
                                 <button type="button" class="tl-pill"
                                         :style="detailTask.isDayPriority ? 'background:#eef2ff;color:#4f46e5' : 'background:#f8fafc;color:#94a3b8'"
@@ -2393,6 +2412,7 @@ document.addEventListener('alpine:init', () => {
         previewEditTitle: '',
         priorityExpanded: true,
         priorityNewTaskTitle: '',
+        myListSavingId: null,
         taskCtx: null,
         kanbanListIds: [],
         kanbanList: null,
@@ -2449,6 +2469,8 @@ document.addEventListener('alpine:init', () => {
         ],
         _accountNumber: '<%= account_number %>',
         _recordId: '<%= record._id %>',
+        _recordTitle: <%- JSON.stringify(record.computedTitle || record.title || 'Record').replace(/</g, '\\u003C') %>,
+        _entityName: <%- JSON.stringify(entity.name || entity.slug || 'Entité').replace(/</g, '\\u003C') %>,
 
         get activeTasks() {
             return this.tasks.filter(t => t.status !== 'Terminé');
@@ -2545,6 +2567,11 @@ document.addEventListener('alpine:init', () => {
             return label;
         },
 
+        defaultRecordListLabel() {
+            const title = this.displayTaskText(this._recordTitle, '').trim();
+            return title ? `Tâches ${title}` : 'Tâches du record';
+        },
+
         isLegacyDayPriorityLabel(value) {
             const lower = this.displayTaskText(value, '').toLowerCase();
             return lower === 'tâches du jour' || lower === 'taches du jour' || lower === 'priorité du jour' || lower === 'priorite du jour';
@@ -2596,7 +2623,7 @@ document.addEventListener('alpine:init', () => {
 
         async focusQuickAdd() {
             if (!this.lists.length) {
-                await this.ensureTaskList('À faire');
+                await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
             }
             const target = this.getDefaultTaskList() || this.lists[0];
             if (!target) return;
@@ -2614,12 +2641,14 @@ document.addEventListener('alpine:init', () => {
         },
 
         getDefaultTaskList() {
-            return this.lists.find(list => String(list.label || '').toLowerCase() === 'à faire')
+            return this.lists.find(list => !!list.isDefault)
+                || this.lists.find(list => String(list.label || '').toLowerCase() === this.defaultRecordListLabel().toLowerCase())
+                || this.lists.find(list => String(list.label || '').toLowerCase() === 'à faire')
                 || this.lists.find(list => String(list.rawLabel || '').toLowerCase() === 'à faire')
                 || null;
         },
 
-        async ensureTaskList(label = 'Liste sans nom') {
+        async ensureTaskList(label = 'Liste sans nom', options = {}) {
             const existing = this.lists.find(list => String(list.label || '').toLowerCase() === String(label).toLowerCase());
             if (existing) return existing;
             try {
@@ -2627,7 +2656,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ label })
+                    body: JSON.stringify({ label, isDefault: options.isDefault === true })
                 });
                 const data = await res.json();
                 if (data.success && data.list) {
@@ -2993,6 +3022,10 @@ document.addEventListener('alpine:init', () => {
                 label,
                 rawLabel: list.rawLabel || list.label || label,
                 isLegacyDayPriorityList: legacyDayPriority,
+                contextType: list.contextType || 'record',
+                isDefault: !!list.isDefault,
+                showInMyLists: !!list.showInMyLists,
+                myListOrder: Number(list.myListOrder) || 0,
                 color: typeof list.color === 'string' && list.color ? list.color : '#6366f1',
                 priorities: Array.isArray(list.priorities) && list.priorities.length ? list.priorities : this.priorities,
                 tasks: (list.tasks || []).map(task => {
@@ -3273,7 +3306,7 @@ document.addEventListener('alpine:init', () => {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ label: 'À faire', color: '#6366f1' })
+                            body: JSON.stringify({ label: this.defaultRecordListLabel(), color: '#6366f1', isDefault: true })
                         });
                         const crData = await cr.json();
                         if (crData.success && crData.list) {
@@ -3310,6 +3343,36 @@ document.addEventListener('alpine:init', () => {
                     this.addingList = false;
                 }
             } catch (e) { console.error('[TaskLists] Create error:', e); }
+        },
+
+        async toggleMyList(list) {
+            if (!list?._id || this.myListSavingId) return;
+            const next = !list.showInMyLists;
+            const previous = !!list.showInMyLists;
+            this.myListSavingId = list._id;
+            list.showInMyLists = next;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/my-lists`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ enabled: next })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+                if (data.list) {
+                    list.showInMyLists = !!data.list.showInMyLists;
+                    list.myListOrder = Number(data.list.myListOrder) || 0;
+                    list.contextType = data.list.contextType || list.contextType || 'record';
+                }
+                if (window.showMessage) window.showMessage(next ? 'Liste ajoutée dans Mes listes' : 'Liste retirée de Mes listes', 'success');
+            } catch (e) {
+                list.showInMyLists = previous;
+                console.error('[TaskLists] Toggle my list error:', e);
+                if (window.showMessage) window.showMessage(e.message || 'Erreur', 'danger');
+            } finally {
+                this.myListSavingId = null;
+            }
         },
 
         toggleExpand(listId) {
@@ -3455,7 +3518,7 @@ document.addEventListener('alpine:init', () => {
             this.priorityNewTaskTitle = title;
             if (!title) return;
             let list = this.getDefaultTaskList();
-            if (!list) list = await this.ensureTaskList('Liste sans nom');
+            if (!list) list = await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
             if (!list) return;
             if (this.previewNewTask[list._id] === undefined) this.previewNewTask[list._id] = '';
             this.previewNewTask[list._id] = title;

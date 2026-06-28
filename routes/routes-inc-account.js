@@ -147,6 +147,11 @@ const {
     getAccountTaskPriorities,
     priorityOptionFor,
 } = require('../services/task-priorities.service');
+const TaskListsService = require('../services/task-lists.service');
+const {
+    DEFAULT_ACCOUNT_TASK_LIST_LABEL,
+    SHOPPING_TASK_LIST_LABEL,
+} = TaskListsService;
 const hubTaskText = (value, fallback = '') => {
     if (typeof value !== 'string') return fallback;
     const text = value.trim();
@@ -154,9 +159,9 @@ const hubTaskText = (value, fallback = '') => {
     return text;
 };
 const hubTaskListLabel = (value) => {
-    const label = hubTaskText(value, 'Liste des tâches');
+    const label = hubTaskText(value, DEFAULT_ACCOUNT_TASK_LIST_LABEL);
     const lower = label.toLowerCase();
-    return (lower === 'général' || lower === 'tâches du jour' || lower === 'taches du jour') ? 'Liste des tâches' : label;
+    return (lower === 'général' || lower === 'general' || lower === 'tâches du jour' || lower === 'taches du jour') ? DEFAULT_ACCOUNT_TASK_LIST_LABEL : label;
 };
 const hubDefaultStatuses = [
     { label: 'À faire', color: '#9ca3af', order: 0 },
@@ -319,12 +324,18 @@ async function ensurePersonalTaskRecord(req) {
 async function ensurePersonalTaskList(req, options = {}) {
     const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
     const accountPriorities = await getAccountTaskPriorities(req);
-    const label = hubTaskListLabel(options.label || 'Liste des tâches');
+    const label = hubTaskListLabel(options.label || DEFAULT_ACCOUNT_TASK_LIST_LABEL);
     const color = options.color || '#6366f1';
     const icon = options.icon || 'solar:checklist-bold-duotone';
     const { entity, record } = await ensurePersonalTaskRecord(req);
     const lists = await TaskListModel.find({ recordId: record._id }).sort({ order: 1, createdAt: 1 });
     let list = lists.find(l => hubTaskListLabel(l.label).toLowerCase() === label.toLowerCase());
+    const isDefault = label.toLowerCase() === DEFAULT_ACCOUNT_TASK_LIST_LABEL.toLowerCase();
+    const baseFlags = {
+        contextType: 'account',
+        isDefault,
+        ...(options.showInMyLists === true ? { showInMyLists: true, myListOrder: lists.length + 1 } : {})
+    };
     if (!list) {
         list = await TaskListModel.create({
             recordId: record._id,
@@ -333,12 +344,20 @@ async function ensurePersonalTaskList(req, options = {}) {
             icon,
             order: lists.length,
             statuses: hubDefaultStatuses,
-            priorities: accountPriorities
+            priorities: accountPriorities,
+            ...baseFlags
         });
-    } else if (!list.icon || list.color !== color) {
+    } else if (!list.icon || !list.color || !list.contextType || list.isDefault !== isDefault || (options.showInMyLists === true && !list.showInMyLists)) {
+        const update = {
+            icon: list.icon || icon,
+            color: list.color || color,
+            contextType: 'account',
+            isDefault,
+            ...(options.showInMyLists === true ? { showInMyLists: true, ...(Number(list.myListOrder) ? {} : { myListOrder: lists.length + 1 }) } : {})
+        };
         list = await TaskListModel.findByIdAndUpdate(
             list._id,
-            { $set: { icon: list.icon || icon, color: list.color || color } },
+            { $set: update },
             { new: true }
         );
     }
@@ -375,7 +394,7 @@ async function ensurePersonalTaskList(req, options = {}) {
 
 async function ensurePersonalTasksTarget(req) {
     return ensurePersonalTaskList(req, {
-        label: 'Liste des tâches',
+        label: DEFAULT_ACCOUNT_TASK_LIST_LABEL,
         color: '#6366f1',
         icon: 'solar:checklist-bold-duotone'
     });
@@ -610,18 +629,28 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
         const accountPriorities = await getAccountTaskPriorities(req);
+        await ensurePersonalTasksTarget(req);
+        if (String(req.account_number) === '6804') {
+            await ensurePersonalTaskList(req, {
+                label: SHOPPING_TASK_LIST_LABEL,
+                color: '#10b981',
+                icon: 'solar:cart-large-bold-duotone',
+                showInMyLists: true
+            });
+        }
 
         // Scope to tenant: get all record IDs belonging to this tenant first
         const tenantRecords = await Record.find({}).select('_id title computedTitle referenceTitle entityId icon color slug image').lean();
         const tenantRecordIds = tenantRecords.map(r => r._id);
+        const myLists = await TaskListsService.listMyTaskLists(req);
         if (tenantRecordIds.length === 0) {
-            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
+            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
         }
 
         const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: 1 }).lean();
         if (allLists.length === 0) {
-            return res.json({ success: true, entities: [], totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
+            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
         }
 
         const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: -1 }).lean();
@@ -747,6 +776,10 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 label: listLabel,
                 color: listColor,
                 icon: listIcon,
+                contextType: list.contextType || (record.slug === 'dexapp-personal-space' ? 'account' : 'record'),
+                isDefault: !!list.isDefault,
+                showInMyLists: !!list.showInMyLists,
+                myListOrder: Number(list.myListOrder) || 0,
                 statuses: listStatuses,
                 priorities: listPriorities,
                 totalTasks: normalizedTasks.length,
@@ -774,7 +807,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 }))
         })).sort((a, b) => b.totalTasks - a.totalTasks);
 
-        res.json({ success: true, entities: result, totalTasks, doneTasks: totalDone, priorities: accountPriorities });
+        res.json({ success: true, entities: result, myLists, totalTasks, doneTasks: totalDone, priorities: accountPriorities });
     } catch (error) {
         console.error('[TasksHub] Error:', error);
         res.status(500).json({ error: error.message });
@@ -795,10 +828,11 @@ router.get("/api/home-overview", async (req, res) => {
             : null;
         const homeData = normalizeHomeOverviewData(prefs?.preferences?.homeData);
         const shoppingTarget = await ensurePersonalTaskList(req, {
-            label: 'Liste de courses',
+            label: SHOPPING_TASK_LIST_LABEL,
             color: '#10b981',
             icon: 'solar:cart-large-bold-duotone',
-            seedTasks: homeData.shoppingItems
+            seedTasks: homeData.shoppingItems,
+            showInMyLists: String(req.account_number) === '6804'
         });
 
         const start = new Date();
@@ -1311,6 +1345,14 @@ router.use("/integrations", require("../src/integrations/routes/tenant.integrati
 router.use("/workflows", require("../src/integrations/routes/workflows.routes.js"));
 
 // Tasks Hub (aggregated tasks across all records)
+router.get("/tasks/lists", (req, res) => {
+    res.render("account/account-task-lists", {
+        layout: "layout-app",
+        user: req.user,
+        account_number: req.account_number
+    });
+});
+
 router.get("/tasks", (req, res) => {
     res.render("account/account-tasks-hub", {
         layout: "layout-app",

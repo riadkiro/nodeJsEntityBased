@@ -56,10 +56,10 @@ function normalizePriority(value, options = defaultPriorities) {
     return priorityLabelFor(value, options);
 }
 
-function cleanListLabel(label, fallback = 'Tâches du jour') {
+function cleanListLabel(label, fallback = 'Liste des tâches') {
     const text = cleanText(label, fallback);
     const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
-    if (normalized === 'general' || /^taches?\s+du\s+jour$/.test(normalized)) return 'Tâches du jour';
+    if (normalized === 'general' || /^taches?\s+du\s+jour$/.test(normalized)) return 'Liste des tâches';
     return text;
 }
 

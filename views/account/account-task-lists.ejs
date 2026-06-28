@@ -1,0 +1,229 @@
+<style>
+.tlm-wrap{min-height:calc(100vh - 70px);background:#fff;color:#0f172a;padding:28px 24px 48px}
+.tlm-shell{max-width:1120px;margin:0 auto}
+.tlm-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:22px}
+.tlm-head h1{margin:0;font-size:26px;font-weight:850;letter-spacing:0;color:#0f172a}
+.tlm-head p{margin:7px 0 0;color:#64748b;font-size:13px;font-weight:650}
+.tlm-back{height:36px;border:1px solid #e5edf6;border-radius:10px;background:#fff;color:#6f55dc;text-decoration:none;font-size:12.5px;font-weight:800;padding:0 12px;display:inline-flex;align-items:center;gap:7px}
+.tlm-create{border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.03);padding:14px;margin-bottom:18px;display:grid;grid-template-columns:minmax(180px,1fr) 130px 130px auto;gap:10px;align-items:center}
+.tlm-input{height:38px;border:1px solid #dfe8f3;border-radius:10px;background:#fff;color:#0f172a;font-family:inherit;font-size:12.5px;font-weight:650;padding:0 11px;outline:none}
+.tlm-input:focus{border-color:#7c5cff;box-shadow:0 0 0 3px rgba(124,92,255,.10)}
+.tlm-btn{height:38px;border:1px solid #dfe8f3;border-radius:10px;background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:800;padding:0 13px;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;transition:all .15s}
+.tlm-btn:hover{border-color:#c7d2fe;color:#4f46e5;background:#fbfcff}
+.tlm-btn.primary{border-color:#6f55dc;background:#6f55dc;color:#fff;box-shadow:0 8px 18px rgba(111,85,220,.18)}
+.tlm-btn.active{border-color:#ddd6fe;background:#f5f3ff;color:#6d5dfc}
+.tlm-btn:disabled{opacity:.55;cursor:wait}
+.tlm-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.25fr);gap:18px;align-items:start}
+.tlm-panel{border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.03);overflow:hidden}
+.tlm-panel-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:15px 16px;border-bottom:1px solid #eef2f7}
+.tlm-panel-title{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:850;color:#0f172a}
+.tlm-count{height:22px;min-width:24px;border-radius:999px;background:#eef2ff;color:#6f55dc;font-size:11px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;padding:0 8px}
+.tlm-list{display:flex;flex-direction:column;gap:8px;padding:12px}
+.tlm-card{border:1px solid #edf2f8;border-radius:12px;background:#fff;padding:12px;display:grid;grid-template-columns:38px minmax(0,1fr) auto;gap:11px;align-items:center}
+.tlm-icon{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--list-color,#6366f1) 13%,#fff);color:var(--list-color,#6366f1)}
+.tlm-title{display:block;color:#0f172a;font-size:13px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlm-meta{display:block;margin-top:3px;color:#7c89a6;font-size:11.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tlm-progress{height:4px;border-radius:999px;background:#eef2f7;margin-top:8px;overflow:hidden}
+.tlm-progress span{display:block;height:100%;border-radius:999px;background:var(--list-color,#6366f1)}
+.tlm-empty{padding:28px 18px;text-align:center;color:#94a3b8;font-size:12.5px;font-weight:700}
+.tlm-error{margin:-6px 0 14px;color:#ef4444;font-size:12px;font-weight:750}
+.dark .tlm-wrap,.dark .tlm-panel,.dark .tlm-card,.dark .tlm-create{background:#060818;color:#e0e6ed;border-color:#253b5c;box-shadow:none}
+.dark .tlm-head h1,.dark .tlm-panel-title,.dark .tlm-title{color:#e0e6ed}
+.dark .tlm-input,.dark .tlm-btn,.dark .tlm-back{background:#0e1726;border-color:#253b5c;color:#9fb0cb}
+@media(max-width:860px){.tlm-grid,.tlm-create{grid-template-columns:1fr}.tlm-head{flex-direction:column}.tlm-back{width:max-content}}
+</style>
+
+<div class="tlm-wrap" x-data="taskListsManager" x-cloak>
+    <div class="tlm-shell">
+        <header class="tlm-head">
+            <div>
+                <h1>Mes listes</h1>
+                <p>Gérez les listes visibles dans votre espace tâches, côté web et mobile.</p>
+            </div>
+            <a class="tlm-back" href="/account/<%= account_number %>/tasks">
+                <iconify-icon icon="solar:alt-arrow-left-linear" width="15"></iconify-icon>
+                Retour aux tâches
+            </a>
+        </header>
+
+        <form class="tlm-create" @submit.prevent="createList()">
+            <input class="tlm-input" type="text" placeholder="Nom de la liste" x-model="draft.label" :disabled="creating">
+            <input class="tlm-input" type="text" placeholder="#6366f1" x-model="draft.color" :disabled="creating">
+            <input class="tlm-input" type="text" placeholder="solar:list-check-bold-duotone" x-model="draft.icon" :disabled="creating">
+            <button class="tlm-btn primary" type="submit" :disabled="creating">
+                <iconify-icon :icon="creating ? 'line-md:loading-twotone-loop' : 'solar:add-circle-bold'" width="15"></iconify-icon>
+                Ajouter
+            </button>
+        </form>
+        <div class="tlm-error" x-show="error" x-text="error"></div>
+
+        <div class="tlm-grid">
+            <section class="tlm-panel">
+                <div class="tlm-panel-head">
+                    <div class="tlm-panel-title">
+                        <iconify-icon icon="solar:bookmark-bold-duotone" width="17" style="color:#6f55dc"></iconify-icon>
+                        Mes listes
+                    </div>
+                    <span class="tlm-count" x-text="myLists.length"></span>
+                </div>
+                <div class="tlm-list">
+                    <template x-for="list in myLists" :key="'mine-' + list.listId">
+                        <article class="tlm-card" :style="'--list-color:' + (list.color || '#6366f1')">
+                            <span class="tlm-icon"><iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="17"></iconify-icon></span>
+                            <span style="min-width:0">
+                                <span class="tlm-title" x-text="list.label"></span>
+                                <span class="tlm-meta" x-text="subtitle(list)"></span>
+                                <span class="tlm-progress"><span :style="'width:' + progress(list) + '%'"></span></span>
+                            </span>
+                            <button class="tlm-btn active" type="button" :disabled="savingId === list.listId" @click="toggle(list, false)">
+                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : 'solar:close-circle-linear'" width="14"></iconify-icon>
+                                Retirer
+                            </button>
+                        </article>
+                    </template>
+                    <template x-if="myLists.length === 0 && !loading">
+                        <div class="tlm-empty">Aucune liste ajoutée</div>
+                    </template>
+                </div>
+            </section>
+
+            <section class="tlm-panel">
+                <div class="tlm-panel-head">
+                    <div class="tlm-panel-title">
+                        <iconify-icon icon="solar:list-check-bold-duotone" width="17" style="color:#6f55dc"></iconify-icon>
+                        Listes disponibles
+                    </div>
+                    <span class="tlm-count" x-text="availableLists.length"></span>
+                </div>
+                <div class="tlm-list">
+                    <template x-for="list in availableLists" :key="'all-' + list.listId">
+                        <article class="tlm-card" :style="'--list-color:' + (list.color || '#6366f1')">
+                            <span class="tlm-icon"><iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="17"></iconify-icon></span>
+                            <span style="min-width:0">
+                                <span class="tlm-title" x-text="list.label"></span>
+                                <span class="tlm-meta" x-text="subtitle(list)"></span>
+                                <span class="tlm-progress"><span :style="'width:' + progress(list) + '%'"></span></span>
+                            </span>
+                            <button class="tlm-btn" type="button" :class="{ 'active': list.showInMyLists }" :disabled="savingId === list.listId" @click="toggle(list, !list.showInMyLists)">
+                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : (list.showInMyLists ? 'solar:bookmark-bold-duotone' : 'solar:bookmark-linear')" width="14"></iconify-icon>
+                                <span x-text="list.showInMyLists ? 'Ajoutée' : 'Ajouter'"></span>
+                            </button>
+                        </article>
+                    </template>
+                    <template x-if="availableLists.length === 0 && !loading">
+                        <div class="tlm-empty">Aucune liste disponible</div>
+                    </template>
+                </div>
+            </section>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('alpine:init', () => {
+    const API = '/account/<%= account_number %>';
+    Alpine.data('taskListsManager', () => ({
+        loading: true,
+        creating: false,
+        savingId: '',
+        error: '',
+        hub: { entities: [], myLists: [] },
+        draft: { label: '', color: '#6366f1', icon: 'solar:list-check-bold-duotone' },
+        async init() {
+            await this.load();
+        },
+        async load() {
+            this.loading = true;
+            try {
+                const res = await fetch(API + '/api/tasks-hub', { credentials: 'include' });
+                const data = await res.json();
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Chargement impossible');
+                this.hub = data;
+            } catch (e) {
+                this.error = e.message || 'Chargement impossible';
+            } finally {
+                this.loading = false;
+            }
+        },
+        get myLists() {
+            return (this.hub.myLists || []).map(list => ({ ...list, listId: String(list.listId || list.id || '') })).filter(list => list.listId);
+        },
+        get availableLists() {
+            const lists = [];
+            (this.hub.entities || []).forEach(entity => {
+                (entity.records || []).forEach(record => {
+                    (record.lists || []).forEach(list => {
+                        const contextType = list.contextType || (record.recordSlug === 'dexapp-personal-space' ? 'account' : 'record');
+                        if (contextType === 'account' && list.isDefault) return;
+                        lists.push({
+                            ...list,
+                            listId: String(list.listId || list.id || ''),
+                            recordId: record.recordId,
+                            recordTitle: record.recordTitle,
+                            entityName: record.entityName || entity.entityName,
+                            badge: contextType === 'record' ? (record.entityName || entity.entityName || 'Record') : 'Mes listes',
+                            contextType,
+                        });
+                    });
+                });
+            });
+            return lists.filter(list => list.listId).sort((a, b) => String(a.label || '').localeCompare(String(b.label || '')));
+        },
+        progress(list = {}) {
+            const total = Number(list.totalTasks || 0);
+            const done = Number(list.doneTasks || 0);
+            return total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+        },
+        subtitle(list = {}) {
+            const total = Number(list.totalTasks || 0);
+            const done = Number(list.doneTasks || 0);
+            const count = `${done} sur ${total} tâche${total > 1 ? 's' : ''}`;
+            if (list.contextType === 'record') return `${count} · ${list.recordTitle || list.entityName || 'Record'}`;
+            return count;
+        },
+        async createList() {
+            const label = String(this.draft.label || '').trim();
+            if (!label || this.creating) return;
+            this.creating = true;
+            this.error = '';
+            try {
+                const res = await fetch(API + '/api/task-lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.draft)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Création impossible');
+                this.draft = { label: '', color: '#6366f1', icon: 'solar:list-check-bold-duotone' };
+                await this.load();
+            } catch (e) {
+                this.error = e.message || 'Création impossible';
+            } finally {
+                this.creating = false;
+            }
+        },
+        async toggle(list, enabled) {
+            const listId = String(list.listId || list.id || '');
+            if (!listId || this.savingId) return;
+            this.savingId = listId;
+            this.error = '';
+            try {
+                const res = await fetch(`${API}/api/task-lists/${listId}/my-lists`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ enabled })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+                await this.load();
+            } catch (e) {
+                this.error = e.message || 'Mise à jour impossible';
+            } finally {
+                this.savingId = '';
+            }
+        },
+    }));
+});
+</script>

@@ -144,7 +144,31 @@
 .th-simple-header{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:28px}
 .th-simple-header h1{margin:0;color:#0e1726;font-size:26px;font-weight:850;line-height:1.2;letter-spacing:0}
 .th-simple-header p{margin:8px 0 0;color:#5c6f98;font-size:13px;font-weight:700;line-height:1.35}
+.th-main-tabs{display:flex;align-items:center;gap:8px;margin:-10px 0 22px}
+.th-main-tab{height:36px;border:1px solid #e5edf6;border-radius:999px;background:#fff;color:#64748b;font-family:inherit;font-size:12.5px;font-weight:800;padding:0 15px;display:inline-flex;align-items:center;gap:7px;cursor:pointer;transition:all .16s}
+.th-main-tab:hover{border-color:#c7d2fe;color:#4f46e5}
+.th-main-tab.active{border-color:#6f55dc;background:#6f55dc;color:#fff;box-shadow:0 8px 18px rgba(111,85,220,.18)}
+.th-main-tab-count{height:18px;min-width:18px;padding:0 5px;border-radius:999px;background:#eef2ff;color:#6f55dc;font-size:10px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
+.th-main-tab.active .th-main-tab-count{background:rgba(255,255,255,.22);color:#fff}
 .th-simple-grid{display:grid;grid-template-columns:264px minmax(0,1fr);gap:24px;align-items:start}
+.th-my-view{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
+.th-my-list-stack{display:flex;flex-direction:column;gap:10px}
+.th-my-list-card{width:100%;border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.03);padding:13px 14px;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;font-family:inherit;cursor:pointer;transition:all .16s}
+.th-my-list-card:hover{border-color:#d6def0;transform:translateY(-1px);box-shadow:0 12px 26px rgba(15,23,42,.055)}
+.th-my-list-card.active{border-color:#b9adff;box-shadow:0 12px 28px rgba(111,85,220,.10)}
+.th-my-list-icon{width:40px;height:40px;border-radius:12px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--list-color,#6366f1) 13%,#fff);color:var(--list-color,#6366f1)}
+.th-my-list-title{min-width:0;color:#0e1726;font-size:13.5px;font-weight:850;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-my-list-meta{margin-top:3px;color:#7c89a6;font-size:11.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-my-list-progress{height:4px;border-radius:999px;background:#eef2f7;overflow:hidden;margin-top:8px}
+.th-my-list-progress span{display:block;height:100%;border-radius:999px;background:var(--list-color,#6366f1)}
+.th-my-list-badge{height:22px;max-width:110px;padding:0 8px;border-radius:999px;background:#f8fafc;color:#7c89a6;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-list-task-card{border:1px solid #dfe8f3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.025);padding:18px 20px}
+.th-list-task-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.th-list-task-title{display:flex;align-items:center;gap:10px;min-width:0}
+.th-list-task-title h2{margin:0;color:#0e1726;font-size:17px;font-weight:850;line-height:1.2}
+.th-list-task-title p{margin:4px 0 0;color:#7c89a6;font-size:12px;font-weight:650}
+.th-list-task-link{height:32px;border:1px solid #e5edf6;border-radius:9px;background:#fff;color:#6f55dc;font-family:inherit;font-size:12px;font-weight:800;padding:0 10px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.th-list-task-rows{display:flex;flex-direction:column;gap:5px;min-height:120px}
 .th-side-stack{display:flex;flex-direction:column;gap:14px;position:sticky;top:88px}
 .th-panel{border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 26px rgba(15,23,42,.035)}
 .th-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px}
@@ -236,8 +260,10 @@
 .th-task-switch::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18);transition:transform .15s}
 .th-task-switch.is-on{background:#10b981}
 .th-task-switch.is-on::after{transform:translateX(16px)}
-.dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel{background:#060818;color:#e0e6ed;border-color:#253b5c}
-.dark .th-simple-header h1,.dark .th-today-title,.dark .th-panel-title,.dark .th-completed-head,.dark .th-task-title-simple{color:#e0e6ed}
+.dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel,.dark .th-my-list-card,.dark .th-list-task-card{background:#060818;color:#e0e6ed;border-color:#253b5c}
+.dark .th-main-tab,.dark .th-list-task-link{background:#0e1726;border-color:#253b5c;color:#9fb0cb}
+.dark .th-main-tab.active{background:#4f46e5;border-color:#4f46e5;color:#fff}
+.dark .th-simple-header h1,.dark .th-today-title,.dark .th-panel-title,.dark .th-completed-head,.dark .th-task-title-simple,.dark .th-my-list-title,.dark .th-list-task-title h2{color:#e0e6ed}
 .dark .th-simple-header p{color:#8ea0bd}
 .dark .th-day,.dark .th-month-label{color:#c1cad6}
 .dark .th-day.is-muted{color:#506690}
@@ -252,7 +278,7 @@
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
-@media(max-width:980px){.th-simple-grid{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
+@media(max-width:980px){.th-simple-grid,.th-my-view{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
 @media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}}
 </style>
 
@@ -269,7 +295,19 @@
             </div>
         </header>
 
-        <div class="th-simple-grid">
+        <nav class="th-main-tabs" aria-label="Navigation tâches">
+            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'today' }" @click="hubTab = 'today'; selectedMode = selectedMode || 'date'">
+                <iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon>
+                Tâches du jour
+            </button>
+            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'lists' }" @click="openListsTab()">
+                <iconify-icon icon="solar:list-check-bold-duotone" width="15"></iconify-icon>
+                Mes listes
+                <span class="th-main-tab-count" x-text="myLists.length"></span>
+            </button>
+        </nav>
+
+        <div class="th-simple-grid" x-show="hubTab === 'today'">
             <aside class="th-side-stack">
                 <section class="th-panel">
                     <div class="th-panel-head">
@@ -439,6 +477,91 @@
                 </section>
             </main>
         </div>
+
+        <div class="th-my-view" x-show="hubTab === 'lists'" x-cloak>
+            <section class="th-my-list-stack">
+                <template x-for="list in myLists" :key="list.listId || list.id">
+                    <button type="button"
+                            class="th-my-list-card"
+                            :class="{ 'active': selectedMyListId === String(list.listId || list.id || '') }"
+                            :style="'--list-color:' + (list.color || '#6366f1')"
+                            @click="selectMyList(list)">
+                        <span class="th-my-list-icon">
+                            <iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="18"></iconify-icon>
+                        </span>
+                        <span style="min-width:0">
+                            <span class="th-my-list-title" x-text="list.label"></span>
+                            <span class="th-my-list-meta" x-text="listSubtitle(list)"></span>
+                            <span class="th-my-list-progress">
+                                <span :style="'width:' + listProgress(list) + '%'"></span>
+                            </span>
+                        </span>
+                        <span class="th-my-list-badge" x-text="list.badge || list.entityName || 'Liste'"></span>
+                    </button>
+                </template>
+                <template x-if="myLists.length === 0 && !sideLoading">
+                    <div class="th-empty-simple">Aucune liste ajoutée pour le moment</div>
+                </template>
+            </section>
+
+            <section class="th-list-task-card">
+                <div class="th-list-task-head">
+                    <div class="th-list-task-title">
+                        <span class="th-today-icon" :style="'background:' + (selectedMyList?.color || '#6366f1') + '16;color:' + (selectedMyList?.color || '#6366f1')">
+                            <iconify-icon :icon="selectedMyList?.icon || 'solar:list-check-bold-duotone'" width="16"></iconify-icon>
+                        </span>
+                        <div style="min-width:0">
+                            <h2 x-text="selectedMyList?.label || 'Mes listes'"></h2>
+                            <p x-text="selectedMyList ? listSubtitle(selectedMyList) : 'Choisissez une liste'"></p>
+                        </div>
+                    </div>
+                    <a class="th-list-task-link" href="/account/<%= account_number %>/tasks/lists">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="14"></iconify-icon>
+                        Gérer
+                    </a>
+                </div>
+
+                <div class="th-list-task-rows">
+                    <template x-for="task in selectedMyListTasks" :key="task._id || task.id">
+                        <div class="th-task-row-simple"
+                             :class="{ 'is-done': isDone(task) }"
+                             @contextmenu.prevent.stop="openTaskMenu($event, task)">
+                            <button type="button"
+                                    class="th-task-check-simple"
+                                    :class="{ 'is-checked': isDone(task) }"
+                                    @click.stop="toggleTaskStatus(task)">
+                                <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
+                            </button>
+                            <div class="th-task-main-simple">
+                                <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
+                            </div>
+                            <div class="th-task-meta-simple">
+                                <button type="button"
+                                        class="th-priority-simple"
+                                        :style="'--priority-color:' + taskPriorityColor(task)"
+                                        @click.stop="openTaskPriorityMenu($event, task)">
+                                    <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+                                    <span x-text="taskPriorityText(task)"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                    <template x-if="selectedMyList && selectedMyListTasks.length === 0">
+                        <div class="th-empty-simple">Aucune tâche dans cette liste</div>
+                    </template>
+                    <template x-if="!selectedMyList && myLists.length === 0">
+                        <div class="th-empty-simple">Ajoutez une liste depuis un record ou créez une liste personnelle</div>
+                    </template>
+                    <form class="th-inline-form" x-show="selectedMyList" @submit.prevent="createListTask()">
+                        <input type="text" x-model="newTaskTitle" :placeholder="'Ajouter dans ' + (selectedMyList?.label || 'la liste') + '...'" :disabled="creatingTask">
+                        <button type="submit" :disabled="creatingTask" title="Ajouter">
+                            <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'tabler:plus'" width="15"></iconify-icon>
+                        </button>
+                    </form>
+                    <div class="th-error-simple" x-show="addError" x-text="addError"></div>
+                </div>
+            </section>
+        </div>
     </div>
 
     <div class="th-task-ctx"
@@ -484,7 +607,10 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('tasksHubApp', () => ({
         entities: [],
+        myLists: [],
         sideLoading: true,
+        hubTab: 'today',
+        selectedMyListId: '',
         searchQuery: '',
         taskSearch: '',
         activeScope: 'personal',
@@ -536,6 +662,14 @@ document.addEventListener('alpine:init', () => {
                         this.priorityChoices = this.normalizePriorityOptions(data.priorities);
                     }
                     this.entities = data.entities || [];
+                    this.myLists = (data.myLists || []).map(list => ({
+                        ...list,
+                        id: String(list.id || list.listId || ''),
+                        listId: String(list.listId || list.id || '')
+                    })).filter(list => list.listId);
+                    if (this.hubTab === 'lists' && !this.selectedMyList && this.myLists.length) {
+                        this.selectedMyListId = this.myLists[0].listId;
+                    }
                     if (!this.activeScope) this.activeScope = 'personal';
                 }
             } catch (e) { console.error('[TasksHub]', e); }
@@ -589,6 +723,37 @@ document.addEventListener('alpine:init', () => {
         selectScope(scope) { this.activeScope = scope; this.activeRecordId = null; this.activeListId = null; this.activeFilter = 'today'; this.priorityFilter = 'all'; },
         selectRecord(record, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = null; this.activeFilter = 'all'; this.priorityFilter = 'all'; },
         selectList(record, list, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = String(list.id || list.listId || ''); this.activeFilter = 'all'; this.priorityFilter = 'all'; },
+        openListsTab() {
+            this.hubTab = 'lists';
+            if (!this.selectedMyListId && this.myLists.length) this.selectMyList(this.myLists[0]);
+        },
+        selectMyList(list = {}) {
+            const listId = String(list.listId || list.id || '');
+            if (!listId) return;
+            this.selectedMyListId = listId;
+            this.activeListId = listId;
+            this.activeRecordId = String(list.recordId || '');
+            this.activeScope = list.scope || (list.contextType === 'record' ? 'record' : 'personal');
+            this.activeFilter = 'all';
+            this.priorityFilter = 'all';
+            this.addError = '';
+        },
+        get selectedMyList() {
+            const id = String(this.selectedMyListId || '');
+            return id ? (this.myLists || []).find(list => String(list.listId || list.id || '') === id) || null : null;
+        },
+        listProgress(list = {}) {
+            const total = Number(list.totalTasks || 0);
+            const done = Number(list.doneTasks || 0);
+            return total ? Math.min(100, Math.round((done / total) * 100)) : 0;
+        },
+        listSubtitle(list = {}) {
+            const total = Number(list.totalTasks || 0);
+            const done = Number(list.doneTasks || 0);
+            const count = `${done} sur ${total} tâche${total > 1 ? 's' : ''}`;
+            if (list.contextType === 'record') return `${count} · ${list.recordTitle || list.entityName || 'Record'}`;
+            return count;
+        },
 
         get activeRecords() {
             let records = this.allRecords.filter(r => r.totalTasks > 0);
@@ -625,6 +790,38 @@ document.addEventListener('alpine:init', () => {
                         scope: record.scope
                     });
                 }));
+        },
+        get selectedMyListTasks() {
+            const id = String(this.selectedMyListId || '');
+            if (!id) return [];
+            return this.allRecords.flatMap(record => (record.tasks || [])
+                .filter(task => String(task.listId || task.taskListId || '') === id)
+                .map(task => {
+                    const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === id) || {};
+                    return {
+                        ...task,
+                        recordId: task.recordId || record.recordId,
+                        listId: id,
+                        taskListId: id,
+                        listLabel: task.listLabel || fallbackList.label || this.selectedMyList?.label || 'Liste',
+                        listIcon: task.listIcon || fallbackList.icon || this.selectedMyList?.icon || 'solar:list-check-bold-duotone',
+                        listColor: task.listColor || fallbackList.color || this.selectedMyList?.color || '#6366f1',
+                        statuses: task.statuses || fallbackList.statuses || [],
+                        priorities: task.priorities || fallbackList.priorities || [],
+                        recordTitle: task.recordTitle || record.recordTitle,
+                        recordIcon: task.recordIcon || record.recordIcon,
+                        recordColor: task.recordColor || record.recordColor,
+                        entityName: task.entityName || record.entityName,
+                        entityIcon: task.entityIcon || record.entityIcon,
+                        entityColor: task.entityColor || record.entityColor,
+                        scope: record.scope
+                    };
+                }))
+                .sort((a, b) => {
+                    const doneDelta = Number(this.isDone(a)) - Number(this.isDone(b));
+                    if (doneDelta !== 0) return doneDelta;
+                    return this.sortDate(a) - this.sortDate(b);
+                });
         },
 
         // ═══ "Aujourd'hui" = startDate ≤ today + dueDate not expired, OR isDayPriority ═══
@@ -1102,6 +1299,40 @@ document.addEventListener('alpine:init', () => {
                 });
             } catch (e) {
                 console.error('[TasksHub] Create today task error:', e);
+                this.addError = e.message || 'Impossible de créer la tâche';
+                if (window.showMessage) window.showMessage(this.addError, 'danger');
+            } finally {
+                this.creatingTask = false;
+            }
+        },
+        async createListTask() {
+            const title = String(this.newTaskTitle || '').trim();
+            const list = this.selectedMyList;
+            if (!title || !list || this.creatingTask) return;
+            this.creatingTask = true;
+            this.addError = '';
+            try {
+                const res = await fetch(API + '/api/tasks-hub/personal-tasks', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        title,
+                        status: 'À faire',
+                        priority: 'Aucune',
+                        isDayPriority: false,
+                        taskListId: list.listId || list.id
+                    })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!data.success || !data.task) throw new Error(data.error || 'Impossible de créer la tâche');
+                const keepListId = this.selectedMyListId;
+                this.newTaskTitle = '';
+                await this.loadHub();
+                this.selectedMyListId = keepListId;
+                if (window.showMessage) window.showMessage('Tâche ajoutée dans ' + (list.label || 'la liste'), 'success');
+            } catch (e) {
+                console.error('[TasksHub] Create list task error:', e);
                 this.addError = e.message || 'Impossible de créer la tâche';
                 if (window.showMessage) window.showMessage(this.addError, 'danger');
             } finally {

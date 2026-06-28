@@ -16,6 +16,7 @@ const { tenantCollection } = require('../middleware/tenant')
 const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } = require('../services/record-filter-query')
 const { ensureEventsEntity } = require('../services/events-entity.service')
 const { taskTenantModels } = require('../services/task-tenant-models.service')
+const TaskListsService = require('../services/task-lists.service')
 const {
     defaultTaskPriorities,
     getAccountTaskPriorities,
@@ -1371,6 +1372,10 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 rawLabel: l.label || '',
                 color: l.color || '#6366f1',
                 icon: l.icon || 'solar:checklist-bold-duotone',
+                contextType: l.contextType || 'record',
+                isDefault: !!l.isDefault,
+                showInMyLists: !!l.showInMyLists,
+                myListOrder: Number(l.myListOrder) || 0,
                 viewMode: l.viewMode || 'kanban',
                 statuses: listStatuses,
                 priorities: listPriorities,
@@ -1512,23 +1517,73 @@ router.get('/api/task-lists/:listId/options', async (req, res) => {
 })
 
 /**
+ * GET /account/:account_number/api/task-lists/my-lists
+ * Fetch task lists shown in the account-level "Mes listes" surface.
+ */
+router.get('/api/task-lists/my-lists', async (req, res) => {
+    try {
+        const lists = await TaskListsService.listMyTaskLists(req)
+        res.json({ success: true, lists })
+    } catch (error) {
+        console.error('[API] My task lists error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * POST /account/:account_number/api/task-lists
+ * Create an account-level list visible in "Mes listes".
+ */
+router.post('/api/task-lists', async (req, res) => {
+    try {
+        const list = await TaskListsService.createAccountTaskList(req, req.body || {})
+        res.status(201).json({ success: true, list })
+    } catch (error) {
+        console.error('[API] Create account task list error:', error)
+        res.status(error.status || 500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-lists/:listId/my-lists
+ * Add/remove any account or record task list from "Mes listes".
+ */
+router.put('/api/task-lists/:listId/my-lists', async (req, res) => {
+    try {
+        const enabled = req.body?.enabled !== false && req.body?.showInMyLists !== false
+        const list = await TaskListsService.setMyListVisibility(req, req.params.listId, enabled)
+        if (!list) return res.status(404).json({ error: 'List not found' })
+        res.json({ success: true, list })
+    } catch (error) {
+        console.error('[API] Toggle my list error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * POST /account/:account_number/api/record/:recordId/task-lists
  * Create a new task list for a specific record
  */
 router.post('/api/record/:recordId/task-lists', async (req, res) => {
     try {
         const { TaskList } = await taskTenantModels(req)
-        const { label, color } = req.body
+        const { label, color, icon } = req.body
         const cleanLabel = cleanTaskText(label)
         if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
         const accountPriorities = await getAccountTaskPriorities(req)
 
         const maxOrder = await TaskList.findOne({ recordId: req.params.recordId }).sort({ order: -1 }).lean()
+        const isFirstList = !maxOrder
         const list = await TaskList.create({
             recordId: req.params.recordId,
             label: cleanLabel,
             color: color || '#6366f1',
+            icon: icon || 'solar:checklist-bold-duotone',
             order: (maxOrder?.order || 0) + 1,
+            contextType: 'record',
+            isDefault: req.body?.isDefault === true || isFirstList,
+            showInMyLists: req.body?.showInMyLists === true,
+            myListOrder: req.body?.showInMyLists === true ? ((maxOrder?.order || 0) + 1) : 0,
             priorities: accountPriorities
         })
 
@@ -1539,6 +1594,10 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
                 label: list.label,
                 color: list.color,
                 icon: list.icon || 'solar:checklist-bold-duotone',
+                contextType: list.contextType || 'record',
+                isDefault: !!list.isDefault,
+                showInMyLists: !!list.showInMyLists,
+                myListOrder: Number(list.myListOrder) || 0,
                 statuses: getListStatuses(list),
                 priorities: accountPriorities,
                 count: 0,

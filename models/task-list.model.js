@@ -13,6 +13,10 @@ const TaskListSchema = new mongoose.Schema({
     color: { type: String, default: '#6366f1' },
     icon: { type: String, default: 'tabler:list' },
     order: { type: Number, default: 0 },
+    contextType: { type: String, enum: ['account', 'record'], default: 'record', index: true },
+    isDefault: { type: Boolean, default: false, index: true },
+    showInMyLists: { type: Boolean, default: false, index: true },
+    myListOrder: { type: Number, default: 0 },
     viewMode: { type: String, enum: ['list', 'kanban'], default: 'kanban' },
     statuses: { type: [{
         label: { type: String, required: true },
@@ -38,5 +42,6 @@ const TaskListSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 TaskListSchema.index({ recordId: 1, order: 1 });
+TaskListSchema.index({ showInMyLists: 1, myListOrder: 1 });
 
 module.exports = mongoose.model('TaskList', TaskListSchema);

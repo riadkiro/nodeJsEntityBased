@@ -54,6 +54,7 @@ router.use("/api", require("./api/api-ocr.router.js"));
 router.use("/api/record-ai", require("./api/api-record-ai.router.js"));
 
 router.use("/api/team", require("./api/api-team.router.js"));
+router.use("/api/task-sharing", require("./api/api-task-sharing.router.js"));
 router.use("/api/team-chat", require("./api/api-team-chat.router.js"));
 router.use("/api/record-access", require("./api/api-record-access.router.js"));
 router.use("/api/billing", require("./api/api-billing.router.js"));
@@ -491,6 +492,8 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             statusColor: hubStatusColors[status] || '#9ca3af',
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, list.tags),
+            subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: !!req.body?.isDayPriority,
             startDate: req.body?.startDate || null,
             dueDate: req.body?.dueDate || null,
@@ -511,6 +514,9 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
                 statusColor: task.statusColor,
                 priority: priorityOption.label,
                 priorityColor: priorityOption.color || '',
+                tags: TaskListsService.normalizeTaskTags(task.tags, list.tags),
+                tagOptions: TaskListsService.normalizeTaskTagOptions(list.tags),
+                subtasks: TaskListsService.normalizeTaskSubtasks(task.subtasks),
                 isDayPriority: !!task.isDayPriority,
                 startDate: task.startDate || null,
                 dueDate: task.dueDate || null,
@@ -721,6 +727,8 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             const listIcon = list.icon || 'solar:checklist-bold-duotone';
             const listStatuses = hubTaskOptions(list.statuses, hubDefaultStatuses);
             const listPriorities = accountPriorities;
+            const listTags = TaskListsService.normalizeTaskTagOptions(list.tags);
+            const listDisplayOptions = TaskListsService.normalizeTaskListDisplayOptions(list.displayOptions);
             const listTasks = (tasksByListId[listId] || []).slice().sort((a, b) => {
                 const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
                 const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
@@ -737,6 +745,9 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                     statusColor: t.statusColor || '#9ca3af',
                     priority: priorityOption.label,
                     priorityColor: priorityOption.color || '',
+                    tags: TaskListsService.normalizeTaskTags(t.tags, listTags),
+                    tagOptions: listTags,
+                    subtasks: TaskListsService.normalizeTaskSubtasks(t.subtasks),
                     isDayPriority: !!t.isDayPriority,
                     startDate: t.startDate || null,
                     dueDate: t.dueDate || null,
@@ -782,6 +793,8 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 myListOrder: Number(list.myListOrder) || 0,
                 statuses: listStatuses,
                 priorities: listPriorities,
+                tags: listTags,
+                displayOptions: listDisplayOptions,
                 totalTasks: normalizedTasks.length,
                 doneTasks: done,
                 tasks: normalizedTasks

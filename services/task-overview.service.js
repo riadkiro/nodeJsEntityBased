@@ -56,6 +56,48 @@ function normalizePriority(value, options = defaultPriorities) {
     return priorityLabelFor(value, options);
 }
 
+function normalizeTaskTags(tags = [], options = []) {
+    const optionByLabel = new Map((Array.isArray(options) ? options : [])
+        .map((item, index) => [cleanText(item?.label || item, '').toLowerCase(), {
+            label: cleanText(item?.label || item, ''),
+            color: item?.color || '#6366f1',
+            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
+        }]));
+    const seen = new Set();
+    return (Array.isArray(tags) ? tags : [])
+        .map((item, index) => {
+            const label = cleanText(item?.label || item, '');
+            const option = optionByLabel.get(label.toLowerCase());
+            return {
+                label,
+                color: item?.color || option?.color || '#6366f1',
+                order: Number.isFinite(Number(item?.order)) ? Number(item.order) : (option?.order ?? index),
+            };
+        })
+        .filter(item => {
+            const key = item.label.toLowerCase();
+            if (!item.label || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .sort((a, b) => a.order - b.order);
+}
+
+function normalizeTaskSubtasks(subtasks = []) {
+    return (Array.isArray(subtasks) ? subtasks : [])
+        .map((item, index) => ({
+            _id: item?._id?.toString?.() || String(item?._id || ''),
+            title: cleanText(item?.title || item, ''),
+            done: item?.done === true,
+            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
+            completedAt: item?.completedAt || null,
+            createdAt: item?.createdAt || null,
+        }))
+        .filter(item => item.title)
+        .sort((a, b) => a.order - b.order)
+        .map((item, index) => ({ ...item, order: index }));
+}
+
 function cleanListLabel(label, fallback = 'Liste des tâches') {
     const text = cleanText(label, fallback);
     const normalized = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
@@ -192,6 +234,9 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
         statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
         priority,
         priorityColor: priorityColorFor(priority, priorities, task.priorityColor || ''),
+        tags: normalizeTaskTags(task.tags, list?.tags),
+        tagOptions: normalizeTaskTags(list?.tags, list?.tags),
+        subtasks: normalizeTaskSubtasks(task.subtasks),
         done: status === STATUS_DONE,
         isDayPriority: !!task.isDayPriority,
         dueDate: task.dueDate || null,

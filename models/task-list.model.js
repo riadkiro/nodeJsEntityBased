@@ -39,6 +39,21 @@ const TaskListSchema = new mongoose.Schema({
         { label: 'Important', color: '#f59e0b', order: 2 },
         { label: 'Urgent', color: '#ef4444', order: 3 },
     ]},
+    tags: { type: [{
+        label: { type: String, required: true },
+        color: { type: String, default: '#6366f1' },
+        order: { type: Number, default: 0 }
+    }], default: [] },
+    displayOptions: {
+        showPriority: { type: Boolean, default: true },
+        showTags: { type: Boolean, default: true },
+        showAttachments: { type: Boolean, default: true },
+        showReminders: { type: Boolean, default: true },
+        showCompleted: { type: Boolean, default: true },
+        dayMode: { type: Boolean, default: false },
+        compactMode: { type: Boolean, default: false },
+        accentRows: { type: Boolean, default: true }
+    },
 }, { timestamps: true });
 
 TaskListSchema.index({ recordId: 1, order: 1 });

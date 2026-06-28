@@ -15,6 +15,18 @@ const RecordTaskSchema = new mongoose.Schema({
     statusColor: { type: String, default: '#9ca3af' },
     priority: { type: String, default: 'Aucune' },
     priorityColor: { type: String, default: '' },
+    tags: { type: [{
+        label: { type: String, required: true },
+        color: { type: String, default: '#6366f1' },
+        order: { type: Number, default: 0 }
+    }], default: [] },
+    subtasks: { type: [{
+        title: { type: String, required: true },
+        done: { type: Boolean, default: false },
+        order: { type: Number, default: 0 },
+        completedAt: { type: Date, default: null },
+        createdAt: { type: Date, default: Date.now }
+    }], default: [] },
     isDayPriority: { type: Boolean, default: false, index: true },
     startDate: { type: Date, default: null },
     dueDate: { type: Date, default: null },

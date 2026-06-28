@@ -852,6 +852,8 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             statusColor: optionColor(statuses, status, '#9ca3af'),
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, target.list.tags),
+            subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: req.body?.isDayPriority !== undefined ? !!req.body.isDayPriority : schedule !== 'tomorrow',
             startDate,
             dueDate: req.body?.dueDate || null,
@@ -948,6 +950,12 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
             const priorityOption = priorityOptionFor(req.body.priority, priorities);
             updates.priority = priorityOption.label;
             updates.priorityColor = priorityOption.color || '';
+        }
+        if (req.body?.tags !== undefined) {
+            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, list?.tags);
+        }
+        if (req.body?.subtasks !== undefined) {
+            updates.subtasks = TaskListsService.normalizeTaskSubtasks(req.body.subtasks);
         }
         if (req.body?.status !== undefined) {
             updates.status = normalizeStatus(req.body.status);

@@ -47,6 +47,25 @@
 .tdm-desc-area blockquote{margin:8px 0;padding:8px 12px;border-left:3px solid #c7d2fe;background:#f8faff;border-radius:8px;color:#64748b}
 .tdm-desc-area pre{white-space:pre-wrap;background:#0f172a;color:#e2e8f0;border-radius:9px;padding:10px 12px;font-size:12px;line-height:1.5}
 .tdm-desc-status{min-height:15px;margin-top:6px;color:#b7c1d3;font-size:10.5px;font-weight:700}
+.tdm-subtasks{margin-top:18px}
+.tdm-subtask-add{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:7px;margin-bottom:8px}
+.tdm-subtask-input{height:34px;border:1.5px solid #e8ecf1;border-radius:9px;background:#fff;color:#0e1726;font-family:inherit;font-size:12.5px;font-weight:600;padding:0 10px;outline:0}
+.tdm-subtask-input:focus{border-color:#4361ee;box-shadow:0 0 0 3px #4361ee10}
+.tdm-subtask-add-btn{width:34px;height:34px;border:1px solid #e0e7ff;border-radius:9px;background:#fff;color:#4f46e5;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.tdm-subtask-add-btn:disabled{opacity:.45;cursor:not-allowed}
+.tdm-subtask-list{display:flex;flex-direction:column;gap:5px}
+.tdm-subtask-row{min-height:34px;border:1px solid #eef2f7;border-radius:9px;background:#fff;display:grid;grid-template-columns:26px minmax(0,1fr) 26px;align-items:center;gap:7px;padding:4px 6px}
+.tdm-subtask-check{width:22px;height:22px;border:1.5px solid #cbd5e1;border-radius:7px;background:#fff;color:transparent;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.tdm-subtask-check.is-done{background:#10b981;border-color:#10b981;color:#fff}
+.tdm-subtask-title{min-width:0;color:#334155;font-size:12.5px;font-weight:650;line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdm-subtask-row.is-done .tdm-subtask-title{text-decoration:line-through;color:#94a3b8}
+.tdm-subtask-remove{width:24px;height:24px;border:0;border-radius:7px;background:transparent;color:#cbd5e1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.tdm-subtask-remove:hover{background:#fef2f2;color:#ef4444}
+.tdm-tag-trigger{width:100%;min-height:32px;border:0;border-radius:8px;background:#f8fafc;color:#0e1726;font-family:inherit;font-size:12px;font-weight:600;line-height:1.2;padding:5px 8px;display:flex;align-items:center;justify-content:flex-end;gap:5px;cursor:pointer;text-align:right;transition:all .15s;flex-wrap:wrap}
+.tdm-tag-trigger:hover,.tdm-tag-trigger.active{background:#eef2ff;color:#4361ee}
+.tdm-tag-empty{color:#94a3b8}
+.tdm-mini-tag{min-height:22px;border-radius:7px;background:color-mix(in srgb,var(--tag-color,#6366f1) 14%,#fff);color:var(--tag-color,#6366f1);padding:3px 8px;display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:800}
+.tdm-option-row .tdm-option-check{color:#22c55e;margin-left:auto}
 .tdm-msg-input::placeholder,.tdm-option-search::placeholder,.tdm-prop-input::placeholder,.tdm-invite-input::placeholder{color:#bfc9d4}
 .tdm-mini-btn{height:28px;border:1px solid #e0e7ff;background:#fff;color:#4f46e5;border-radius:8px;padding:0 10px;font-family:inherit;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
 .tdm-mini-btn:hover{background:#eef2ff;border-color:#c7d2fe}
@@ -192,6 +211,8 @@
 	.dark .tdm-option-row{color:#e0e6ed}
 	.dark .tdm-option-row:hover,.dark .tdm-option-row.active,.dark .tdm-assign-row:hover,.dark .tdm-assign-row.active{background:#1b2e4b}
 	.dark .tdm-attachment-item,.dark .tdm-conv-entry,.dark .tdm-chat-bubble,.dark .tdm-chat-attachment,.dark .tdm-chat-pending-item,.dark .tdm-chat-input-shell{background:#111f35;border-color:#253b5c}
+	.dark .tdm-subtask-input,.dark .tdm-subtask-add-btn,.dark .tdm-subtask-row,.dark .tdm-subtask-check,.dark .tdm-tag-trigger{background:#111f35;border-color:#253b5c;color:#e0e6ed}
+	.dark .tdm-subtask-title{color:#e0e6ed}
 	.dark .tdm-conv-entry.is-mine .tdm-chat-bubble{background:#16264a;border-color:#2a3f72}
 	.dark .tdm-attachment-name,.dark .tdm-prop-text,.dark .tdm-conv-text,.dark .tdm-assign-name,.dark .tdm-chat-file-name{color:#e0e6ed}
 	.dark .tdm-close{background:#17233a;color:#8ea0bd}
@@ -231,6 +252,39 @@
                     <div class="tdm-body">
                         <div class="tdm-main">
                             <input type="text" class="tdm-title-input" placeholder="Titre de la tâche..." x-model="$store.taskModal.task.title" @change="$store.taskModal.updateField('title', $store.taskModal.task.title)">
+
+                            <div class="tdm-subtasks">
+                                <div class="tdm-section-row">
+                                    <div class="tdm-section-label">Sous-tâches</div>
+                                    <span class="tdm-foot-created" x-text="$store.taskModal.subtaskProgressLabel()"></span>
+                                </div>
+                                <form class="tdm-subtask-add" @submit.prevent="$store.taskModal.addSubtask()">
+                                    <input class="tdm-subtask-input"
+                                           type="text"
+                                           placeholder="Ajouter une sous-tâche..."
+                                           x-model="$store.taskModal.newSubtaskTitle">
+                                    <button class="tdm-subtask-add-btn" type="submit" :disabled="!$store.taskModal.newSubtaskTitle.trim()" title="Ajouter">
+                                        <iconify-icon icon="solar:add-circle-bold" width="15"></iconify-icon>
+                                    </button>
+                                </form>
+                                <div class="tdm-subtask-list" x-show="$store.taskModal.subtasks().length > 0">
+                                    <template x-for="subtask in $store.taskModal.subtasks()" :key="subtask._id || subtask.order + '-' + subtask.title">
+                                        <div class="tdm-subtask-row" :class="{ 'is-done': subtask.done }">
+                                            <button type="button"
+                                                    class="tdm-subtask-check"
+                                                    :class="{ 'is-done': subtask.done }"
+                                                    :title="subtask.done ? 'Décocher' : 'Cocher'"
+                                                    @click="$store.taskModal.toggleSubtask(subtask)">
+                                                <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
+                                            </button>
+                                            <span class="tdm-subtask-title" x-text="subtask.title"></span>
+                                            <button type="button" class="tdm-subtask-remove" title="Supprimer" @click="$store.taskModal.removeSubtask(subtask)">
+                                                <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
 
                             <div class="tdm-section-row">
                                 <div class="tdm-section-label">Description</div>
@@ -325,11 +379,66 @@
                                         </template>
                                     </div>
                                 </div>
-                            </div>
+	                            </div>
 
-                            <div class="tdm-prop">
-                                <span class="tdm-prop-icon"><iconify-icon icon="solar:flag-linear" width="15"></iconify-icon></span>
-                                <span class="tdm-prop-label">Priorité</span>
+	                            <div class="tdm-prop">
+	                                <span class="tdm-prop-icon"><iconify-icon icon="solar:tag-linear" width="15"></iconify-icon></span>
+	                                <span class="tdm-prop-label">Tags</span>
+	                                <div class="tdm-prop-value" @click.stop>
+	                                    <button type="button"
+	                                            class="tdm-tag-trigger"
+	                                            :class="{ 'active': $store.taskModal.optionMenu === 'tag' }"
+	                                            @click="$store.taskModal.toggleOptionMenu('tag')">
+	                                        <template x-if="$store.taskModal.selectedTags().length === 0">
+	                                            <span class="tdm-tag-empty">Aucun tag</span>
+	                                        </template>
+	                                        <template x-for="tag in $store.taskModal.selectedTags()" :key="tag.label">
+	                                            <span class="tdm-mini-tag" :style="'--tag-color:' + (tag.color || '#6366f1')">
+	                                                <iconify-icon icon="solar:tag-linear" width="11"></iconify-icon>
+	                                                <span x-text="tag.label"></span>
+	                                            </span>
+	                                        </template>
+	                                    </button>
+	                                    <div class="tdm-option-popover" x-show="$store.taskModal.optionMenu === 'tag'" x-cloak @click.stop>
+	                                        <input class="tdm-option-search" type="text" placeholder="Rechercher ou créer..." x-model="$store.taskModal.optionSearch.tag">
+	                                        <div class="tdm-option-list">
+	                                            <template x-for="option in $store.taskModal.filteredOptions('tag')" :key="option.label">
+	                                                <button type="button" class="tdm-option-row" :class="{'active': $store.taskModal.taskHasTag(option)}" @click="$store.taskModal.selectOption('tag', option)">
+	                                                    <span class="tdm-pill-dot" :style="'background:' + option.color"></span>
+	                                                    <span class="tdm-option-row-label" x-text="option.label"></span>
+	                                                    <iconify-icon class="tdm-option-check" x-show="$store.taskModal.taskHasTag(option)" icon="solar:check-circle-bold" width="14"></iconify-icon>
+	                                                    <span class="tdm-option-action" @click.stop="$store.taskModal.openOptionEditor('tag', option)">
+	                                                        <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
+	                                                    </span>
+	                                                </button>
+	                                            </template>
+	                                        </div>
+	                                        <template x-if="$store.taskModal.canCreateOption('tag')">
+	                                            <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('tag')" x-text="'Créer “' + $store.taskModal.optionSearch.tag.trim() + '”'"></button>
+	                                        </template>
+	                                        <template x-if="$store.taskModal.optionEditor && $store.taskModal.optionEditor.kind === 'tag'">
+	                                            <div class="tdm-option-editor">
+	                                                <div class="tdm-option-editor-title">Modifier le tag</div>
+	                                                <input class="tdm-option-editor-input" type="text" x-model="$store.taskModal.optionEditor.label">
+	                                                <div class="tdm-color-grid">
+	                                                    <template x-for="color in $store.taskModal.colorPalette" :key="color">
+	                                                        <button type="button" class="tdm-color-swatch" :class="{'active': $store.taskModal.optionEditor.color === color}" :style="'background:' + color" @click="$store.taskModal.optionEditor.color = color"></button>
+	                                                    </template>
+	                                                </div>
+	                                                <div class="tdm-option-editor-actions">
+	                                                    <button type="button" class="tdm-option-save" @click="$store.taskModal.saveOptionEditor()">Enregistrer</button>
+	                                                    <button type="button" class="tdm-option-cancel" @click="$store.taskModal.optionEditor = null">Annuler</button>
+	                                                    <button type="button" class="tdm-option-delete" @click="$store.taskModal.deleteEditedOption()">Supprimer</button>
+	                                                </div>
+	                                            </div>
+	                                        </template>
+	                                    </div>
+	                                </div>
+	                            </div>
+
+	                            <div class="tdm-prop">
+	                                <span class="tdm-prop-icon"><iconify-icon icon="solar:flag-linear" width="15"></iconify-icon></span>
+	                                <span class="tdm-prop-label">Priorité</span>
                                 <div class="tdm-prop-value" @click.stop>
                                     <button type="button" class="tdm-pill"
                                             :style="$store.taskModal.pillStyle('priority', $store.taskModal.task.priority)"
@@ -373,9 +482,9 @@
                                 </div>
                             </div>
 
-                            <div class="tdm-prop">
-                                <span class="tdm-prop-icon"><iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon></span>
-                                <span class="tdm-prop-label">Priorité jour</span>
+	                            <div class="tdm-prop">
+	                                <span class="tdm-prop-icon"><iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon></span>
+	                                <span class="tdm-prop-label">À faire aujourd’hui</span>
                                 <div class="tdm-prop-value">
                                     <button type="button" class="tdm-toggle" :class="{'active': $store.taskModal.task.isDayPriority}" @click.stop="$store.taskModal.task.isDayPriority = !$store.taskModal.task.isDayPriority; $store.taskModal.updateField('isDayPriority', $store.taskModal.task.isDayPriority)"></button>
                                 </div>
@@ -627,12 +736,13 @@ document.addEventListener('alpine:init', () => {
     const API = '/account/<%= account_number %>';
 
     Alpine.store('taskModal', {
-        task: null,
-        statusOptions: [],
-        priorityOptions: [],
-        optionMenu: null,
-	        optionSearch: { status: '', priority: '' },
-	        optionEditor: null,
+	        task: null,
+	        statusOptions: [],
+	        priorityOptions: [],
+	        tagOptions: [],
+	        optionMenu: null,
+		        optionSearch: { status: '', priority: '', tag: '' },
+		        optionEditor: null,
 	        uploadBusy: false,
 	        teamMembers: [],
 	        teamInvitations: [],
@@ -647,9 +757,10 @@ document.addEventListener('alpine:init', () => {
 		        _descriptionSaveTimer: null,
 		        _descriptionSavedHtml: '',
 		        _descriptionEditorSyncing: false,
-		        reminderDraft: { date: '', time: '', dirty: false },
-		        reminderSaving: false,
-		        _openSeq: 0,
+			        reminderDraft: { date: '', time: '', dirty: false },
+			        reminderSaving: false,
+			        newSubtaskTitle: '',
+			        _openSeq: 0,
 		        _reminderEditSeq: 0,
 		        _onUpdate: null,
 		        _onDelete: null,
@@ -684,15 +795,19 @@ document.addEventListener('alpine:init', () => {
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = this.normalizeDescriptionHtml(taskObj?.description || '');
-		            this.statusOptions = this.normalizeOptions(taskObj?.statuses, this.defaults.statuses);
-            this.priorityOptions = this.normalizeOptions(taskObj?.priorities, this.defaults.priorities);
-            this.task = {
-                ...taskObj,
-                _comments: [],
-                attachments: Array.isArray(taskObj?.attachments) ? taskObj.attachments : [],
-                status: taskObj?.status || 'À faire',
-                priority: taskObj?.priority || 'Aucune',
-                reminder: taskObj?.reminder || null
+	            this.statusOptions = this.normalizeOptions(taskObj?.statuses, this.defaults.statuses);
+	            this.priorityOptions = this.normalizeOptions(taskObj?.priorities, this.defaults.priorities);
+	            this.tagOptions = this.normalizeOptions(taskObj?.tagOptions, []);
+	            this.task = {
+	                ...taskObj,
+	                _comments: [],
+	                attachments: Array.isArray(taskObj?.attachments) ? taskObj.attachments : [],
+	                tags: this.normalizeTaskTags(taskObj?.tags || [], taskObj?.tagOptions || []),
+	                tagOptions: this.tagOptions,
+	                subtasks: this.normalizeSubtasks(taskObj?.subtasks || []),
+	                status: taskObj?.status || 'À faire',
+	                priority: taskObj?.priority || 'Aucune',
+	                reminder: taskObj?.reminder || null
             };
             this.syncReminderDraft({ force: true });
 	            this._onUpdate = onUpdate || null;
@@ -715,10 +830,14 @@ document.addEventListener('alpine:init', () => {
                         } else {
                             this.syncReminderDraft({ force: true });
                         }
-                        this._descriptionSavedHtml = this.normalizeDescriptionHtml(this.task.description || '');
-                        this.statusOptions = this.normalizeOptions(taskData.task.statuses, this.defaults.statuses);
-                        this.priorityOptions = this.normalizeOptions(taskData.task.priorities, this.defaults.priorities);
-                    }
+	                        this._descriptionSavedHtml = this.normalizeDescriptionHtml(this.task.description || '');
+	                        this.statusOptions = this.normalizeOptions(taskData.task.statuses, this.defaults.statuses);
+	                        this.priorityOptions = this.normalizeOptions(taskData.task.priorities, this.defaults.priorities);
+	                        this.tagOptions = this.normalizeOptions(taskData.task.tagOptions, []);
+	                        this.task.tags = this.normalizeTaskTags(this.task.tags || [], this.tagOptions);
+	                        this.task.tagOptions = this.tagOptions;
+	                        this.task.subtasks = this.normalizeSubtasks(this.task.subtasks || []);
+	                    }
                 } catch (e) {
                     console.warn('[TaskModal] Task fetch error:', e);
                 }
@@ -768,8 +887,9 @@ document.addEventListener('alpine:init', () => {
 		            this.uploadBusy = false;
 		            this.chatSending = false;
 		            this.descriptionStatus = '';
-		            this.reminderDraft = { date: '', time: '', dirty: false };
-		            this.reminderSaving = false;
+			            this.reminderDraft = { date: '', time: '', dirty: false };
+			            this.reminderSaving = false;
+			            this.newSubtaskTitle = '';
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = '';
@@ -783,23 +903,128 @@ document.addEventListener('alpine:init', () => {
 	            this._onDelete = null;
 	        },
 
-        normalizeOptions(options, fallback = []) {
-            const source = Array.isArray(options) && options.length ? options : fallback;
-            return source
+	        normalizeOptions(options, fallback = []) {
+	            const source = Array.isArray(options) && options.length ? options : fallback;
+	            return source
                 .map((item, index) => ({
                     label: String(item?.label || '').trim(),
                     color: item?.color || (fallback[index]?.color || '#94a3b8'),
                     order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index
                 }))
                 .filter(item => item.label)
-                .sort((a, b) => a.order - b.order);
-        },
+	                .sort((a, b) => a.order - b.order);
+	        },
 
-        optionMeta(kind) {
-            return kind === 'priority'
-                ? { optionsKey: 'priorityOptions', searchKey: 'priority', field: 'priority', colorField: 'priorityColor', endpoint: 'priorities', payload: 'priorities', fallbackColor: '#cbd5e1' }
-                : { optionsKey: 'statusOptions', searchKey: 'status', field: 'status', colorField: 'statusColor', endpoint: 'statuses', payload: 'statuses', fallbackColor: '#9ca3af' };
-        },
+	        normalizeTaskTags(tags = [], options = this.tagOptions) {
+	            const optionByLabel = new Map((Array.isArray(options) ? options : [])
+	                .map((option, index) => [String(option?.label || option || '').trim().toLowerCase(), {
+	                    label: String(option?.label || option || '').trim(),
+	                    color: option?.color || this.colorPalette[index % this.colorPalette.length] || '#6366f1',
+	                    order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
+	                }]));
+	            const seen = new Set();
+	            return (Array.isArray(tags) ? tags : [])
+	                .map((tag, index) => {
+	                    const label = String(tag?.label || tag || '').trim();
+	                    const option = optionByLabel.get(label.toLowerCase());
+	                    return {
+	                        label,
+	                        color: tag?.color || option?.color || '#6366f1',
+	                        order: Number.isFinite(Number(tag?.order)) ? Number(tag.order) : (option?.order ?? index)
+	                    };
+	                })
+	                .filter(tag => {
+	                    const key = tag.label.toLowerCase();
+	                    if (!tag.label || seen.has(key)) return false;
+	                    seen.add(key);
+	                    return true;
+	                })
+	                .sort((a, b) => a.order - b.order);
+	        },
+
+	        selectedTags() {
+	            return this.normalizeTaskTags(this.task?.tags || [], this.tagOptions);
+	        },
+
+	        taskHasTag(option) {
+	            const key = String(option?.label || '').trim().toLowerCase();
+	            return !!key && this.selectedTags().some(tag => tag.label.toLowerCase() === key);
+	        },
+
+	        normalizeSubtasks(subtasks = []) {
+	            return (Array.isArray(subtasks) ? subtasks : [])
+	                .map((subtask, index) => ({
+	                    _id: subtask?._id || '',
+	                    title: String(subtask?.title || subtask || '').trim(),
+	                    done: subtask?.done === true,
+	                    order: Number.isFinite(Number(subtask?.order)) ? Number(subtask.order) : index,
+	                    completedAt: subtask?.completedAt || null,
+	                    createdAt: subtask?.createdAt || new Date().toISOString()
+	                }))
+	                .filter(subtask => subtask.title)
+	                .sort((a, b) => a.order - b.order)
+	                .map((subtask, index) => ({ ...subtask, order: index }));
+	        },
+
+	        subtasks() {
+	            if (!this.task) return [];
+	            this.task.subtasks = this.normalizeSubtasks(this.task.subtasks || []);
+	            return this.task.subtasks;
+	        },
+
+	        subtaskProgressLabel() {
+	            const items = this.subtasks();
+	            if (!items.length) return '0';
+	            const done = items.filter(item => item.done).length;
+	            return done + ' sur ' + items.length;
+	        },
+
+	        async saveSubtasks(nextSubtasks) {
+	            if (!this.task) return false;
+	            this.task.subtasks = this.normalizeSubtasks(nextSubtasks);
+	            return this.updateField('subtasks', this.task.subtasks, { silent: true });
+	        },
+
+	        async addSubtask() {
+	            const title = String(this.newSubtaskTitle || '').trim();
+	            if (!title || !this.task) return;
+	            const next = [
+	                ...this.subtasks(),
+	                { title, done: false, order: this.subtasks().length, createdAt: new Date().toISOString(), completedAt: null }
+	            ];
+	            this.newSubtaskTitle = '';
+	            await this.saveSubtasks(next);
+	        },
+
+	        async toggleSubtask(target) {
+	            if (!this.task) return;
+	            const key = target?._id || target?.order + '-' + target?.title;
+	            const next = this.subtasks().map(subtask => {
+	                const currentKey = subtask._id || subtask.order + '-' + subtask.title;
+	                if (currentKey !== key) return subtask;
+	                const done = !subtask.done;
+	                return { ...subtask, done, completedAt: done ? new Date().toISOString() : null };
+	            });
+	            await this.saveSubtasks(next);
+	        },
+
+	        async removeSubtask(target) {
+	            if (!this.task) return;
+	            const key = target?._id || target?.order + '-' + target?.title;
+	            const next = this.subtasks()
+	                .filter(subtask => (subtask._id || subtask.order + '-' + subtask.title) !== key)
+	                .map((subtask, index) => ({ ...subtask, order: index }));
+	            await this.saveSubtasks(next);
+	        },
+
+	        optionMeta(kind) {
+	            if (kind === 'tag') {
+	                return { optionsKey: 'tagOptions', searchKey: 'tag', field: 'tags', endpoint: 'tags', payload: 'tags', fallbackColor: '#6366f1', multi: true };
+	            }
+	            return kind === 'priority'
+	                ? { optionsKey: 'priorityOptions', searchKey: 'priority', field: 'priority', colorField: 'priorityColor', endpoint: 'priorities', payload: 'priorities', fallbackColor: '#cbd5e1' }
+	                : { optionsKey: 'statusOptions', searchKey: 'status', field: 'status', colorField: 'statusColor', endpoint: 'statuses', payload: 'statuses', fallbackColor: '#9ca3af' };
+	        },
 
         optionColor(kind, label) {
             const meta = this.optionMeta(kind);
@@ -926,11 +1151,22 @@ document.addEventListener('alpine:init', () => {
             return !(this[meta.optionsKey] || []).some(option => option.label.toLowerCase() === label.toLowerCase());
         },
 
-        async selectOption(kind, option) {
-            const meta = this.optionMeta(kind);
-            if (!this.task || !option?.label) return;
-            this.task[meta.field] = option.label;
-            this.task[meta.colorField] = option.color || meta.fallbackColor;
+	        async selectOption(kind, option) {
+	            const meta = this.optionMeta(kind);
+	            if (!this.task || !option?.label) return;
+	            if (kind === 'tag') {
+	                const key = String(option.label || '').trim().toLowerCase();
+	                const current = this.selectedTags();
+	                const hasTag = current.some(tag => tag.label.toLowerCase() === key);
+	                const next = hasTag
+	                    ? current.filter(tag => tag.label.toLowerCase() !== key)
+	                    : [...current, { label: option.label, color: option.color || meta.fallbackColor, order: current.length }];
+	                this.task.tags = this.normalizeTaskTags(next, this.tagOptions);
+	                await this.updateField('tags', this.task.tags, { silent: true });
+	                return;
+	            }
+	            this.task[meta.field] = option.label;
+	            this.task[meta.colorField] = option.color || meta.fallbackColor;
             if (kind === 'status') {
                 this.task.completedAt = String(option.label || '').toLowerCase().includes('termin')
                     ? (this.task.completedAt || new Date().toISOString())
@@ -944,10 +1180,10 @@ document.addEventListener('alpine:init', () => {
 	            const label = String(this.optionSearch[kind] || '').trim();
 	            if (!label) return;
 	            const meta = this.optionMeta(kind);
-	            const next = this.normalizeOptions([
-	                ...(this[meta.optionsKey] || []),
-	                { label, color: kind === 'priority' ? '#8b5cf6' : '#4361ee', order: (this[meta.optionsKey] || []).length }
-	            ], this.defaults[meta.payload]);
+		            const next = this.normalizeOptions([
+		                ...(this[meta.optionsKey] || []),
+		                { label, color: kind === 'priority' ? '#8b5cf6' : (kind === 'tag' ? '#6366f1' : '#4361ee'), order: (this[meta.optionsKey] || []).length }
+		            ], this.defaults[meta.payload]);
 	            try {
 	                const saved = await this.saveOptions(kind, next);
 	                const created = saved.find(option => option.label === label) || next[next.length - 1];
@@ -990,9 +1226,22 @@ document.addEventListener('alpine:init', () => {
 	            } catch (e) {
 	                return;
 	            }
-            if (this.task?.[meta.field] === editor.originalLabel || this.task?.[meta.field] === label) {
-                const updated = saved.find(option => option.label === label) || { label, color: editor.color };
-                this.task[meta.field] = updated.label;
+	            if (editor.kind === 'tag') {
+	                const updated = saved.find(option => option.label === label) || { label, color: editor.color };
+	                const nextTags = this.selectedTags().map(tag => (
+	                    tag.label === editor.originalLabel
+	                        ? { label: updated.label, color: updated.color || meta.fallbackColor, order: tag.order }
+	                        : tag
+	                ));
+	                this.task.tags = this.normalizeTaskTags(nextTags, saved);
+	                this.task.tagOptions = saved;
+	                if (this._onUpdate) {
+	                    this._onUpdate(this.task._id, 'tags', this.task.tags, this.task);
+	                    this._onUpdate(this.task._id, 'tagOptions', saved, this.task);
+	                }
+	            } else if (this.task?.[meta.field] === editor.originalLabel || this.task?.[meta.field] === label) {
+	                const updated = saved.find(option => option.label === label) || { label, color: editor.color };
+	                this.task[meta.field] = updated.label;
                 this.task[meta.colorField] = updated.color || meta.fallbackColor;
                 await this.updateField(meta.field, updated.label);
             }
@@ -1014,40 +1263,54 @@ document.addEventListener('alpine:init', () => {
 	            } catch (e) {
 	                return;
 	            }
-            if (this.task?.[meta.field] === editor.originalLabel) {
-                await this.selectOption(editor.kind, saved[0]);
-            }
+	            if (editor.kind === 'tag') {
+	                this.task.tags = this.selectedTags().filter(tag => tag.label !== editor.originalLabel);
+	                this.task.tagOptions = saved;
+	                if (this._onUpdate) {
+	                    this._onUpdate(this.task._id, 'tags', this.task.tags, this.task);
+	                    this._onUpdate(this.task._id, 'tagOptions', saved, this.task);
+	                }
+	            } else if (this.task?.[meta.field] === editor.originalLabel) {
+	                await this.selectOption(editor.kind, saved[0]);
+	            }
             this.optionEditor = null;
         },
 
 	        async saveOptions(kind, options, metaPayload = {}) {
 	            const meta = this.optionMeta(kind);
 	            const cleaned = this.normalizeOptions(options, this.defaults[meta.payload]);
-	            const previous = this[meta.optionsKey] || [];
-	            this[meta.optionsKey] = cleaned;
-	            if (kind !== 'priority' && !this.task?.taskListId) return cleaned;
-	            try {
-                const endpoint = kind === 'priority'
-                    ? API + '/api/task-priorities'
-                    : API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint;
+		            const previous = this[meta.optionsKey] || [];
+		            this[meta.optionsKey] = cleaned;
+		            if (kind !== 'priority' && !this.task?.taskListId) return cleaned;
+		            try {
+	                const endpoint = kind === 'priority'
+	                    ? API + '/api/task-priorities'
+	                    : API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint;
                 const res = await fetch(endpoint, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({ [meta.payload]: cleaned, ...metaPayload })
                 });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Options non enregistrées');
-                this[meta.optionsKey] = this.normalizeOptions(data[meta.payload], cleaned);
-                this.task[meta.payload] = this[meta.optionsKey];
-                if (this._onUpdate) this._onUpdate(this.task._id, meta.payload, this[meta.optionsKey], this.task);
-                if (kind === 'priority') {
-                    window.dispatchEvent(new CustomEvent('task-priorities-updated', { detail: { priorities: this[meta.optionsKey] } }));
-                }
-	                return this[meta.optionsKey];
-	            } catch (e) {
-	                this[meta.optionsKey] = previous;
-	                this.task[meta.payload] = previous;
+	                const data = await res.json().catch(() => ({}));
+	                if (!res.ok || data.success === false) throw new Error(data.error || 'Options non enregistrées');
+	                this[meta.optionsKey] = this.normalizeOptions(data[meta.payload], cleaned);
+	                if (kind === 'tag') {
+	                    this.task.tagOptions = this[meta.optionsKey];
+	                    this.task.tags = this.normalizeTaskTags(this.task.tags || [], this.tagOptions);
+	                    if (this._onUpdate) this._onUpdate(this.task._id, 'tagOptions', this[meta.optionsKey], this.task);
+	                } else {
+	                    this.task[meta.payload] = this[meta.optionsKey];
+	                    if (this._onUpdate) this._onUpdate(this.task._id, meta.payload, this[meta.optionsKey], this.task);
+	                }
+	                if (kind === 'priority') {
+	                    window.dispatchEvent(new CustomEvent('task-priorities-updated', { detail: { priorities: this[meta.optionsKey] } }));
+	                }
+		                return this[meta.optionsKey];
+		            } catch (e) {
+		                this[meta.optionsKey] = previous;
+		                if (kind === 'tag') this.task.tagOptions = previous;
+		                else this.task[meta.payload] = previous;
 	                console.error('[TaskModal] Option save error:', e);
 	                if (window.showMessage) window.showMessage('Erreur lors de l’enregistrement des options', 'danger');
 	                throw e;
@@ -1212,10 +1475,16 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
                 const updatedTask = data.task ? { ...this.task, ...data.task } : { ...this.task, [field]: value };
-                this.task = updatedTask;
-                if (Array.isArray(updatedTask.statuses)) this.statusOptions = this.normalizeOptions(updatedTask.statuses, this.defaults.statuses);
-                if (Array.isArray(updatedTask.priorities)) this.priorityOptions = this.normalizeOptions(updatedTask.priorities, this.defaults.priorities);
-                if (this._onUpdate) this._onUpdate(this.task._id, field, value, updatedTask);
+	                this.task = updatedTask;
+	                if (Array.isArray(updatedTask.statuses)) this.statusOptions = this.normalizeOptions(updatedTask.statuses, this.defaults.statuses);
+	                if (Array.isArray(updatedTask.priorities)) this.priorityOptions = this.normalizeOptions(updatedTask.priorities, this.defaults.priorities);
+	                if (Array.isArray(updatedTask.tagOptions)) {
+	                    this.tagOptions = this.normalizeOptions(updatedTask.tagOptions, []);
+	                    this.task.tagOptions = this.tagOptions;
+	                }
+	                if (Array.isArray(updatedTask.tags)) this.task.tags = this.normalizeTaskTags(updatedTask.tags, this.tagOptions);
+	                if (Array.isArray(updatedTask.subtasks)) this.task.subtasks = this.normalizeSubtasks(updatedTask.subtasks);
+	                if (this._onUpdate) this._onUpdate(this.task._id, field, value, updatedTask);
                 if (!options.silent && window.showMessage) window.showMessage('Tâche mise à jour', 'success');
                 return true;
             } catch (e) {

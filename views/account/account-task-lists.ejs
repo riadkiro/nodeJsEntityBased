@@ -75,9 +75,9 @@
                                 <span class="tlm-meta" x-text="subtitle(list)"></span>
                                 <span class="tlm-progress"><span :style="'width:' + progress(list) + '%'"></span></span>
                             </span>
-                            <button class="tlm-btn active" type="button" :disabled="savingId === list.listId" @click="toggle(list, false)">
-                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : 'solar:close-circle-linear'" width="14"></iconify-icon>
-                                Retirer
+                            <button class="tlm-btn active" type="button" :disabled="savingId === list.listId || list.contextType === 'account'" @click="list.contextType === 'account' ? null : toggle(list, false)">
+                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : (list.contextType === 'account' ? 'solar:user-rounded-bold-duotone' : 'solar:close-circle-linear')" width="14"></iconify-icon>
+                                <span x-text="list.contextType === 'account' ? 'Perso' : 'Retirer'"></span>
                             </button>
                         </article>
                     </template>
@@ -104,9 +104,9 @@
                                 <span class="tlm-meta" x-text="subtitle(list)"></span>
                                 <span class="tlm-progress"><span :style="'width:' + progress(list) + '%'"></span></span>
                             </span>
-                            <button class="tlm-btn" type="button" :class="{ 'active': list.showInMyLists }" :disabled="savingId === list.listId" @click="toggle(list, !list.showInMyLists)">
-                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : (list.showInMyLists ? 'solar:bookmark-bold-duotone' : 'solar:bookmark-linear')" width="14"></iconify-icon>
-                                <span x-text="list.showInMyLists ? 'Ajoutée' : 'Ajouter'"></span>
+                            <button class="tlm-btn" type="button" :class="{ 'active': list.showInMyLists }" :disabled="savingId === list.listId || (list.contextType === 'account' && list.showInMyLists)" @click="(list.contextType === 'account' && list.showInMyLists) ? null : toggle(list, !list.showInMyLists)">
+                                <iconify-icon :icon="savingId === list.listId ? 'line-md:loading-twotone-loop' : (list.contextType === 'account' && list.showInMyLists ? 'solar:user-rounded-bold-duotone' : (list.showInMyLists ? 'solar:bookmark-bold-duotone' : 'solar:bookmark-linear'))" width="14"></iconify-icon>
+                                <span x-text="list.contextType === 'account' && list.showInMyLists ? 'Perso' : (list.showInMyLists ? 'Ajoutée' : 'Ajouter')"></span>
                             </button>
                         </article>
                     </template>

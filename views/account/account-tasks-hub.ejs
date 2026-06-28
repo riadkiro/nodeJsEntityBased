@@ -153,6 +153,59 @@
 .th-simple-grid{display:grid;grid-template-columns:264px minmax(0,1fr);gap:24px;align-items:start}
 .th-my-view{display:grid;grid-template-columns:minmax(0,360px) minmax(0,1fr);gap:20px;align-items:start}
 .th-my-list-stack{display:flex;flex-direction:column;gap:10px}
+.th-create-list-btn{height:42px;border:1px solid #dfe8f3;border-radius:12px;background:#fff;color:#6f55dc;font-family:inherit;font-size:12.5px;font-weight:850;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;box-shadow:0 10px 24px rgba(15,23,42,.03);transition:all .16s}
+.th-create-list-btn:hover{border-color:#b9adff;background:#fbfaff;box-shadow:0 12px 26px rgba(111,85,220,.09)}
+.th-new-list-error{color:#ef4444;font-size:12px;font-weight:750}
+.th-list-modal-backdrop{position:fixed;inset:0;z-index:10030;background:rgba(15,23,42,.38);display:flex;align-items:center;justify-content:center;padding:22px}
+.th-list-modal{width:min(560px,100%);max-height:min(720px,calc(100vh - 44px));overflow:auto;border:1px solid #e5edf6;border-radius:16px;background:#fff;box-shadow:0 24px 70px rgba(15,23,42,.22)}
+.th-list-modal-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;padding:18px 20px 12px;border-bottom:1px solid #eef2f7}
+.th-list-modal-title{display:flex;align-items:center;gap:11px;min-width:0}
+.th-list-modal-preview{width:42px;height:42px;border-radius:13px;display:inline-flex;align-items:center;justify-content:center;background:color-mix(in srgb,var(--draft-list-color,#6366f1) 13%,#fff);color:var(--draft-list-color,#6366f1);flex:0 0 auto}
+.th-list-modal-title h3{margin:0;color:#0e1726;font-size:17px;font-weight:850;line-height:1.2}
+.th-list-modal-title p{margin:4px 0 0;color:#7c89a6;font-size:12px;font-weight:650}
+.th-list-modal-close{width:32px;height:32px;border:1px solid #e5edf6;border-radius:10px;background:#fff;color:#94a3b8;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.th-list-modal-close:hover{color:#6f55dc;border-color:#c7d2fe;background:#fbfaff}
+.th-list-modal-body{padding:16px 20px 18px;display:flex;flex-direction:column;gap:15px}
+.th-list-field{display:flex;flex-direction:column;gap:8px}
+.th-list-field label,.th-list-modal-label{color:#334155;font-size:12px;font-weight:850}
+.th-list-input{height:40px;border:1px solid #dfe8f3;border-radius:10px;background:#fff;color:#0e1726;padding:0 12px;font-family:inherit;font-size:13px;font-weight:700;outline:none}
+.th-list-input:focus{border-color:#7c5cff;box-shadow:0 0 0 3px rgba(124,92,255,.10)}
+.th-list-icon-grid{display:grid;grid-template-columns:repeat(8,32px);gap:7px}
+.th-list-icon-choice{width:32px;height:32px;border:1px solid #e5edf6;border-radius:10px;background:#fff;color:#7c89a6;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
+.th-list-icon-choice:hover,.th-list-icon-choice.active{border-color:#b9adff;background:#f5f3ff;color:#6f55dc}
+.th-list-color-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.th-list-color-choice{width:25px;height:25px;border:2px solid #fff;border-radius:999px;background:var(--swatch-color,#6366f1);box-shadow:0 0 0 1px #dfe8f3;cursor:pointer;transition:transform .14s,box-shadow .14s}
+.th-list-color-choice:hover,.th-list-color-choice.active{transform:scale(1.08);box-shadow:0 0 0 2px #b9adff}
+.th-list-color-custom{width:30px;height:30px;border:0;background:transparent;padding:0;cursor:pointer}
+.th-list-tag-builder{display:grid;grid-template-columns:minmax(0,1fr) 32px 34px;gap:8px;align-items:center}
+.th-list-tag-color{width:32px;height:32px;border:0;background:transparent;padding:0;cursor:pointer}
+.th-list-tag-add{height:34px;border:1px solid #e5edf6;border-radius:10px;background:#fff;color:#6f55dc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.th-list-tag-cloud{display:flex;flex-wrap:wrap;gap:7px}
+.th-list-tag-pill{min-height:28px;border:1px solid color-mix(in srgb,var(--tag-color,#6366f1) 32%,#fff);border-radius:999px;background:color-mix(in srgb,var(--tag-color,#6366f1) 12%,#fff);color:var(--tag-color,#6366f1);font-family:inherit;font-size:11px;font-weight:850;display:inline-flex;align-items:center;gap:6px;padding:0 8px}
+.th-list-tag-pill input{width:22px;height:22px;border:0;background:transparent;padding:0;cursor:pointer}
+.th-list-tag-remove{width:18px;height:18px;border:0;border-radius:999px;background:transparent;color:currentColor;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;opacity:.75}
+.th-list-tag-remove:hover{opacity:1;background:rgba(15,23,42,.06)}
+.th-list-config-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.th-list-config-grid.is-single{grid-template-columns:1fr}
+.th-list-toggle{min-height:42px;border:1px solid #e5edf6;border-radius:12px;background:#fff;color:#334155;padding:0 12px;font-family:inherit;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer}
+.th-list-toggle:hover{border-color:#c7d2fe;background:#fbfaff}
+.th-list-toggle-switch{width:34px;height:18px;border-radius:999px;background:#e2e8f0;position:relative;flex:0 0 auto;transition:background .15s}
+.th-list-toggle-switch::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18);transition:transform .15s}
+.th-list-toggle-switch.is-on{background:#6f55dc}
+.th-list-toggle-switch.is-on::after{transform:translateX(16px)}
+.th-list-segmented{display:grid;grid-template-columns:1fr 1fr;border:1px solid #e5edf6;border-radius:12px;padding:3px;background:#f8fafc}
+.th-list-segmented button{height:34px;border:0;border-radius:9px;background:transparent;color:#64748b;font-family:inherit;font-size:12px;font-weight:850;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer}
+.th-list-segmented button.active{background:#fff;color:#6f55dc;box-shadow:0 4px 12px rgba(15,23,42,.06)}
+.th-list-config-section{border:1px solid #eef2f7;border-radius:13px;background:#fbfdff;padding:12px;display:flex;flex-direction:column;gap:10px}
+.th-list-config-section-head{display:flex;align-items:center;gap:8px;color:#0f172a;font-size:12px;font-weight:850}
+.th-list-config-section-head iconify-icon{color:#6f55dc}
+.th-list-modal-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;padding-top:2px}
+.th-list-btn{height:38px;border:1px solid #e5edf6;border-radius:10px;background:#fff;color:#475569;font-family:inherit;font-size:12.5px;font-weight:850;padding:0 14px;display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer}
+.th-list-btn:hover{border-color:#c7d2fe;color:#6f55dc;background:#fbfaff}
+.th-list-btn.primary{border-color:#6f55dc;background:#6f55dc;color:#fff}
+.th-list-btn.danger{border-color:#fee2e2;background:#fff;color:#ef4444;margin-right:auto}
+.th-list-btn.danger:hover{border-color:#fecaca;background:#fef2f2;color:#dc2626}
+.th-list-btn:disabled{opacity:.55;cursor:wait}
 .th-my-list-card{width:100%;border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.03);padding:13px 14px;display:grid;grid-template-columns:40px minmax(0,1fr) auto;gap:12px;align-items:center;text-align:left;font-family:inherit;cursor:pointer;transition:all .16s}
 .th-my-list-card:hover{border-color:#d6def0;transform:translateY(-1px);box-shadow:0 12px 26px rgba(15,23,42,.055)}
 .th-my-list-card.active{border-color:#b9adff;box-shadow:0 12px 28px rgba(111,85,220,.10)}
@@ -167,12 +220,31 @@
 .th-list-task-title{display:flex;align-items:center;gap:10px;min-width:0}
 .th-list-task-title h2{margin:0;color:#0e1726;font-size:17px;font-weight:850;line-height:1.2}
 .th-list-task-title p{margin:4px 0 0;color:#7c89a6;font-size:12px;font-weight:650}
-.th-list-task-link{height:32px;border:1px solid #e5edf6;border-radius:9px;background:#fff;color:#6f55dc;font-family:inherit;font-size:12px;font-weight:800;padding:0 10px;display:inline-flex;align-items:center;gap:6px;text-decoration:none}
+.th-list-head-actions{display:flex;align-items:center;gap:7px}
+.th-list-config-btn{width:32px;height:32px;border:1px solid #e5edf6;border-radius:9px;background:#fff;color:#6f55dc;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s;flex:0 0 auto}
+.th-list-config-btn:hover{border-color:#c7d2fe;background:#fbfaff}
+.th-share-role{height:34px;border:1px solid #dfe8f3;border-radius:9px;background:#fff;color:#334155;font-family:inherit;font-size:12px;font-weight:750;padding:0 9px}
+.th-share-row{min-height:42px;border:1px solid #eef2f7;border-radius:10px;background:#fff;display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:9px;padding:8px 10px}
+.th-share-list{display:flex;flex-direction:column;gap:7px}
+.th-share-name{display:block;color:#0e1726;font-size:12.5px;font-weight:850;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.th-share-meta{display:block;margin-top:2px;color:#94a3b8;font-size:11px;font-weight:700;line-height:1.2}
+.th-share-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.th-share-mini{height:28px;border:1px solid #e0e7ff;border-radius:8px;background:#fff;color:#6f55dc;font-family:inherit;font-size:11.5px;font-weight:850;padding:0 9px;display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.th-share-mini:hover{background:#f5f3ff;border-color:#b9adff}
+.th-share-mini.danger{border-color:#fecaca;color:#ef4444}
+.th-share-mini.danger:hover{background:#fef2f2;border-color:#ef4444}
+.th-share-status{height:22px;border-radius:999px;background:#f1f5f9;color:#64748b;padding:0 8px;display:inline-flex;align-items:center;font-size:10.5px;font-weight:850}
+.th-share-status.accepted{background:#dcfce7;color:#16a34a}
 .th-list-task-rows{display:flex;flex-direction:column;gap:5px;min-height:120px}
 .th-side-stack{display:flex;flex-direction:column;gap:14px;position:sticky;top:88px}
 .th-panel{border:1px solid #e5edf6;border-radius:14px;background:#fff;box-shadow:0 10px 26px rgba(15,23,42,.035)}
 .th-panel-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 16px 10px}
 .th-panel-title{display:inline-flex;align-items:center;gap:8px;color:#0e1726;font-size:13px;font-weight:850}
+.th-panel-title-stack{align-items:flex-start}
+.th-panel-title-main{display:flex;align-items:center;gap:8px;min-width:0}
+.th-panel-title-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.th-panel-subtitle{color:#94a3b8;font-size:10px;font-weight:600;line-height:1.15}
+.th-panel-actions{display:flex;align-items:center;gap:5px}
 .th-panel-icon{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:#efe8ff;color:#805dca;flex:0 0 auto}
 .th-panel-count{height:22px;min-width:24px;padding:0 8px;border-radius:8px;background:#eef2ff;color:#6f55dc;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;justify-content:center}
 .th-calendar-nav{display:flex;align-items:center;gap:4px}
@@ -211,12 +283,20 @@
 .th-day-calendar-btn{height:22px;min-width:20px;border:0;border-radius:8px;background:transparent;color:#8b7cf8;padding:0 2px;font-family:inherit;font-size:10.5px;font-weight:850;display:inline-flex;align-items:center;gap:5px;cursor:pointer;transform:translateY(1px)}
 .th-day-calendar-btn:hover{color:#6f55dc}
 .th-day-calendar-btn.is-active{padding:0 8px;background:#efe8ff;color:#7c5cff}
+.th-date-inline-picker{position:relative;overflow:hidden}
+.th-date-inline-picker input{position:absolute;inset:0;opacity:0;cursor:pointer}
 .th-card-link{color:#6f55dc;text-decoration:none;font-size:12px;font-weight:800;white-space:nowrap}
 .th-card-link:hover{text-decoration:underline}
 .th-today-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:26px;align-items:stretch}
+.th-today-body.is-completed-hidden,.th-list-panel-body.is-completed-hidden{grid-template-columns:minmax(0,1fr)}
+.th-today-body.is-compact .th-task-row-simple,.th-list-panel-body.is-compact .th-task-row-simple{min-height:24px;padding-top:0;padding-bottom:0}
+.th-today-body.is-compact .th-task-title-simple,.th-list-panel-body.is-compact .th-task-title-simple{font-size:12.5px}
+.th-list-panel-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:26px;align-items:start}
 .th-open-list{display:flex;flex-direction:column;gap:6px;min-width:0}
 .th-task-row-simple{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:28px;padding:1px 8px;border-radius:8px;position:relative}
 .th-task-row-simple:hover{background:#fbfcff}
+.th-task-row-simple.is-accented{padding-left:12px}
+.th-task-row-simple.is-accented::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:999px;background:var(--task-accent-color,#805dca);opacity:.75}
 .th-task-check-simple{width:15px;height:15px;border-radius:4px;border:1.5px solid #9aa8c2;background:#fff;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex:0 0 auto;color:transparent}
 .th-task-check-simple.is-checked{background:#edf3ff;border-color:#90a7d8;color:#647aa8}
 .th-task-check-simple iconify-icon{display:none}
@@ -229,6 +309,9 @@
 .th-reminder-mini{width:18px;height:18px;border-radius:6px;color:var(--primary-color,#6e5afb);display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .th-priority-simple{border:0;background:transparent;padding:0;color:var(--priority-color,#cbd5e1);display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:10.5px;font-weight:850;white-space:nowrap;cursor:pointer}
 .th-priority-simple iconify-icon{color:currentColor}
+.th-tag-simple{border:0;background:color-mix(in srgb,var(--tag-color,#6366f1) 12%,#fff);color:var(--tag-color,#6366f1);height:20px;border-radius:5px;padding:0 7px;display:inline-flex;align-items:center;gap:4px;font-family:inherit;font-size:10px;font-weight:850;white-space:nowrap;cursor:pointer}
+.th-tag-simple.is-empty{background:#f8fafc;color:#94a3b8}
+.th-tag-stack{display:inline-flex;align-items:center;gap:5px;min-width:0}
 .th-inline-form{display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;margin-top:4px}
 .th-inline-form input{height:31px;border:1px solid #dbe4f0;border-radius:8px;background:#fff;color:#0e1726;padding:0 11px;font-family:inherit;font-size:12.5px;font-weight:600;outline:none}
 .th-inline-form input:focus{border-color:#7c5cff;box-shadow:0 0 0 3px rgba(124,92,255,.11)}
@@ -252,16 +335,26 @@
 .th-task-ctx button.danger{color:#ef4444}
 .th-task-ctx button.danger:hover{background:#fef2f2;color:#dc2626}
 .th-task-ctx-label{margin:8px 7px 6px;color:#94a3b8;font-size:10px;font-weight:850;text-transform:uppercase;letter-spacing:.45px}
-.th-task-ctx-priorities{display:grid;grid-template-columns:1fr 1fr;gap:5px}
+.th-task-ctx-search{width:100%;height:34px;border:1px solid #dbe4f0;border-radius:10px;background:#fff;color:#0e1726;padding:0 10px;font-family:inherit;font-size:12px;font-weight:700;outline:none;margin-bottom:7px}
+.th-task-ctx-search:focus{border-color:#7c5cff;box-shadow:0 0 0 3px rgba(124,92,255,.11)}
+.th-task-ctx-search::placeholder{color:#aab6ca}
+.th-task-ctx-priorities{display:grid;grid-template-columns:1fr 1fr;gap:5px;max-height:190px;overflow:auto;padding-right:1px}
 .th-task-ctx-priorities button{min-height:30px;background:color-mix(in srgb,var(--priority-color,#94a3b8) 12%,#fff);color:var(--priority-color,#64748b);justify-content:flex-start}
+.th-task-ctx-priorities button.th-task-ctx-create{grid-column:1/-1;background:#f8faff;color:#6f55dc;border:1px dashed #c7d2fe;justify-content:center}
+.th-task-ctx-empty{grid-column:1/-1;min-height:34px;border:1px dashed #dbe4f0;border-radius:9px;background:#fafbff;color:#94a3b8;font-size:11.5px;font-weight:800;display:flex;align-items:center;justify-content:center;text-align:center;padding:8px}
 .th-task-ctx-toggle{justify-content:space-between}
 .th-task-ctx-toggle-main{display:inline-flex;align-items:center;gap:8px;min-width:0}
 .th-task-switch{width:34px;height:18px;border-radius:999px;background:#e2e8f0;position:relative;flex:0 0 auto;transition:background .15s}
 .th-task-switch::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18);transition:transform .15s}
 .th-task-switch.is-on{background:#10b981}
 .th-task-switch.is-on::after{transform:translateX(16px)}
-.dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel,.dark .th-my-list-card,.dark .th-list-task-card{background:#060818;color:#e0e6ed;border-color:#253b5c}
-.dark .th-main-tab,.dark .th-list-task-link{background:#0e1726;border-color:#253b5c;color:#9fb0cb}
+.dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel,.dark .th-my-list-card,.dark .th-list-modal,.dark .th-list-task-card{background:#060818;color:#e0e6ed;border-color:#253b5c}
+.dark .th-create-list-btn,.dark .th-list-input,.dark .th-list-tag-add,.dark .th-list-modal-close,.dark .th-list-icon-choice,.dark .th-list-toggle,.dark .th-list-btn,.dark .th-list-segmented,.dark .th-main-tab,.dark .th-list-config-btn{background:#0e1726;border-color:#253b5c;color:#9fb0cb}
+.dark .th-create-list-btn:hover,.dark .th-list-config-btn:hover,.dark .th-list-tag-add:hover,.dark .th-list-modal-close:hover,.dark .th-list-icon-choice:hover,.dark .th-list-icon-choice.active,.dark .th-list-toggle:hover,.dark .th-list-btn:hover{background:#1b2447;border-color:#4f46e5;color:#a5b4fc}
+.dark .th-list-modal-head{border-color:#253b5c}
+.dark .th-list-modal-title h3,.dark .th-list-field label,.dark .th-list-modal-label,.dark .th-list-config-section-head{color:#e0e6ed}
+.dark .th-list-config-section{background:#0b1222;border-color:#253b5c}
+.dark .th-list-segmented button.active{background:#1b2447;color:#a5b4fc;box-shadow:none}
 .dark .th-main-tab.active{background:#4f46e5;border-color:#4f46e5;color:#fff}
 .dark .th-simple-header h1,.dark .th-today-title,.dark .th-panel-title,.dark .th-completed-head,.dark .th-task-title-simple,.dark .th-my-list-title,.dark .th-list-task-title h2{color:#e0e6ed}
 .dark .th-simple-header p{color:#8ea0bd}
@@ -272,21 +365,24 @@
 .dark .th-inline-form input,.dark .th-inline-form button{background:#0e1726;border-color:#253b5c;color:#e0e6ed}
 .dark .th-completed{border-color:#253b5c}
 .dark .th-task-ctx{background:#0e1726;border-color:#253b5c;box-shadow:0 18px 46px rgba(0,0,0,.35)}
+.dark .th-task-ctx-search{background:#0e1726;border-color:#253b5c;color:#e0e6ed}
 .dark .th-task-ctx button{color:#dbe5f3}
 .dark .th-task-ctx button:hover{background:#111f35;color:#a5b4fc}
 .dark .th-task-ctx-priorities button{background:color-mix(in srgb,var(--priority-color,#94a3b8) 18%,#0e1726)}
+.dark .th-task-ctx-priorities button.th-task-ctx-create{background:#111f35;border-color:#4f46e5;color:#a5b4fc}
+.dark .th-task-ctx-empty{background:#111f35;border-color:#253b5c;color:#8ea0bd}
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
-@media(max-width:980px){.th-simple-grid,.th-my-view{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
-@media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}}
+@media(max-width:980px){.th-simple-grid,.th-my-view{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body,.th-list-panel-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
+@media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
 </style>
 
 <div class="th-wrap th-simple"
      x-data="tasksHubApp"
      x-cloak
      @click.window="closeTaskMenu()"
-     @keydown.escape.window="closeTaskMenu(); closeTask()">
+     @keydown.escape.window="closePanelConfig(); closeListModal(); closeTaskMenu(); closeTask()">
     <div class="th-simple-shell">
         <header class="th-simple-header">
             <div>
@@ -296,7 +392,7 @@
         </header>
 
         <nav class="th-main-tabs" aria-label="Navigation tâches">
-            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'today' }" @click="hubTab = 'today'; selectedMode = selectedMode || 'date'">
+            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'today' }" @click="openTodayTab()">
                 <iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon>
                 Tâches du jour
             </button>
@@ -344,11 +440,21 @@
 
                 <section class="th-panel">
                     <div class="th-panel-head">
-                        <div class="th-panel-title">
+                        <div class="th-panel-title th-panel-title-stack">
                             <span class="th-panel-icon"><iconify-icon icon="solar:chart-2-bold-duotone" width="16"></iconify-icon></span>
-                            <span>Charge de travail</span>
+                            <span class="th-panel-title-text">
+                                <span>Charge de travail</span>
+                                <span class="th-panel-subtitle" x-text="workloadWeekLabel"></span>
+                            </span>
                         </div>
-                        <span class="th-panel-count" x-text="weekTaskCount"></span>
+                        <div class="th-panel-actions">
+                            <button type="button" class="th-list-config-btn" @click="shiftWorkloadWeek(-1)" title="Semaine précédente">
+                                <iconify-icon icon="solar:alt-arrow-left-linear" width="14"></iconify-icon>
+                            </button>
+                            <button type="button" class="th-list-config-btn" @click="shiftWorkloadWeek(1)" title="Semaine suivante">
+                                <iconify-icon icon="solar:alt-arrow-right-linear" width="14"></iconify-icon>
+                            </button>
+                        </div>
                     </div>
                     <div class="th-workload">
                         <div class="th-workload-bars">
@@ -403,14 +509,24 @@
                                 <span x-show="selectedHasCustomDate" x-text="selectedShortLabel"></span>
                             </button>
                         </div>
-                        <a class="th-card-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
+                        <div class="th-list-head-actions">
+                            <button type="button"
+                                    class="th-list-config-btn"
+                                    title="Configurer le panel"
+                                    @click="openPanelConfig()">
+                                <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
+                            </button>
+                            <a class="th-card-link" href="/account/<%= account_number %>/tasks">Voir tout</a>
+                        </div>
                     </div>
 
-                    <div class="th-today-body">
+                    <div class="th-today-body"
+                         :class="{ 'is-completed-hidden': !todayPanelOption('showCompleted', true), 'is-compact': todayPanelOption('compactMode', false) }">
                         <div class="th-open-list" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
                             <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
                                 <div class="th-task-row-simple"
-                                     :class="{ 'is-done': isDone(task) }"
+                                     :class="{ 'is-done': isDone(task), 'is-accented': todayPanelOption('accentRows', true) }"
+                                     :style="'--task-accent-color:' + taskAccentColor(task)"
                                      :data-task-id="task._id || task.id"
                                      @contextmenu.prevent.stop="openTaskMenu($event, task)">
                                     <button type="button"
@@ -424,14 +540,30 @@
                                         <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
                                     </div>
                                     <div class="th-task-meta-simple">
-                                        <span class="th-reminder-mini" x-show="taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
+                                        <span class="th-reminder-mini" x-show="todayTaskDisplayOption(task, 'showReminders', true) && taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
                                             <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
                                         </span>
-                                        <span class="th-attachment-mini" x-show="taskHasAttachments(task)" title="Pièce jointe">
+                                        <span class="th-attachment-mini" x-show="todayTaskDisplayOption(task, 'showAttachments', true) && taskHasAttachments(task)" title="Pièce jointe">
                                             <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+                                        </span>
+                                        <span class="th-tag-stack" x-show="todayTaskDisplayOption(task, 'showTags', true)">
+                                            <template x-for="tag in visibleTaskTags(task)" :key="tag.label">
+                                                <button type="button"
+                                                        class="th-tag-simple"
+                                                        :style="'--tag-color:' + (tag.color || '#6366f1')"
+                                                        @click.stop="openTaskTagMenu($event, task)">
+                                                    <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                                    <span x-text="tag.label"></span>
+                                                </button>
+                                            </template>
+                                            <button type="button" class="th-tag-simple is-empty" x-show="visibleTaskTags(task).length === 0" @click.stop="openTaskTagMenu($event, task)">
+                                                <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                                Tag
+                                            </button>
                                         </span>
                                         <button type="button"
                                                 class="th-priority-simple"
+                                                x-show="todayTaskDisplayOption(task, 'showPriority', true)"
                                                 :style="'--priority-color:' + taskPriorityColor(task)"
                                                 :title="'Priorité ' + taskPriorityText(task)"
                                                 @click.stop="openTaskPriorityMenu($event, task)">
@@ -453,7 +585,7 @@
                             <div class="th-error-simple" x-show="addError" x-text="addError"></div>
                         </div>
 
-                        <aside class="th-completed">
+                        <aside class="th-completed" x-show="todayPanelOption('showCompleted', true)">
                             <div class="th-completed-head">
                                 <iconify-icon icon="solar:check-circle-bold" width="15" style="color:#22c55e"></iconify-icon>
                                 <strong x-text="completedTitle"></strong>
@@ -480,6 +612,11 @@
 
         <div class="th-my-view" x-show="hubTab === 'lists'" x-cloak>
             <section class="th-my-list-stack">
+                <button type="button" class="th-create-list-btn" @click="openListModal()">
+                    <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
+                    Créer une liste
+                </button>
+
                 <template x-for="list in myLists" :key="list.listId || list.id">
                     <button type="button"
                             class="th-my-list-card"
@@ -513,54 +650,452 @@
                         <div style="min-width:0">
                             <h2 x-text="selectedMyList?.label || 'Mes listes'"></h2>
                             <p x-text="selectedMyList ? listSubtitle(selectedMyList) : 'Choisissez une liste'"></p>
+                            <div class="th-today-title" x-show="selectedMyList && selectedListDayMode" style="margin-top:7px;font-size:12px">
+                                <button type="button"
+                                        class="th-day-nav"
+                                        x-show="!selectedListIsToday"
+                                        @click="selectListToday()">
+                                    Aujourd'hui
+                                </button>
+                                <button type="button"
+                                        class="th-day-nav"
+                                        :class="{ 'is-active': selectedListIsTomorrow }"
+                                        @click="selectListTomorrow()">
+                                    Demain
+                                </button>
+                                <label class="th-day-calendar-btn th-date-inline-picker"
+                                       :class="{ 'is-active': selectedListHasCustomDate }"
+                                       title="Choisir une date">
+                                    <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
+                                    <span x-show="selectedListHasCustomDate" x-text="selectedListShortLabel"></span>
+                                    <input type="date"
+                                           :value="selectedListDateKey"
+                                           @change="selectListDate($event.target.value || todayKey())">
+                                </label>
+                            </div>
                         </div>
                     </div>
-                    <a class="th-list-task-link" href="/account/<%= account_number %>/tasks/lists">
-                        <iconify-icon icon="solar:settings-bold-duotone" width="14"></iconify-icon>
-                        Gérer
-                    </a>
+                    <div class="th-list-head-actions" x-show="selectedMyList">
+                        <button type="button"
+                                class="th-list-config-btn"
+                                title="Partager la liste"
+                                @click="openShareModal(selectedMyList)">
+                            <iconify-icon icon="solar:share-bold-duotone" width="15"></iconify-icon>
+                        </button>
+                        <button type="button"
+                                class="th-list-config-btn"
+                                title="Configurer la liste"
+                                @click="openListModal(selectedMyList)">
+                            <iconify-icon icon="solar:settings-bold-duotone" width="15"></iconify-icon>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="th-list-task-rows">
-                    <template x-for="task in selectedMyListTasks" :key="task._id || task.id">
-                        <div class="th-task-row-simple"
-                             :class="{ 'is-done': isDone(task) }"
-                             @contextmenu.prevent.stop="openTaskMenu($event, task)">
-                            <button type="button"
-                                    class="th-task-check-simple"
-                                    :class="{ 'is-checked': isDone(task) }"
-                                    @click.stop="toggleTaskStatus(task)">
-                                <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
-                            </button>
-                            <div class="th-task-main-simple">
-                                <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
-                            </div>
-                            <div class="th-task-meta-simple">
+                <div class="th-list-panel-body"
+                     :class="{ 'is-completed-hidden': !selectedListDisplayOption('showCompleted', true), 'is-compact': selectedListDisplayOption('compactMode', false) }">
+                    <div class="th-list-task-rows">
+                        <template x-for="task in selectedMyListTasks" :key="task._id || task.id">
+                            <div class="th-task-row-simple"
+                                 :class="{ 'is-done': isDone(task), 'is-accented': selectedListDisplayOption('accentRows', true) }"
+                                 :style="'--task-accent-color:' + taskAccentColor(task)"
+                                 @contextmenu.prevent.stop="openTaskMenu($event, task)">
                                 <button type="button"
-                                        class="th-priority-simple"
-                                        :style="'--priority-color:' + taskPriorityColor(task)"
-                                        @click.stop="openTaskPriorityMenu($event, task)">
-                                    <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
-                                    <span x-text="taskPriorityText(task)"></span>
+                                        class="th-task-check-simple"
+                                        :class="{ 'is-checked': isDone(task) }"
+                                        @click.stop="toggleTaskStatus(task)">
+                                    <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                 </button>
+                                <div class="th-task-main-simple">
+                                    <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
+                                </div>
+                                <div class="th-task-meta-simple">
+                                    <span class="th-reminder-mini" x-show="selectedListDisplayOption('showReminders', true) && taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
+                                        <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+                                    </span>
+                                    <span class="th-attachment-mini" x-show="selectedListDisplayOption('showAttachments', true) && taskHasAttachments(task)" title="Pièce jointe">
+                                        <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+                                    </span>
+                                    <span class="th-tag-stack" x-show="selectedListDisplayOption('showTags', true)">
+                                        <template x-for="tag in visibleTaskTags(task)" :key="tag.label">
+                                            <button type="button"
+                                                    class="th-tag-simple"
+                                                    :style="'--tag-color:' + (tag.color || '#6366f1')"
+                                                    @click.stop="openTaskTagMenu($event, task)">
+                                                <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                                <span x-text="tag.label"></span>
+                                            </button>
+                                        </template>
+                                        <button type="button" class="th-tag-simple is-empty" x-show="visibleTaskTags(task).length === 0" @click.stop="openTaskTagMenu($event, task)">
+                                            <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                            Tag
+                                        </button>
+                                    </span>
+                                    <button type="button"
+                                            class="th-priority-simple"
+                                            x-show="selectedListDisplayOption('showPriority', true)"
+                                            :style="'--priority-color:' + taskPriorityColor(task)"
+                                            @click.stop="openTaskPriorityMenu($event, task)">
+                                        <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+                                        <span x-text="taskPriorityText(task)"></span>
+                                    </button>
+                                </div>
                             </div>
+                        </template>
+                        <template x-if="selectedMyList && selectedMyListTasks.length === 0">
+                            <div class="th-empty-simple" x-text="selectedListEmptyLabel"></div>
+                        </template>
+                        <template x-if="!selectedMyList && myLists.length === 0">
+                            <div class="th-empty-simple">Ajoutez une liste depuis un record ou créez une liste personnelle</div>
+                        </template>
+                        <form class="th-inline-form" x-show="selectedMyList" @submit.prevent="createListTask()">
+                            <input type="text" x-model="newTaskTitle" :placeholder="selectedListAddPlaceholder" :disabled="creatingTask">
+                            <button type="submit" :disabled="creatingTask" title="Ajouter">
+                                <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'tabler:plus'" width="15"></iconify-icon>
+                            </button>
+                        </form>
+                        <div class="th-error-simple" x-show="addError" x-text="addError"></div>
+                    </div>
+
+                    <aside class="th-completed" x-show="selectedMyList && selectedListDisplayOption('showCompleted', true)">
+                        <div class="th-completed-head">
+                            <iconify-icon icon="solar:check-circle-bold" width="15" style="color:#22c55e"></iconify-icon>
+                            <strong x-text="selectedListCompletedTitle"></strong>
                         </div>
-                    </template>
-                    <template x-if="selectedMyList && selectedMyListTasks.length === 0">
-                        <div class="th-empty-simple">Aucune tâche dans cette liste</div>
-                    </template>
-                    <template x-if="!selectedMyList && myLists.length === 0">
-                        <div class="th-empty-simple">Ajoutez une liste depuis un record ou créez une liste personnelle</div>
-                    </template>
-                    <form class="th-inline-form" x-show="selectedMyList" @submit.prevent="createListTask()">
-                        <input type="text" x-model="newTaskTitle" :placeholder="'Ajouter dans ' + (selectedMyList?.label || 'la liste') + '...'" :disabled="creatingTask">
-                        <button type="submit" :disabled="creatingTask" title="Ajouter">
-                            <iconify-icon :icon="creatingTask ? 'line-md:loading-twotone-loop' : 'tabler:plus'" width="15"></iconify-icon>
-                        </button>
-                    </form>
-                    <div class="th-error-simple" x-show="addError" x-text="addError"></div>
+                        <div class="th-completed-list">
+                            <template x-for="task in selectedMyListCompletedTasks" :key="task._id || task.id">
+                                <div class="th-completed-row">
+                                    <button type="button" class="th-done-action" title="Remettre à faire" @click.stop="toggleTaskStatus(task)">
+                                        <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                                    </button>
+                                    <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
+                                    <span class="th-completed-record" x-show="task.recordTitle && task.recordTitle !== 'Espace perso'" x-text="task.recordTitle"></span>
+                                </div>
+                            </template>
+                            <template x-if="selectedMyListCompletedTasks.length === 0">
+                                <div class="th-empty-simple" x-text="selectedListCompletedEmptyLabel"></div>
+                            </template>
+                        </div>
+                    </aside>
                 </div>
             </section>
+        </div>
+    </div>
+
+    <div class="th-list-modal-backdrop"
+         x-show="listModalOpen"
+         x-cloak
+         @click.self="closeListModal()">
+        <form class="th-list-modal"
+              :style="'--draft-list-color:' + newListDraft.color"
+              @submit.prevent="saveListModal()"
+              @click.stop>
+            <div class="th-list-modal-head">
+                <div class="th-list-modal-title">
+                    <span class="th-list-modal-preview">
+                        <iconify-icon :icon="newListDraft.icon" width="19"></iconify-icon>
+                    </span>
+                    <div>
+                        <h3 x-text="listModalMode === 'edit' ? 'Configurer la liste' : 'Nouvelle liste'"></h3>
+                        <p x-text="newListDraft.label.trim() || 'Mes listes'"></p>
+                    </div>
+                </div>
+                <button type="button" class="th-list-modal-close" @click="closeListModal()" title="Fermer">
+                    <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                </button>
+            </div>
+            <div class="th-list-modal-body">
+                <div class="th-list-field">
+                    <label for="th-new-list-name">Nom de la liste</label>
+                    <input id="th-new-list-name"
+                           x-ref="newListNameInput"
+                           class="th-list-input"
+                           type="text"
+                           x-model="newListDraft.label"
+                           :disabled="creatingList"
+                           maxlength="80"
+                           autocomplete="off">
+                </div>
+
+                <div class="th-list-field">
+                    <span class="th-list-modal-label">Icône</span>
+                    <div class="th-list-icon-grid">
+                        <template x-for="icon in listIconChoices" :key="icon">
+                            <button type="button"
+                                    class="th-list-icon-choice"
+                                    :class="{ 'active': newListDraft.icon === icon }"
+                                    :title="icon"
+                                    @click="newListDraft.icon = icon">
+                                <iconify-icon :icon="icon" width="16"></iconify-icon>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-list-field">
+                    <span class="th-list-modal-label">Couleur</span>
+                    <div class="th-list-color-row">
+                        <template x-for="color in listColorChoices" :key="color">
+                            <button type="button"
+                                    class="th-list-color-choice"
+                                    :class="{ 'active': newListDraft.color === color }"
+                                    :style="'--swatch-color:' + color"
+                                    :title="color"
+                                    @click="newListDraft.color = color"></button>
+                        </template>
+                        <input class="th-list-color-custom" type="color" x-model="newListDraft.color" :disabled="creatingList" title="Couleur personnalisée">
+                    </div>
+                </div>
+
+                <div class="th-list-config-section">
+                    <div class="th-list-config-section-head">
+                        <iconify-icon icon="solar:calendar-mark-bold-duotone" width="15"></iconify-icon>
+                        Comportement
+                    </div>
+                    <button type="button" class="th-list-toggle" @click="newListDraft.displayOptions.dayMode = !newListDraft.displayOptions.dayMode">
+                        <span>Activer tâches du jour</span>
+                        <span class="th-list-toggle-switch" :class="{ 'is-on': newListDraft.displayOptions.dayMode === true }"></span>
+                    </button>
+                </div>
+
+                <div class="th-list-config-section">
+                    <div class="th-list-config-section-head">
+                        <iconify-icon icon="solar:eye-bold-duotone" width="15"></iconify-icon>
+                        Visibilité
+                    </div>
+                    <div class="th-list-config-grid">
+                        <template x-for="option in listDisplayOptionChoices" :key="option.key">
+                            <button type="button" class="th-list-toggle" @click="newListDraft.displayOptions[option.key] = !newListDraft.displayOptions[option.key]">
+                                <span x-text="option.label"></span>
+                                <span class="th-list-toggle-switch" :class="{ 'is-on': newListDraft.displayOptions[option.key] !== false }"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-list-config-section">
+                    <div class="th-list-config-section-head">
+                        <iconify-icon icon="solar:tuning-2-bold-duotone" width="15"></iconify-icon>
+                        Style
+                    </div>
+                    <div class="th-list-segmented">
+                        <button type="button" :class="{ active: newListDraft.displayOptions.compactMode === false }" @click="newListDraft.displayOptions.compactMode = false">
+                            <iconify-icon icon="solar:list-check-linear" width="14"></iconify-icon>
+                            Normal
+                        </button>
+                        <button type="button" :class="{ active: newListDraft.displayOptions.compactMode === true }" @click="newListDraft.displayOptions.compactMode = true">
+                            <iconify-icon icon="solar:list-down-minimalistic-linear" width="14"></iconify-icon>
+                            Compact
+                        </button>
+                    </div>
+                    <button type="button" class="th-list-toggle" @click="newListDraft.displayOptions.accentRows = !newListDraft.displayOptions.accentRows">
+                        <span>Style accentué</span>
+                        <span class="th-list-toggle-switch" :class="{ 'is-on': newListDraft.displayOptions.accentRows !== false }"></span>
+                    </button>
+                </div>
+
+                <div class="th-list-config-grid is-single" x-show="listModalMode === 'create'">
+                    <button type="button" class="th-list-toggle" @click="newListDraft.openAfterCreate = !newListDraft.openAfterCreate">
+                        <span>Ouvrir après création</span>
+                        <span class="th-list-toggle-switch" :class="{ 'is-on': newListDraft.openAfterCreate }"></span>
+                    </button>
+                </div>
+
+                <div class="th-new-list-error" x-show="listCreateError" x-text="listCreateError"></div>
+
+                <div class="th-list-modal-actions">
+                    <button type="button" class="th-list-btn danger" x-show="listModalMode === 'edit'" @click="deleteSelectedList()" :disabled="creatingList">
+                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+                        Supprimer
+                    </button>
+                    <button type="button" class="th-list-btn" @click="closeListModal()">Annuler</button>
+                    <button type="submit" class="th-list-btn primary" :disabled="creatingList || !newListDraft.label.trim()">
+                        <iconify-icon :icon="creatingList ? 'line-md:loading-twotone-loop' : (listModalMode === 'edit' ? 'solar:diskette-bold-duotone' : 'solar:add-circle-bold')" width="15"></iconify-icon>
+                        <span x-text="listModalMode === 'edit' ? 'Enregistrer' : 'Créer'"></span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="th-list-modal-backdrop"
+         x-show="panelConfigOpen"
+         x-cloak
+         @click.self="closePanelConfig()">
+        <form class="th-list-modal"
+              @submit.prevent="savePanelConfig()"
+              @click.stop>
+            <div class="th-list-modal-head">
+                <div class="th-list-modal-title">
+                    <span class="th-list-modal-preview">
+                        <iconify-icon icon="solar:settings-bold-duotone" width="19"></iconify-icon>
+                    </span>
+                    <div>
+                        <h3>Configurer le panel</h3>
+                        <p>Tâches du jour</p>
+                    </div>
+                </div>
+                <button type="button" class="th-list-modal-close" @click="closePanelConfig()" title="Fermer">
+                    <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                </button>
+            </div>
+            <div class="th-list-modal-body">
+                <div class="th-list-config-section">
+                    <div class="th-list-config-section-head">
+                        <iconify-icon icon="solar:eye-bold-duotone" width="15"></iconify-icon>
+                        Visibilité
+                    </div>
+                    <div class="th-list-config-grid">
+                        <template x-for="option in listDisplayOptionChoices" :key="'panel-' + option.key">
+                            <button type="button" class="th-list-toggle" @click="panelConfigDraft[option.key] = !panelConfigDraft[option.key]">
+                                <span x-text="option.label"></span>
+                                <span class="th-list-toggle-switch" :class="{ 'is-on': panelConfigDraft[option.key] !== false }"></span>
+                            </button>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-list-config-section">
+                    <div class="th-list-config-section-head">
+                        <iconify-icon icon="solar:tuning-2-bold-duotone" width="15"></iconify-icon>
+                        Style
+                    </div>
+                    <div class="th-list-segmented">
+                        <button type="button" :class="{ active: panelConfigDraft.compactMode === false }" @click="panelConfigDraft.compactMode = false">
+                            <iconify-icon icon="solar:list-check-linear" width="14"></iconify-icon>
+                            Normal
+                        </button>
+                        <button type="button" :class="{ active: panelConfigDraft.compactMode === true }" @click="panelConfigDraft.compactMode = true">
+                            <iconify-icon icon="solar:list-down-minimalistic-linear" width="14"></iconify-icon>
+                            Compact
+                        </button>
+                    </div>
+                    <button type="button" class="th-list-toggle" @click="panelConfigDraft.accentRows = !panelConfigDraft.accentRows">
+                        <span>Style accentué</span>
+                        <span class="th-list-toggle-switch" :class="{ 'is-on': panelConfigDraft.accentRows !== false }"></span>
+                    </button>
+                </div>
+
+                <div class="th-list-modal-actions">
+                    <button type="button" class="th-list-btn" @click="closePanelConfig()">Annuler</button>
+                    <button type="submit" class="th-list-btn primary">
+                        <iconify-icon icon="solar:diskette-bold-duotone" width="15"></iconify-icon>
+                        Enregistrer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="th-list-modal-backdrop"
+         x-show="shareModalOpen"
+         x-cloak
+         @click.self="closeShareModal()">
+        <div class="th-list-modal"
+             @click.stop>
+            <div class="th-list-modal-head">
+                <div class="th-list-modal-title">
+                    <span class="th-list-modal-preview">
+                        <iconify-icon icon="solar:share-bold-duotone" width="19"></iconify-icon>
+                    </span>
+                    <div>
+                        <h3>Partager la liste</h3>
+                        <p x-text="shareList?.label || 'Liste collaborative'"></p>
+                    </div>
+                </div>
+                <button type="button" class="th-list-modal-close" @click="closeShareModal()" title="Fermer">
+                    <iconify-icon icon="solar:close-circle-linear" width="16"></iconify-icon>
+                </button>
+            </div>
+            <div class="th-list-modal-body">
+                <div class="th-list-field">
+                    <span class="th-list-modal-label">Rôle</span>
+                    <select class="th-share-role" x-model="shareRole">
+                        <option value="viewer">Lecture</option>
+                        <option value="editor">Modification</option>
+                        <option value="admin">Gestion</option>
+                    </select>
+                </div>
+
+                <div class="th-list-field">
+                    <span class="th-list-modal-label">Contacts</span>
+                    <form class="th-list-tag-builder" @submit.prevent="createContactRequest()">
+                        <input class="th-list-input" type="text" x-model="newContactValue" placeholder="Email ou téléphone">
+                        <span></span>
+                        <button type="submit" class="th-list-tag-add" :disabled="sharingLoading || !newContactValue.trim()" title="Ajouter">
+                            <iconify-icon icon="solar:user-plus-bold" width="15"></iconify-icon>
+                        </button>
+                    </form>
+                    <div class="th-share-list">
+                        <template x-for="contact in sharingContacts" :key="contact.id">
+                            <div class="th-share-row">
+                                <span style="min-width:0">
+                                    <span class="th-share-name" x-text="contact.name || contact.email || contact.phone"></span>
+                                    <span class="th-share-meta" x-text="contact.email || contact.phone || ''"></span>
+                                </span>
+                                <span class="th-share-actions">
+                                    <span class="th-share-status" :class="{ accepted: contact.status === 'accepted' }" x-text="contact.status === 'accepted' ? 'Accepté' : (contact.direction === 'incoming' ? 'À accepter' : 'En attente')"></span>
+                                    <button type="button" class="th-share-mini" x-show="contact.status !== 'accepted' && contact.direction === 'incoming'" @click="acceptContact(contact)">
+                                        <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                                        Accepter
+                                    </button>
+                                    <button type="button" class="th-share-mini" x-show="contact.status === 'accepted' && !isContactShared(contact)" @click="shareWithContact(contact)">
+                                        <iconify-icon icon="solar:share-linear" width="13"></iconify-icon>
+                                        Partager
+                                    </button>
+                                </span>
+                            </div>
+                        </template>
+                        <template x-if="sharingContacts.length === 0 && !sharingLoading">
+                            <div class="th-empty-simple">Aucun contact pour le moment</div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-list-field" x-show="sharingTeams.length > 0">
+                    <span class="th-list-modal-label">Équipes</span>
+                    <div class="th-share-list">
+                        <template x-for="team in sharingTeams" :key="team._id || team.id">
+                            <div class="th-share-row">
+                                <span style="min-width:0">
+                                    <span class="th-share-name" x-text="team.name"></span>
+                                    <span class="th-share-meta" x-text="(team.memberCount || 0) + ' membre(s)'"></span>
+                                </span>
+                                <span class="th-share-actions">
+                                    <button type="button" class="th-share-mini" x-show="!isTeamShared(team)" @click="shareWithTeam(team)">
+                                        <iconify-icon icon="solar:users-group-rounded-bold-duotone" width="13"></iconify-icon>
+                                        Partager
+                                    </button>
+                                </span>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-list-field">
+                    <span class="th-list-modal-label">Accès actifs</span>
+                    <div class="th-share-list">
+                        <template x-for="share in sharingShares" :key="share.id">
+                            <div class="th-share-row">
+                                <span style="min-width:0">
+                                    <span class="th-share-name" x-text="share.targetName || share.targetEmail || 'Partage'"></span>
+                                    <span class="th-share-meta" x-text="share.targetType === 'team' ? 'Équipe · ' + share.role : 'Contact · ' + share.role"></span>
+                                </span>
+                                <span class="th-share-actions">
+                                    <button type="button" class="th-share-mini danger" @click="removeShare(share)">
+                                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
+                                        Retirer
+                                    </button>
+                                </span>
+                            </div>
+                        </template>
+                        <template x-if="sharingShares.length === 0 && !sharingLoading">
+                            <div class="th-empty-simple">Aucun partage actif</div>
+                        </template>
+                    </div>
+                </div>
+
+                <div class="th-new-list-error" x-show="sharingError" x-text="sharingError"></div>
+            </div>
         </div>
     </div>
 
@@ -569,19 +1104,19 @@
          x-cloak
          :style="taskMenu ? 'left:' + taskMenu.x + 'px;top:' + taskMenu.y + 'px' : ''"
          @click.stop>
-        <button type="button" x-show="!taskMenu?.priorityOnly" @click="editTaskFromMenu()">
+        <button type="button" x-show="!taskMenu?.priorityOnly && !taskMenu?.tagOnly" @click="editTaskFromMenu()">
             <iconify-icon icon="solar:pen-2-linear" width="14"></iconify-icon>
             Modifier
         </button>
-        <button type="button" class="th-task-ctx-toggle" x-show="!taskMenu?.priorityOnly" @click="toggleDayPriorityFromMenu()">
+        <button type="button" class="th-task-ctx-toggle" x-show="!taskMenu?.priorityOnly && !taskMenu?.tagOnly" @click="toggleDayPriorityFromMenu()">
             <span class="th-task-ctx-toggle-main">
                 <iconify-icon icon="solar:bolt-bold-duotone" width="14"></iconify-icon>
                 <span>À faire aujourd’hui</span>
             </span>
             <span class="th-task-switch" :class="{ 'is-on': menuTaskIsDayPriority() }"></span>
         </button>
-        <div class="th-task-ctx-label">Priorité</div>
-        <div class="th-task-ctx-priorities">
+        <div class="th-task-ctx-label" x-show="!taskMenu?.tagOnly">Priorité</div>
+        <div class="th-task-ctx-priorities" x-show="!taskMenu?.tagOnly">
             <template x-for="priority in taskPriorityMenuOptions()" :key="priority.label">
                 <button type="button"
                         :style="'--priority-color:' + priority.color"
@@ -591,7 +1126,35 @@
                 </button>
             </template>
         </div>
-        <button type="button" class="danger" x-show="!taskMenu?.priorityOnly" @click="deleteTaskFromMenu()">
+        <div class="th-task-ctx-label" x-show="taskMenu?.tagOnly">Tags</div>
+        <input class="th-task-ctx-search"
+               x-show="taskMenu?.tagOnly"
+               type="text"
+               placeholder="Rechercher ou créer..."
+               x-model="tagMenuSearch"
+               @keydown.enter.prevent="canCreateTaskTagFromMenu() ? createTaskTagFromMenu() : null"
+               @click.stop>
+        <div class="th-task-ctx-priorities" x-show="taskMenu?.tagOnly">
+            <template x-for="tag in filteredTaskTagMenuOptions()" :key="tag.label">
+                <button type="button"
+                        :style="'--priority-color:' + tag.color"
+                        @click="toggleTaskTagFromMenu(tag)">
+                    <iconify-icon :icon="menuTaskHasTag(tag) ? 'solar:check-circle-bold' : 'solar:tag-linear'" width="11"></iconify-icon>
+                    <span x-text="tag.label"></span>
+                </button>
+            </template>
+            <button type="button"
+                    class="th-task-ctx-create"
+                    x-show="canCreateTaskTagFromMenu()"
+                    @click="createTaskTagFromMenu()">
+                <iconify-icon icon="solar:add-circle-linear" width="11"></iconify-icon>
+                <span x-text="'Créer “' + tagMenuSearch.trim() + '”'"></span>
+            </button>
+            <div class="th-task-ctx-empty" x-show="!canCreateTaskTagFromMenu() && filteredTaskTagMenuOptions().length === 0">
+                Aucun tag pour cette liste
+            </div>
+        </div>
+        <button type="button" class="danger" x-show="!taskMenu?.priorityOnly && !taskMenu?.tagOnly" @click="deleteTaskFromMenu()">
             <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
             Supprimer
         </button>
@@ -619,6 +1182,8 @@ document.addEventListener('alpine:init', () => {
         activeFilter: 'today',
         selectedDateKey: '',
         selectedMode: 'date',
+        selectedListDateKey: '',
+        workloadWeekOffset: 0,
         calendarCursor: '',
         todaySortable: null,
         taskMenu: null,
@@ -627,7 +1192,64 @@ document.addEventListener('alpine:init', () => {
         ctxTaskId: null,
         addingTask: false,
         creatingTask: false,
+        creatingList: false,
         newTaskTitle: '',
+        listModalOpen: false,
+        listModalMode: 'create',
+        editingListId: '',
+        listCreateError: '',
+        newListDraft: { label: '', color: '#6366f1', icon: 'solar:list-check-bold-duotone', tags: [], displayOptions: {}, openAfterCreate: true },
+        newTagDraft: { label: '', color: '#6366f1' },
+        panelConfigOpen: false,
+        panelConfigDraft: {},
+        todayPanelOptions: {},
+        tagMenuSearch: '',
+        tagMenuCreating: false,
+        shareModalOpen: false,
+        shareList: null,
+        sharingContacts: [],
+        sharingShares: [],
+        sharingTeams: [],
+        sharingLoading: false,
+        sharingError: '',
+        newContactValue: '',
+        shareRole: 'editor',
+        defaultListDisplayOptions: { showPriority: true, showTags: true, showAttachments: true, showReminders: true, showCompleted: true, dayMode: false, compactMode: false, accentRows: true },
+        defaultPanelDisplayOptions: { showPriority: true, showTags: true, showAttachments: true, showReminders: true, showCompleted: true, compactMode: false, accentRows: true },
+        listDisplayOptionChoices: [
+            { key: 'showPriority', label: 'Priorité' },
+            { key: 'showTags', label: 'Tags' },
+            { key: 'showAttachments', label: 'Pièces jointes' },
+            { key: 'showReminders', label: 'Rappels' },
+            { key: 'showCompleted', label: 'Terminées' }
+        ],
+        listIconChoices: [
+            'solar:list-check-bold-duotone',
+            'solar:bookmark-bold-duotone',
+            'solar:cart-large-bold-duotone',
+            'solar:home-2-bold-duotone',
+            'solar:case-round-bold-duotone',
+            'solar:heart-bold-duotone',
+            'solar:star-bold-duotone',
+            'solar:calendar-bold-duotone',
+            'solar:wallet-money-bold-duotone',
+            'solar:book-2-bold-duotone',
+            'solar:flag-bold-duotone',
+            'solar:bell-bing-bold-duotone',
+            'solar:folder-bold-duotone',
+            'solar:cup-star-bold-duotone',
+            'solar:bolt-bold-duotone',
+            'solar:notes-bold-duotone',
+            'solar:bag-4-bold-duotone',
+            'solar:gift-bold-duotone',
+            'solar:wallet-2-bold-duotone',
+            'solar:meditation-bold-duotone',
+            'solar:clipboard-list-bold-duotone',
+            'solar:map-point-bold-duotone',
+            'solar:shop-bold-duotone',
+            'solar:box-bold-duotone'
+        ],
+        listColorChoices: ['#6366f1', '#805dca', '#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#ec4899', '#64748b'],
         quickAddStatus: 'À faire',
         quickAddPriority: 'Aucune',
         addError: '',
@@ -647,7 +1269,9 @@ document.addEventListener('alpine:init', () => {
 
         async init() {
             this.selectedDateKey = this.todayKey();
+            this.selectedListDateKey = this.todayKey();
             this.calendarCursor = this.monthKeyFromDateKey(this.selectedDateKey);
+            this.loadTodayPanelOptions();
             window.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeTask(); });
             await this.loadHub();
         },
@@ -723,6 +1347,18 @@ document.addEventListener('alpine:init', () => {
         selectScope(scope) { this.activeScope = scope; this.activeRecordId = null; this.activeListId = null; this.activeFilter = 'today'; this.priorityFilter = 'all'; },
         selectRecord(record, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = null; this.activeFilter = 'all'; this.priorityFilter = 'all'; },
         selectList(record, list, scope) { this.activeScope = scope || record.scope || 'personal'; this.activeRecordId = record.recordId; this.activeListId = String(list.id || list.listId || ''); this.activeFilter = 'all'; this.priorityFilter = 'all'; },
+        openTodayTab() {
+            this.hubTab = 'today';
+            this.selectedMode = this.selectedMode || 'date';
+            if (this.selectedMode === 'date' && !this.selectedDateKey) this.selectedDateKey = this.todayKey();
+            this.activeScope = 'personal';
+            this.activeRecordId = null;
+            this.activeListId = null;
+            this.activeFilter = 'today';
+            this.priorityFilter = 'all';
+            this.addError = '';
+            this.$nextTick(() => this.refreshTodaySortable());
+        },
         openListsTab() {
             this.hubTab = 'lists';
             if (!this.selectedMyListId && this.myLists.length) this.selectMyList(this.myLists[0]);
@@ -731,11 +1367,7 @@ document.addEventListener('alpine:init', () => {
             const listId = String(list.listId || list.id || '');
             if (!listId) return;
             this.selectedMyListId = listId;
-            this.activeListId = listId;
-            this.activeRecordId = String(list.recordId || '');
-            this.activeScope = list.scope || (list.contextType === 'record' ? 'record' : 'personal');
-            this.activeFilter = 'all';
-            this.priorityFilter = 'all';
+            if (!this.selectedListDateKey) this.selectedListDateKey = this.todayKey();
             this.addError = '';
         },
         get selectedMyList() {
@@ -779,6 +1411,9 @@ document.addEventListener('alpine:init', () => {
                         listLabel: task.listLabel || fallbackList.label || 'Liste des tâches',
                         listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone',
                         listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1',
+                        tags: this.normalizeTaskTags(task.tags || [], fallbackList.tags || []),
+                        tagOptions: this.normalizeListTags(task.tagOptions || fallbackList.tags || []),
+                        displayOptions: { ...this.defaultListDisplayOptions, ...(fallbackList.displayOptions || {}) },
                         statuses: task.statuses || fallbackList.statuses || [],
                         priorities: task.priorities || fallbackList.priorities || [],
                         recordTitle: task.recordTitle || record.recordTitle,
@@ -791,7 +1426,7 @@ document.addEventListener('alpine:init', () => {
                     });
                 }));
         },
-        get selectedMyListTasks() {
+        get selectedMyListAllTasks() {
             const id = String(this.selectedMyListId || '');
             if (!id) return [];
             return this.allRecords.flatMap(record => (record.tasks || [])
@@ -806,6 +1441,8 @@ document.addEventListener('alpine:init', () => {
                         listLabel: task.listLabel || fallbackList.label || this.selectedMyList?.label || 'Liste',
                         listIcon: task.listIcon || fallbackList.icon || this.selectedMyList?.icon || 'solar:list-check-bold-duotone',
                         listColor: task.listColor || fallbackList.color || this.selectedMyList?.color || '#6366f1',
+                        tags: this.normalizeTaskTags(task.tags || [], this.selectedMyList?.tags || fallbackList.tags || []),
+                        tagOptions: this.normalizeListTags(task.tagOptions || this.selectedMyList?.tags || fallbackList.tags || []),
                         statuses: task.statuses || fallbackList.statuses || [],
                         priorities: task.priorities || fallbackList.priorities || [],
                         recordTitle: task.recordTitle || record.recordTitle,
@@ -822,6 +1459,49 @@ document.addEventListener('alpine:init', () => {
                     if (doneDelta !== 0) return doneDelta;
                     return this.sortDate(a) - this.sortDate(b);
                 });
+        },
+        get selectedListDayMode() {
+            return this.selectedListDisplayOption('dayMode', false);
+        },
+        get selectedMyListTasks() {
+            const tasks = this.selectedMyListAllTasks.filter(task => !this.isDone(task));
+            if (!this.selectedListDayMode) return tasks;
+            return tasks.filter(task => this.taskMatchesDate(task, this.selectedListDateKey));
+        },
+        get selectedMyListCompletedTasks() {
+            if (!this.selectedListDisplayOption('showCompleted', true)) return [];
+            const tasks = this.selectedMyListAllTasks.filter(task => this.isDone(task));
+            if (!this.selectedListDayMode) {
+                return tasks.sort((a, b) => new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0));
+            }
+            return tasks
+                .filter(task => this.dateKeyFromValue(task.completedAt || task.updatedAt) === this.selectedListDateKey)
+                .sort((a, b) => new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0));
+        },
+        get selectedListCompletedTitle() {
+            const suffix = ` (${this.selectedMyListCompletedTasks.length})`;
+            if (!this.selectedListDayMode) return 'Terminées' + suffix;
+            if (this.selectedListIsToday) return "Terminées aujourd'hui" + suffix;
+            if (this.selectedListIsTomorrow) return 'Terminées demain' + suffix;
+            return 'Terminées le ' + this.formatDayKey(this.selectedListDateKey) + suffix;
+        },
+        get selectedListCompletedEmptyLabel() {
+            if (!this.selectedListDayMode) return 'Aucune tâche terminée';
+            if (this.selectedListIsToday) return "Aucune tâche terminée aujourd'hui";
+            return 'Aucune tâche terminée pour cette date';
+        },
+        get selectedListEmptyLabel() {
+            if (!this.selectedListDayMode) return 'Aucune tâche dans cette liste';
+            if (this.selectedListIsToday) return 'Aucune tâche pour le moment';
+            if (this.selectedListIsTomorrow) return 'Aucune tâche pour demain';
+            return 'Aucune tâche pour le ' + this.formatDayKey(this.selectedListDateKey, { long: true });
+        },
+        get selectedListAddPlaceholder() {
+            const label = this.selectedMyList?.label || 'la liste';
+            if (!this.selectedListDayMode) return 'Ajouter dans ' + label + '...';
+            if (this.selectedListIsToday) return 'Ajouter une tâche...';
+            if (this.selectedListIsTomorrow) return 'Ajouter une tâche pour demain...';
+            return 'Ajouter une tâche pour le ' + this.formatDayKey(this.selectedListDateKey, { long: true }) + '...';
         },
 
         // ═══ "Aujourd'hui" = startDate ≤ today + dueDate not expired, OR isDayPriority ═══
@@ -904,12 +1584,27 @@ document.addEventListener('alpine:init', () => {
             if (this.activeRecord) return 'Ajouter dans ' + this.activeRecord.recordTitle + ' · Liste des tâches';
             return 'Ajouter dans Espace perso · Liste des tâches';
         },
+        get workloadWeekStart() {
+            const today = this.dateFromKey(this.todayKey());
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7) + (Number(this.workloadWeekOffset || 0) * 7));
+            return weekStart;
+        },
+        get workloadWeekLabel() {
+            const start = new Date(this.workloadWeekStart);
+            const end = new Date(start);
+            end.setDate(start.getDate() + 6);
+            const startDay = start.toLocaleDateString('fr-FR', { day: 'numeric' });
+            const endLabel = end.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
+            return `du ${startDay} au ${endLabel}`;
+        },
+        shiftWorkloadWeek(delta) {
+            this.workloadWeekOffset += Number(delta || 0);
+        },
         get workloadBars() {
             const labels = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
             const counts = [0,0,0,0,0,0,0];
-            const today = this.dateFromKey(this.todayKey());
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+            const weekStart = new Date(this.workloadWeekStart);
             const weekEnd = new Date(weekStart);
             weekEnd.setDate(weekStart.getDate() + 6);
             this.rawVisibleTasks.filter(task => !this.isDone(task)).forEach(task => {
@@ -975,6 +1670,27 @@ document.addEventListener('alpine:init', () => {
             });
             (this.fallbackTasks || []).forEach(item => {
                 if (this.taskId(item) === id) Object.assign(item, patch);
+            });
+        },
+        patchListTagsEverywhere(listId, tags = []) {
+            const id = String(listId || '');
+            if (!id) return;
+            const normalizedTags = this.normalizeListTags(tags);
+            (this.myLists || []).forEach(list => {
+                if (String(list.listId || list.id || '') === id) list.tags = normalizedTags;
+            });
+            (this.entities || []).forEach(entity => {
+                (entity.records || []).forEach(record => {
+                    (record.lists || []).forEach(list => {
+                        if (String(list.listId || list.id || '') === id) list.tags = normalizedTags;
+                    });
+                    (record.tasks || []).forEach(task => {
+                        if (String(task.listId || task.taskListId || '') === id) task.tagOptions = normalizedTags;
+                    });
+                });
+            });
+            (this.fallbackTasks || []).forEach(task => {
+                if (String(task.listId || task.taskListId || '') === id) task.tagOptions = normalizedTags;
             });
         },
         removeTaskEverywhere(taskId) {
@@ -1150,6 +1866,13 @@ document.addEventListener('alpine:init', () => {
         },
         selectToday() { this.selectDate(this.todayKey()); },
         selectTomorrow() { this.selectDate(this.todayKey(1)); },
+        selectListDate(key) {
+            this.selectedListDateKey = this.dateKeyFromValue(key) || this.todayKey();
+            this.calendarCursor = this.monthKeyFromDateKey(this.selectedListDateKey);
+            this.addError = '';
+        },
+        selectListToday() { this.selectListDate(this.todayKey()); },
+        selectListTomorrow() { this.selectListDate(this.todayKey(1)); },
         selectOverdue() {
             this.selectedMode = 'overdue';
             this.addError = '';
@@ -1166,6 +1889,18 @@ document.addEventListener('alpine:init', () => {
         },
         get selectedShortLabel() {
             return this.formatDayKey(this.selectedDateKey);
+        },
+        get selectedListIsToday() {
+            return this.selectedListDateKey === this.todayKey();
+        },
+        get selectedListIsTomorrow() {
+            return this.selectedListDateKey === this.todayKey(1);
+        },
+        get selectedListHasCustomDate() {
+            return !this.selectedListIsToday && !this.selectedListIsTomorrow;
+        },
+        get selectedListShortLabel() {
+            return this.formatDayKey(this.selectedListDateKey);
         },
         formatDayKey(key, options = {}) {
             const d = this.dateFromKey(key);
@@ -1255,6 +1990,62 @@ document.addEventListener('alpine:init', () => {
             const date = new Date(raw);
             return !Number.isNaN(date.getTime());
         },
+        listForTask(task = {}) {
+            const id = String(task.listId || task.taskListId || '');
+            if (!id) return null;
+            for (const record of this.allRecords || []) {
+                const list = (record.lists || []).find(item => String(item.id || item.listId || '') === id);
+                if (list) return list;
+            }
+            return (this.myLists || []).find(item => String(item.id || item.listId || '') === id) || null;
+        },
+        selectedListDisplayOption(key, fallback = true) {
+            const options = this.selectedMyList?.displayOptions || {};
+            return options[key] === undefined ? fallback : options[key] !== false;
+        },
+        todayPanelOption(key, fallback = true) {
+            const options = this.todayPanelOptions || {};
+            return options[key] === undefined ? fallback : options[key] !== false;
+        },
+        todayTaskDisplayOption(task = {}, key, fallback = true) {
+            if (!this.todayPanelOption(key, fallback)) return false;
+            return this.taskDisplayOption(task, key, fallback);
+        },
+        taskAccentColor(task = {}) {
+            return task.priorityColor || this.taskPriorityColor(task) || task.listColor || this.listForTask(task)?.color || '#805dca';
+        },
+        taskDisplayOption(task = {}, key, fallback = true) {
+            const options = task.displayOptions || this.listForTask(task)?.displayOptions || {};
+            return options[key] === undefined ? fallback : options[key] !== false;
+        },
+        taskTagOptions(task = {}) {
+            const options = task.tagOptions || this.listForTask(task)?.tags || this.selectedMyList?.tags || [];
+            return this.normalizeListTags(options);
+        },
+        normalizeTaskTags(tags = [], options = []) {
+            const optionByLabel = new Map(this.normalizeListTags(options).map(tag => [tag.label.toLowerCase(), tag]));
+            const seen = new Set();
+            return (Array.isArray(tags) ? tags : [])
+                .map((tag, index) => {
+                    const label = String(tag?.label || tag || '').trim();
+                    const option = optionByLabel.get(label.toLowerCase());
+                    return {
+                        label,
+                        color: this.cleanHexColor(tag?.color || option?.color, '#6366f1'),
+                        order: Number.isFinite(Number(tag?.order)) ? Number(tag.order) : (option?.order ?? index)
+                    };
+                })
+                .filter(tag => {
+                    const key = tag.label.toLowerCase();
+                    if (!tag.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
+                .sort((a, b) => a.order - b.order);
+        },
+        visibleTaskTags(task = {}) {
+            return this.normalizeTaskTags(task.tags || [], this.taskTagOptions(task)).slice(0, 3);
+        },
         taskPriorityText(task = {}) {
             const label = String(task.priority || 'Aucune');
             if (!label || label === 'Aucune' || label === 'Basse' || label === 'Normale') return 'Normal';
@@ -1320,7 +2111,8 @@ document.addEventListener('alpine:init', () => {
                         title,
                         status: 'À faire',
                         priority: 'Aucune',
-                        isDayPriority: false,
+                        isDayPriority: this.selectedListDayMode,
+                        startDate: this.selectedListDayMode ? (this.selectedListDateKey || this.todayKey()) : '',
                         taskListId: list.listId || list.id
                     })
                 });
@@ -1337,6 +2129,372 @@ document.addEventListener('alpine:init', () => {
                 if (window.showMessage) window.showMessage(this.addError, 'danger');
             } finally {
                 this.creatingTask = false;
+            }
+        },
+        resetNewListDraft() {
+            this.newListDraft = {
+                label: '',
+                color: this.listColorChoices[0] || '#6366f1',
+                icon: this.listIconChoices[0] || 'solar:list-check-bold-duotone',
+                tags: [],
+                displayOptions: { ...this.defaultListDisplayOptions },
+                openAfterCreate: true
+            };
+            this.newTagDraft = { label: '', color: this.listColorChoices[0] || '#6366f1' };
+        },
+        openListModal(list = null) {
+            const listId = String(list?.listId || list?.id || '');
+            this.listModalMode = listId ? 'edit' : 'create';
+            this.editingListId = listId;
+            if (listId) {
+                this.newListDraft = {
+                    label: list.label || '',
+                    color: list.color || this.listColorChoices[0] || '#6366f1',
+                    icon: list.icon || this.listIconChoices[0] || 'solar:list-check-bold-duotone',
+                    tags: this.normalizeListTags(list.tags || []),
+                    displayOptions: { ...this.defaultListDisplayOptions, ...(list.displayOptions || {}) },
+                    openAfterCreate: true
+                };
+                this.newTagDraft = { label: '', color: this.listColorChoices[0] || '#6366f1' };
+            } else {
+                this.resetNewListDraft();
+            }
+            this.listCreateError = '';
+            this.listModalOpen = true;
+            this.$nextTick(() => this.$refs.newListNameInput?.focus());
+        },
+        closeListModal() {
+            if (this.creatingList) return;
+            this.listModalOpen = false;
+            this.listModalMode = 'create';
+            this.editingListId = '';
+            this.listCreateError = '';
+        },
+        async saveListModal() {
+            if (this.listModalMode === 'edit') return this.updateMyListConfig();
+            return this.createMyList();
+        },
+        loadTodayPanelOptions() {
+            const key = 'dexio.tasksHub.todayPanelOptions';
+            try {
+                const parsed = JSON.parse(localStorage.getItem(key) || '{}');
+                this.todayPanelOptions = { ...this.defaultPanelDisplayOptions, ...(parsed && typeof parsed === 'object' ? parsed : {}) };
+            } catch (e) {
+                this.todayPanelOptions = { ...this.defaultPanelDisplayOptions };
+            }
+        },
+        openPanelConfig() {
+            this.panelConfigDraft = { ...this.defaultPanelDisplayOptions, ...(this.todayPanelOptions || {}) };
+            this.panelConfigOpen = true;
+        },
+        closePanelConfig() {
+            this.panelConfigOpen = false;
+            this.panelConfigDraft = {};
+        },
+        savePanelConfig() {
+            this.todayPanelOptions = { ...this.defaultPanelDisplayOptions, ...(this.panelConfigDraft || {}) };
+            try {
+                localStorage.setItem('dexio.tasksHub.todayPanelOptions', JSON.stringify(this.todayPanelOptions));
+            } catch (e) {}
+            this.closePanelConfig();
+            if (window.showMessage) window.showMessage('Panel mis à jour', 'success');
+        },
+        normalizeListTags(tags = []) {
+            const seen = new Set();
+            return (Array.isArray(tags) ? tags : [])
+                .map((tag, index) => ({
+                    label: String(tag?.label || tag || '').trim(),
+                    color: this.cleanHexColor(tag?.color, this.listColorChoices[index % this.listColorChoices.length] || '#6366f1'),
+                    order: Number.isFinite(Number(tag?.order)) ? Number(tag.order) : index
+                }))
+                .filter(tag => {
+                    const key = tag.label.toLowerCase();
+                    if (!tag.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                });
+        },
+        cleanHexColor(value, fallback = '#6366f1') {
+            const color = String(value || '').trim();
+            return /^#[0-9a-f]{6}$/i.test(color) ? color : fallback;
+        },
+        addListTag() {
+            const label = String(this.newTagDraft.label || '').trim();
+            if (!label) return;
+            const exists = (this.newListDraft.tags || []).some(tag => String(tag.label || '').toLowerCase() === label.toLowerCase());
+            if (exists) {
+                this.listCreateError = 'Ce tag existe déjà';
+                return;
+            }
+            this.newListDraft.tags.push({
+                label,
+                color: this.cleanHexColor(this.newTagDraft.color, '#6366f1'),
+                order: this.newListDraft.tags.length
+            });
+            this.newTagDraft = { label: '', color: this.listColorChoices[(this.newListDraft.tags.length) % this.listColorChoices.length] || '#6366f1' };
+            this.listCreateError = '';
+        },
+        removeListTag(label) {
+            const key = String(label || '').toLowerCase();
+            this.newListDraft.tags = (this.newListDraft.tags || [])
+                .filter(tag => String(tag.label || '').toLowerCase() !== key)
+                .map((tag, index) => ({ ...tag, order: index }));
+        },
+        listConfigPayload(label) {
+            return {
+                label,
+                color: this.newListDraft.color || '#6366f1',
+                icon: this.newListDraft.icon || 'solar:list-check-bold-duotone',
+                tags: this.normalizeListTags(this.newListDraft.tags),
+                displayOptions: { ...this.defaultListDisplayOptions, ...(this.newListDraft.displayOptions || {}) },
+                showInMyLists: true
+            };
+        },
+        async createMyList() {
+            const label = String(this.newListDraft.label || '').trim();
+            if (!label || this.creatingList) return;
+            const shouldOpen = this.newListDraft.openAfterCreate !== false;
+            this.creatingList = true;
+            this.listCreateError = '';
+            try {
+                const res = await fetch(API + '/api/task-lists', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.listConfigPayload(label))
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Création impossible');
+                const createdId = String(data.list?.listId || data.list?.id || data.list?._id || '');
+                this.resetNewListDraft();
+                await this.loadHub();
+                if (shouldOpen && createdId) this.selectedMyListId = createdId;
+                this.hubTab = 'lists';
+                this.listModalOpen = false;
+                if (window.showMessage) window.showMessage('Liste créée', 'success');
+            } catch (e) {
+                console.error('[TasksHub] Create list error:', e);
+                this.listCreateError = e.message || 'Création impossible';
+                if (window.showMessage) window.showMessage(this.listCreateError, 'danger');
+            } finally {
+                this.creatingList = false;
+            }
+        },
+        async updateMyListConfig() {
+            const listId = String(this.editingListId || '');
+            const label = String(this.newListDraft.label || '').trim();
+            if (!listId || !label || this.creatingList) return;
+            this.creatingList = true;
+            this.listCreateError = '';
+            try {
+                const res = await fetch(`${API}/api/task-lists/${listId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(this.listConfigPayload(label))
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
+                const keepListId = String(data.list?.listId || data.list?.id || listId);
+                await this.loadHub();
+                this.selectedMyListId = keepListId;
+                this.listModalOpen = false;
+                this.listModalMode = 'create';
+                this.editingListId = '';
+                if (window.showMessage) window.showMessage('Liste mise à jour', 'success');
+            } catch (e) {
+                console.error('[TasksHub] Update list error:', e);
+                this.listCreateError = e.message || 'Mise à jour impossible';
+                if (window.showMessage) window.showMessage(this.listCreateError, 'danger');
+            } finally {
+                this.creatingList = false;
+            }
+        },
+        async deleteSelectedList() {
+            const listId = String(this.editingListId || '');
+            if (!listId || this.creatingList) return;
+            if (!window.confirm('Supprimer cette liste et toutes ses tâches ?')) return;
+            this.creatingList = true;
+            this.listCreateError = '';
+            try {
+                const res = await fetch(`${API}/api/task-lists/${listId}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
+                await this.loadHub();
+                this.selectedMyListId = this.myLists[0]?.listId || '';
+                this.listModalOpen = false;
+                this.listModalMode = 'create';
+                this.editingListId = '';
+                if (window.showMessage) window.showMessage('Liste supprimée', 'success');
+            } catch (e) {
+                this.listCreateError = e.message || 'Suppression impossible';
+                if (window.showMessage) window.showMessage(this.listCreateError, 'danger');
+            } finally {
+                this.creatingList = false;
+            }
+        },
+        openShareModal(list = null) {
+            const listId = String(list?.listId || list?.id || '');
+            if (!listId) return;
+            this.shareList = list;
+            this.shareModalOpen = true;
+            this.shareRole = 'editor';
+            this.newContactValue = '';
+            this.sharingError = '';
+            this.loadSharingContext();
+        },
+        closeShareModal() {
+            this.shareModalOpen = false;
+            this.shareList = null;
+            this.sharingError = '';
+            this.newContactValue = '';
+        },
+        shareListId() {
+            return String(this.shareList?.listId || this.shareList?.id || '');
+        },
+        async loadSharingContext() {
+            const listId = this.shareListId();
+            if (!listId) return;
+            this.sharingLoading = true;
+            this.sharingError = '';
+            try {
+                const [contactsRes, sharesRes, teamRes] = await Promise.all([
+                    fetch(API + '/api/task-sharing/contacts', { credentials: 'include' }),
+                    fetch(`${API}/api/task-sharing/lists/${listId}/shares`, { credentials: 'include' }),
+                    fetch(API + '/api/team/members', { credentials: 'include' })
+                ]);
+                const contactsData = await contactsRes.json().catch(() => ({}));
+                const sharesData = await sharesRes.json().catch(() => ({}));
+                const teamData = await teamRes.json().catch(() => ({}));
+                if (!contactsRes.ok || contactsData.success === false) throw new Error(contactsData.error || 'Contacts indisponibles');
+                if (!sharesRes.ok || sharesData.success === false) throw new Error(sharesData.error || 'Partages indisponibles');
+                this.sharingContacts = Array.isArray(contactsData.contacts) ? contactsData.contacts : [];
+                this.sharingShares = Array.isArray(sharesData.shares) ? sharesData.shares : [];
+                this.sharingTeams = Array.isArray(teamData.teams) ? teamData.teams : [];
+            } catch (e) {
+                console.error('[TasksHub] Sharing context error:', e);
+                this.sharingError = e.message || 'Partage indisponible';
+            } finally {
+                this.sharingLoading = false;
+            }
+        },
+        contactPayloadFromInput() {
+            const value = String(this.newContactValue || '').trim();
+            if (!value) return null;
+            return value.includes('@') ? { email: value } : { phone: value };
+        },
+        async createContactRequest() {
+            const payload = this.contactPayloadFromInput();
+            if (!payload || this.sharingLoading) return;
+            this.sharingLoading = true;
+            this.sharingError = '';
+            try {
+                const res = await fetch(API + '/api/task-sharing/contacts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Contact impossible');
+                this.newContactValue = '';
+                await this.loadSharingContext();
+                if (window.showMessage) window.showMessage('Demande de contact ajoutée', 'success');
+            } catch (e) {
+                this.sharingError = e.message || 'Contact impossible';
+                if (window.showMessage) window.showMessage(this.sharingError, 'danger');
+            } finally {
+                this.sharingLoading = false;
+            }
+        },
+        async acceptContact(contact) {
+            if (!contact?.id || this.sharingLoading) return;
+            this.sharingLoading = true;
+            this.sharingError = '';
+            try {
+                const res = await fetch(`${API}/api/task-sharing/contacts/${contact.id}/accept`, {
+                    method: 'POST',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Acceptation impossible');
+                await this.loadSharingContext();
+                if (window.showMessage) window.showMessage('Contact accepté', 'success');
+            } catch (e) {
+                this.sharingError = e.message || 'Acceptation impossible';
+                if (window.showMessage) window.showMessage(this.sharingError, 'danger');
+            } finally {
+                this.sharingLoading = false;
+            }
+        },
+        isContactShared(contact = {}) {
+            const id = String(contact.id || contact._id || '');
+            const email = String(contact.email || '').toLowerCase();
+            const userId = String(contact.userId || '');
+            return (this.sharingShares || []).some(share => (
+                (id && String(share.contactId || '') === id)
+                || (email && String(share.targetEmail || '').toLowerCase() === email)
+                || (userId && String(share.targetUserId || '') === userId)
+            ));
+        },
+        isTeamShared(team = {}) {
+            const id = String(team._id || team.id || '');
+            return !!id && (this.sharingShares || []).some(share => share.targetType === 'team' && String(share.teamId || '') === id);
+        },
+        async shareWithContact(contact) {
+            const listId = this.shareListId();
+            if (!listId || !contact?.id || this.sharingLoading) return;
+            await this.createShare({ targetType: 'contact', contactId: contact.id });
+        },
+        async shareWithTeam(team) {
+            const teamId = String(team?._id || team?.id || '');
+            if (!teamId || this.sharingLoading) return;
+            await this.createShare({ targetType: 'team', teamId });
+        },
+        async createShare(payload = {}) {
+            const listId = this.shareListId();
+            if (!listId) return;
+            this.sharingLoading = true;
+            this.sharingError = '';
+            try {
+                const res = await fetch(`${API}/api/task-sharing/lists/${listId}/shares`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ ...payload, role: this.shareRole || 'editor' })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Partage impossible');
+                await this.loadSharingContext();
+                if (window.showMessage) window.showMessage('Liste partagée', 'success');
+            } catch (e) {
+                this.sharingError = e.message || 'Partage impossible';
+                if (window.showMessage) window.showMessage(this.sharingError, 'danger');
+            } finally {
+                this.sharingLoading = false;
+            }
+        },
+        async removeShare(share) {
+            if (!share?.id || this.sharingLoading) return;
+            this.sharingLoading = true;
+            this.sharingError = '';
+            try {
+                const res = await fetch(`${API}/api/task-sharing/shares/${share.id}`, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Retrait impossible');
+                await this.loadSharingContext();
+                if (window.showMessage) window.showMessage('Partage retiré', 'success');
+            } catch (e) {
+                this.sharingError = e.message || 'Retrait impossible';
+                if (window.showMessage) window.showMessage(this.sharingError, 'danger');
+            } finally {
+                this.sharingLoading = false;
             }
         },
         initTodaySortable(el) {
@@ -1379,22 +2537,28 @@ document.addEventListener('alpine:init', () => {
         },
         closeTaskMenu() {
             this.taskMenu = null;
+            this.tagMenuSearch = '';
+            this.tagMenuCreating = false;
         },
         openTaskMenu(event, task, options = {}) {
             const id = this.taskId(task);
             if (!id) return;
             const width = 240;
-            const height = options.priorityOnly ? 128 : 264;
+            const height = options.tagOnly ? 248 : (options.priorityOnly ? 160 : 264);
             const source = event?.currentTarget || event?.target;
             const rect = source?.getBoundingClientRect?.();
             const rawX = event?.clientX || (rect ? rect.right : 0);
             const rawY = event?.clientY || (rect ? rect.bottom : 0);
             const x = Math.max(8, Math.min(rawX, window.innerWidth - width - 8));
             const y = Math.max(8, Math.min(rawY, window.innerHeight - height - 8));
-            this.taskMenu = { x, y, taskId: id, priorityOnly: options.priorityOnly === true };
+            this.tagMenuSearch = '';
+            this.taskMenu = { x, y, taskId: id, priorityOnly: options.priorityOnly === true, tagOnly: options.tagOnly === true };
         },
         openTaskPriorityMenu(event, task) {
             this.openTaskMenu(event, task, { priorityOnly: true });
+        },
+        openTaskTagMenu(event, task) {
+            this.openTaskMenu(event, task, { tagOnly: true });
         },
         menuTask() {
             return this.findTaskById(this.taskMenu?.taskId)?.task || null;
@@ -1439,6 +2603,91 @@ document.addEventListener('alpine:init', () => {
         },
         taskPriorityMenuOptions() {
             return this.taskPriorityOptions(this.menuTask());
+        },
+        taskTagMenuOptions() {
+            return this.taskTagOptions(this.menuTask());
+        },
+        menuTaskList() {
+            const found = this.findTaskById(this.taskMenu?.taskId);
+            return found?.list || this.listForTask(found?.task || this.menuTask()) || this.selectedMyList || null;
+        },
+        filteredTaskTagMenuOptions() {
+            const query = String(this.tagMenuSearch || '').trim().toLowerCase();
+            const options = this.taskTagMenuOptions();
+            if (!query) return options;
+            return options.filter(tag => String(tag.label || '').toLowerCase().includes(query));
+        },
+        canCreateTaskTagFromMenu() {
+            const label = String(this.tagMenuSearch || '').trim();
+            if (!label || this.tagMenuCreating) return false;
+            const key = label.toLowerCase();
+            return !this.taskTagMenuOptions().some(tag => String(tag.label || '').toLowerCase() === key);
+        },
+        menuTaskHasTag(tag) {
+            const label = String(tag?.label || '').toLowerCase();
+            const task = this.menuTask();
+            return !!label && this.normalizeTaskTags(task?.tags || [], this.taskTagOptions(task)).some(item => String(item.label || '').toLowerCase() === label);
+        },
+        async createTaskTagFromMenu() {
+            const task = this.menuTask();
+            const label = String(this.tagMenuSearch || '').trim();
+            const list = this.menuTaskList();
+            const listId = String(list?.listId || list?.id || task?.listId || task?.taskListId || '');
+            if (!task || !label || !listId || this.tagMenuCreating || !this.canCreateTaskTagFromMenu()) return;
+            const currentOptions = this.taskTagMenuOptions();
+            const nextOptions = this.normalizeListTags([
+                ...currentOptions,
+                {
+                    label,
+                    color: this.listColorChoices[currentOptions.length % this.listColorChoices.length] || '#6366f1',
+                    order: currentOptions.length
+                }
+            ]);
+            this.tagMenuCreating = true;
+            try {
+                const res = await fetch(`${API}/api/task-lists/${listId}/tags`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ tags: nextOptions })
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false) throw new Error(data.error || 'Création du tag impossible');
+                const savedOptions = this.normalizeListTags(data.tags || nextOptions);
+                const createdTag = savedOptions.find(tag => String(tag.label || '').toLowerCase() === label.toLowerCase()) || nextOptions[nextOptions.length - 1];
+                this.patchListTagsEverywhere(listId, savedOptions);
+                const currentTags = this.normalizeTaskTags(task.tags || [], savedOptions);
+                const nextTags = currentTags.some(tag => String(tag.label || '').toLowerCase() === label.toLowerCase())
+                    ? currentTags
+                    : [...currentTags, { label: createdTag.label, color: createdTag.color || '#6366f1', order: currentTags.length }];
+                this.tagMenuSearch = '';
+                this.closeTaskMenu();
+                const updated = await this.updateTaskPatch(task, { tags: nextTags }, { tags: nextTags, tagOptions: savedOptions });
+                if (updated && window.showMessage) window.showMessage('Tag créé', 'success');
+            } catch (e) {
+                console.error('[TasksHub] Tag create error:', e);
+                if (window.showMessage) window.showMessage(e.message || 'Création du tag impossible', 'danger');
+            } finally {
+                this.tagMenuCreating = false;
+            }
+        },
+        async toggleTaskTagFromMenu(tag) {
+            const task = this.menuTask();
+            if (!task || !tag?.label) return;
+            const label = String(tag.label);
+            const hasTag = this.menuTaskHasTag(tag);
+            const current = this.normalizeTaskTags(task.tags || [], this.taskTagOptions(task));
+            const nextTags = hasTag
+                ? current.filter(item => String(item.label || '').toLowerCase() !== label.toLowerCase())
+                : [...current, { label, color: tag.color || '#6366f1', order: current.length }];
+            this.closeTaskMenu();
+            await this.updateTaskPatch(task, { tags: nextTags }, { tags: nextTags });
+        },
+        editSelectedListFromMenu() {
+            const task = this.menuTask();
+            this.closeTaskMenu();
+            const list = this.listForTask(task) || this.selectedMyList;
+            if (list) this.openListModal(list);
         },
         async updateTaskPatch(task, updates = {}, optimisticExtra = {}) {
             const id = this.taskId(task);

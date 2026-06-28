@@ -1239,6 +1239,7 @@ const serializeRecordTask = (req, task, list = null, extra = {}) => {
     const taskList = list || {}
     const statuses = getListStatuses(taskList)
     const priorities = normalizeTaskPriorityOptions(extra.priorities || taskList.priorities, defaultTaskPriorities)
+    const tagOptions = TaskListsService.normalizeTaskTagOptions(taskList.tags)
     const status = cleanTaskText(task.status, 'À faire')
     const priority = priorityLabelFor(task.priority, priorities)
     return {
@@ -1249,6 +1250,9 @@ const serializeRecordTask = (req, task, list = null, extra = {}) => {
         statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
         priority,
         priorityColor: priorityColorFor(priority, priorities, task.priorityColor || ''),
+        tags: TaskListsService.normalizeTaskTags(task.tags, tagOptions),
+        tagOptions,
+        subtasks: TaskListsService.normalizeTaskSubtasks(task.subtasks),
         isDayPriority: !!task.isDayPriority,
         taskListId: task.taskListId?.toString?.() || String(task.taskListId || taskList._id || ''),
         startDate: task.startDate || null,
@@ -1366,6 +1370,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
             })
             const listStatuses = getListStatuses(l)
             const listPriorities = accountPriorities
+            const listTags = TaskListsService.normalizeTaskTagOptions(l.tags)
             return {
                 _id: l._id.toString(),
                 label: cleanTaskListLabel(l.label),
@@ -1379,6 +1384,8 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 viewMode: l.viewMode || 'kanban',
                 statuses: listStatuses,
                 priorities: listPriorities,
+                tags: listTags,
+                displayOptions: TaskListsService.normalizeTaskListDisplayOptions(l.displayOptions),
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
                 tasks: sorted.slice(0, 10).map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities }))
@@ -1464,6 +1471,25 @@ router.put('/api/task-lists/:listId/priorities', async (req, res) => {
 })
 
 /**
+ * PUT /account/:account_number/api/task-lists/:listId/tags
+ * Update the list-specific task tags.
+ */
+router.put('/api/task-lists/:listId/tags', async (req, res) => {
+    try {
+        const { tags, renames } = req.body
+        if (!Array.isArray(tags)) {
+            return res.status(400).json({ error: 'Tags array required' })
+        }
+        const cleaned = await TaskListsService.updateTaskListTags(req, req.params.listId, { tags, renames })
+        if (!cleaned) return res.status(404).json({ error: 'List not found' })
+        res.json({ success: true, tags: cleaned })
+    } catch (error) {
+        console.error('[API] Update tags error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /account/:account_number/api/task-priorities
  * Fetch the account-wide task priorities shared by web and mobile.
  */
@@ -1508,7 +1534,8 @@ router.get('/api/task-lists/:listId/options', async (req, res) => {
         res.json({
             success: true,
             statuses: getListStatuses(list),
-            priorities
+            priorities,
+            tags: TaskListsService.normalizeTaskTagOptions(list.tags)
         })
     } catch (error) {
         console.error('[API] Task list options error:', error)
@@ -1639,22 +1666,17 @@ router.post('/api/record/:recordId/task-lists/reorder', async (req, res) => {
 
 /**
  * PUT /account/:account_number/api/task-lists/:listId
- * Rename a task list
+ * Update task list configuration.
  */
 router.put('/api/task-lists/:listId', async (req, res) => {
     try {
-        const { TaskList } = await taskTenantModels(req)
-        const { label } = req.body
-        const cleanLabel = cleanTaskText(label)
-        if (!cleanLabel) return res.status(400).json({ error: 'Label required' })
-
-        const list = await TaskList.findByIdAndUpdate(req.params.listId, { label: cleanLabel }, { new: true })
+        const list = await TaskListsService.updateTaskListConfig(req, req.params.listId, req.body || {})
         if (!list) return res.status(404).json({ error: 'List not found' })
 
-        res.json({ success: true, label: cleanTaskListLabel(list.label) })
+        res.json({ success: true, list, label: list.label })
     } catch (error) {
-        console.error('[API] Rename task list error:', error)
-        res.status(500).json({ error: error.message })
+        console.error('[API] Update task list error:', error)
+        res.status(error.status || 500).json({ error: error.message })
     }
 })
 
@@ -1770,6 +1792,8 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             statusColor: optionColor(listStatuses, taskStatus, '#9ca3af'),
             priority: taskPriorityOption.label,
             priorityColor: taskPriorityOption.color || '',
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, list.tags),
+            subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: !!isDayPriority,
             startDate: startDate || null,
             dueDate: dueDate || null,
@@ -2056,7 +2080,7 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
 router.put('/api/record-tasks/:taskId', async (req, res) => {
     try {
         const { TaskList, RecordTask, TaskComment } = await taskTenantModels(req)
-        const allowedFields = ['title', 'description', 'status', 'priority', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId', 'completedAt']
+        const allowedFields = ['title', 'description', 'status', 'priority', 'tags', 'subtasks', 'startDate', 'dueDate', 'assignedTo', 'isDayPriority', 'taskListId', 'completedAt']
         const updates = {}
         const oldTask = await RecordTask.findById(req.params.taskId).lean()
         if (!oldTask) return res.status(404).json({ error: 'Task not found' })
@@ -2110,6 +2134,12 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             const priorityOption = priorityOptionFor(updates.priority, accountPriorities)
             updates.priority = priorityOption.label
             updates.priorityColor = priorityOption.color || ''
+        }
+        if (updates.tags !== undefined) {
+            updates.tags = TaskListsService.normalizeTaskTags(updates.tags, targetList?.tags)
+        }
+        if (updates.subtasks !== undefined) {
+            updates.subtasks = TaskListsService.normalizeTaskSubtasks(updates.subtasks)
         }
         if (updates.completedAt !== undefined) {
             const nextStatus = updates.status || oldTask.status

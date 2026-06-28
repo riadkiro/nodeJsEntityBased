@@ -8,6 +8,16 @@ const { getAccountTaskPriorities } = require('./task-priorities.service');
 const PERSONAL_SPACE_SLUG = 'dexapp-personal-space';
 const DEFAULT_ACCOUNT_TASK_LIST_LABEL = 'Liste des tâches';
 const SHOPPING_TASK_LIST_LABEL = 'Liste de courses';
+const defaultTaskListDisplayOptions = {
+    showPriority: true,
+    showTags: true,
+    showAttachments: true,
+    showReminders: true,
+    showCompleted: true,
+    dayMode: false,
+    compactMode: false,
+    accentRows: true,
+};
 
 function cleanText(value, fallback = '') {
     if (typeof value !== 'string') return fallback;
@@ -33,6 +43,88 @@ function cleanTaskListColor(value, fallback = '#6366f1') {
 function cleanTaskListIcon(value, fallback = 'solar:checklist-bold-duotone') {
     const icon = cleanText(value, fallback).toLowerCase();
     return /^[a-z0-9:_-]{2,96}$/.test(icon) ? icon : fallback;
+}
+
+function cleanTaskListViewMode(value, fallback = 'list') {
+    return ['list', 'kanban'].includes(value) ? value : fallback;
+}
+
+function normalizeTaskTagOptions(options = []) {
+    const seen = new Set();
+    return (Array.isArray(options) ? options : [])
+        .map((item, index) => ({
+            label: cleanText(item?.label || item, ''),
+            color: cleanTaskListColor(item?.color, '#6366f1'),
+            order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
+        }))
+        .filter(item => {
+            const key = item.label.toLowerCase();
+            if (!item.label || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .sort((a, b) => a.order - b.order);
+}
+
+function normalizeTaskTags(tags = [], options = []) {
+    const tagOptions = normalizeTaskTagOptions(options);
+    const optionByLabel = new Map(tagOptions.map(item => [item.label.toLowerCase(), item]));
+    const seen = new Set();
+    return (Array.isArray(tags) ? tags : [])
+        .map((item, index) => {
+            const label = cleanText(item?.label || item, '');
+            const option = optionByLabel.get(label.toLowerCase());
+            return {
+                label,
+                color: cleanTaskListColor(item?.color || option?.color, '#6366f1'),
+                order: Number.isFinite(Number(item?.order)) ? Number(item.order) : (option?.order ?? index),
+            };
+        })
+        .filter(item => {
+            const key = item.label.toLowerCase();
+            if (!item.label || seen.has(key)) return false;
+            seen.add(key);
+            return true;
+        })
+        .sort((a, b) => a.order - b.order);
+}
+
+function normalizeTaskSubtasks(subtasks = []) {
+    const seen = new Set();
+    return (Array.isArray(subtasks) ? subtasks : [])
+        .map((item, index) => {
+            const title = cleanText(item?.title || item, '');
+            const key = item?._id ? String(item._id) : `${title.toLowerCase()}-${index}`;
+            return {
+                ...(item?._id ? { _id: item._id } : {}),
+                title,
+                done: item?.done === true,
+                order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
+                completedAt: item?.done === true
+                    ? (item.completedAt || new Date())
+                    : null,
+                createdAt: item?.createdAt || new Date(),
+                _key: key,
+            };
+        })
+        .filter(item => {
+            if (!item.title || seen.has(item._key)) return false;
+            seen.add(item._key);
+            delete item._key;
+            return true;
+        })
+        .sort((a, b) => a.order - b.order)
+        .map((item, index) => ({ ...item, order: index }));
+}
+
+function normalizeTaskListDisplayOptions(value = {}) {
+    const source = value && typeof value === 'object' ? value : {};
+    return Object.fromEntries(
+        Object.entries(defaultTaskListDisplayOptions).map(([key, fallback]) => [
+            key,
+            source[key] === undefined ? fallback : source[key] !== false,
+        ]),
+    );
 }
 
 function recordTitle(record = {}, fallback = 'Sans titre') {
@@ -90,6 +182,9 @@ function serializeTaskListSummary(req, list = {}, tasks = [], record = {}, entit
         rawLabel: list.label || label,
         color,
         icon,
+        viewMode: cleanTaskListViewMode(list.viewMode, 'list'),
+        tags: normalizeTaskTagOptions(list.tags),
+        displayOptions: normalizeTaskListDisplayOptions(list.displayOptions),
         order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0,
         myListOrder: Number.isFinite(Number(list.myListOrder)) ? Number(list.myListOrder) : 0,
         isDefault: !!list.isDefault,
@@ -209,16 +304,110 @@ async function createAccountTaskList(req, input = {}) {
         label,
         color: cleanTaskListColor(input.color, '#6366f1'),
         icon: cleanTaskListIcon(input.icon, 'solar:list-check-bold-duotone'),
+        viewMode: cleanTaskListViewMode(input.viewMode, 'list'),
+        tags: normalizeTaskTagOptions(input.tags),
+        displayOptions: normalizeTaskListDisplayOptions(input.displayOptions),
         order: lists.length,
         myListOrder: (Number(maxMyList?.myListOrder) || 0) + 1,
         contextType: 'account',
         isDefault: false,
-        showInMyLists: input.showInMyLists !== false,
+        showInMyLists: true,
         statuses: TaskOverview.defaultStatuses,
         priorities,
     });
 
     return serializeTaskListSummary(req, list.toObject ? list.toObject() : list, [], record.toObject ? record.toObject() : record, entity.toObject ? entity.toObject() : entity);
+}
+
+async function updateTaskListConfig(req, listId, input = {}) {
+    const id = String(listId || '');
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+
+    const label = cleanTaskListLabel(input.label, '');
+    if (!label) {
+        const error = new Error('Nom de liste requis');
+        error.status = 400;
+        throw error;
+    }
+
+    const { TaskList, RecordTask } = await taskTenantModels(req);
+    const list = await TaskList.findById(id);
+    if (!list) return null;
+
+    list.label = label;
+    list.color = cleanTaskListColor(input.color, list.color || '#6366f1');
+    list.icon = cleanTaskListIcon(input.icon, list.icon || 'solar:list-check-bold-duotone');
+    list.viewMode = cleanTaskListViewMode(input.viewMode, list.viewMode || 'list');
+    const tagsChanged = input.tags !== undefined;
+    const previousTags = normalizeTaskTagOptions(list.tags);
+    if (tagsChanged) list.tags = normalizeTaskTagOptions(input.tags);
+    if (input.displayOptions !== undefined) list.displayOptions = normalizeTaskListDisplayOptions(input.displayOptions);
+    if (list.contextType === 'account') {
+        list.showInMyLists = true;
+    }
+    await list.save();
+
+    if (tagsChanged) await syncTaskTagsWithOptions(RecordTask, list._id, previousTags, list.tags, input.tagRenames || input.renames || []);
+
+    return serializeOneTaskList(req, list);
+}
+
+function normalizeTagRenamePairs(renames = []) {
+    return (Array.isArray(renames) ? renames : [])
+        .map(item => ({
+            from: cleanText(item?.from, ''),
+            to: cleanText(item?.to, ''),
+        }))
+        .filter(item => item.from && item.to && item.from.toLowerCase() !== item.to.toLowerCase());
+}
+
+async function syncTaskTagsWithOptions(RecordTask, listId, previousOptions = [], nextOptions = [], renames = []) {
+    const nextTags = normalizeTaskTagOptions(nextOptions);
+    const previousTags = normalizeTaskTagOptions(previousOptions);
+    const renameByLabel = new Map(normalizeTagRenamePairs(renames).map(pair => [pair.from.toLowerCase(), pair.to]));
+    const nextByLabel = new Map(nextTags.map(tag => [tag.label.toLowerCase(), tag]));
+    const previousByLabel = new Map(previousTags.map(tag => [tag.label.toLowerCase(), tag]));
+    const allowed = new Set(nextByLabel.keys());
+    const tasks = await RecordTask.find({ taskListId: listId }).select('_id tags');
+
+    for (const task of tasks) {
+        const current = normalizeTaskTags(task.tags, previousTags);
+        const synced = [];
+        const seen = new Set();
+        for (const tag of current) {
+            const renamed = renameByLabel.get(tag.label.toLowerCase()) || tag.label;
+            const key = renamed.toLowerCase();
+            const option = nextByLabel.get(key);
+            if (!allowed.has(key) || !option || seen.has(key)) continue;
+            seen.add(key);
+            synced.push({
+                label: option.label,
+                color: option.color || tag.color || previousByLabel.get(tag.label.toLowerCase())?.color || '#6366f1',
+                order: option.order ?? synced.length,
+            });
+        }
+        if (JSON.stringify(task.tags || []) !== JSON.stringify(synced)) {
+            task.tags = synced;
+            await task.save();
+        }
+    }
+}
+
+async function updateTaskListTags(req, listId, input = {}) {
+    const id = String(listId || '');
+    if (!mongoose.Types.ObjectId.isValid(id)) return null;
+
+    const { TaskList, RecordTask } = await taskTenantModels(req);
+    const list = await TaskList.findById(id);
+    if (!list) return null;
+
+    const previousTags = normalizeTaskTagOptions(list.tags);
+    const nextTags = normalizeTaskTagOptions(input.tags);
+    list.tags = nextTags;
+    await list.save();
+    await syncTaskTagsWithOptions(RecordTask, list._id, previousTags, nextTags, input.renames || []);
+
+    return nextTags;
 }
 
 async function listMyTaskLists(req) {
@@ -284,6 +473,9 @@ async function setMyListVisibility(req, listId, enabled = true) {
         showInMyLists: !!enabled,
         contextType,
     };
+    if (contextType === 'account' && !enabled) {
+        return serializeOneTaskList(req, list);
+    }
     if (enabled && !Number(list.myListOrder)) {
         const max = await TaskList.findOne({ showInMyLists: true }).sort({ myListOrder: -1 }).select('myListOrder').lean();
         update.myListOrder = (Number(max?.myListOrder) || 0) + 1;
@@ -297,13 +489,21 @@ module.exports = {
     PERSONAL_SPACE_SLUG,
     DEFAULT_ACCOUNT_TASK_LIST_LABEL,
     SHOPPING_TASK_LIST_LABEL,
+    defaultTaskListDisplayOptions,
     cleanText,
     cleanTaskListLabel,
     cleanTaskListColor,
     cleanTaskListIcon,
+    cleanTaskListViewMode,
+    normalizeTaskTagOptions,
+    normalizeTaskTags,
+    normalizeTaskSubtasks,
+    normalizeTaskListDisplayOptions,
+    updateTaskListTags,
     defaultRecordTaskListLabel,
     ensurePersonalTaskRecord,
     createAccountTaskList,
+    updateTaskListConfig,
     listContextType,
     listMyTaskLists,
     serializeTaskListSummary,

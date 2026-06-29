@@ -21,7 +21,11 @@ async function ensureTenantMongoUser(accountNumber) {
     if (!credentials) return { skipped: true, reason: 'no_credentials' };
 
     const dbName = dbConfig.tenantDbName(accountNumber);
-    const client = new MongoClient(dbConfig.adminDbUri(), { maxPoolSize: 2 });
+    const client = new MongoClient(dbConfig.adminDbUri(), {
+        maxPoolSize: 2,
+        serverSelectionTimeoutMS: 8000,
+        connectTimeoutMS: 8000,
+    });
 
     try {
         await client.connect();

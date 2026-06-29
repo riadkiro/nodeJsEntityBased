@@ -23,6 +23,9 @@ function getTransporter() {
             port: mailConfig.smtp.port,
             secure: mailConfig.smtp.secure,
             auth: mailConfig.smtp.auth,
+            connectionTimeout: 8000,
+            greetingTimeout: 8000,
+            socketTimeout: 10000,
         });
     }
     return transporter;

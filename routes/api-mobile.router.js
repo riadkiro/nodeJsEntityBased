@@ -5,8 +5,6 @@ const User = require('../models/user.model');
 const Account = require('../models/account.model');
 const mailer = require('../services/mailer');
 const ReminderService = require('../services/reminders/reminder.service');
-const { convertPendingInvitesToGrants } = require('../services/record-access-invitations');
-const { ensureTenantDatabase } = require('../services/tenant-provisioning');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
@@ -15,6 +13,10 @@ const {
     getAccountTaskPriorities,
     priorityOptionFor,
 } = require('../services/task-priorities.service');
+const {
+    createAccountUser,
+    RegistrationError,
+} = require('../services/account-registration.service');
 
 const router = express.Router();
 
@@ -527,123 +529,31 @@ router.post('/auth/login', async (req, res) => {
 
 router.post('/auth/register', async (req, res) => {
     try {
-        const name = cleanText(req.body?.name, '');
-        const email = normalizeEmail(req.body?.email);
-        const password = String(req.body?.password || '');
-        const confirmPassword = String(req.body?.confirmPassword || req.body?.password || '');
-        const errors = [];
-
-        if (!name) errors.push('Le nom est requis');
-        if (!email) errors.push("L'email est requis");
-        if (!password || password.length < 6) errors.push('Le mot de passe doit contenir au moins 6 caracteres');
-        if (password !== confirmPassword) errors.push('Les mots de passe ne correspondent pas');
-        if (errors.length) return sendError(res, 400, errors.join('. '), 'VALIDATION_ERROR');
-
-        const existing = await User.findOne({ email });
-        if (existing) return sendError(res, 409, 'Cet email est deja utilise', 'EMAIL_EXISTS');
-
-        const newUser = new User({
-            name,
-            email,
-            password,
-            authProvider: 'local',
-            status: 'pending',
-            emailVerified: false,
+        const registration = await createAccountUser({
+            req,
+            name: req.body?.name,
+            email: req.body?.email,
+            password: req.body?.password,
+            confirmPassword: req.body?.confirmPassword || req.body?.password,
+            plan: req.body?.plan || 'free',
             role: 'user',
-            membership: {
-                plan: 'free',
-                startDate: new Date(),
-                maxAccounts: 1,
-                maxUsersPerAccount: 3,
-                storageLimit: 500,
-            },
-            loginCount: 0,
+            requireEmailVerification: true,
+            requirePasswordConfirmation: true,
+            inviteToken: req.body?.inviteToken,
         });
 
-        let accountNumber;
-        let attempts = 0;
-        do {
-            accountNumber = String(5000 + Math.floor(Math.random() * 5000));
-            // eslint-disable-next-line no-await-in-loop
-            const duplicate = await Account.findOne({ account_number: accountNumber });
-            if (!duplicate) break;
-            attempts += 1;
-        } while (attempts < 100);
-
-        if (attempts >= 100) {
-            return sendError(res, 500, "Impossible de generer un numero d'espace unique");
-        }
-
-        await ensureTenantDatabase(accountNumber);
-        await newUser.save();
-
-        const newAccount = new Account({
-            name: `${name}'s Workspace`,
-            icon: 'solar:home-2-bold-duotone',
-            ownerId: newUser._id,
-            users: [{
-                userId: newUser._id.toString(),
-                email: newUser.email,
-                role: 'owner',
-                status: 'active',
-            }],
-            account_number: accountNumber,
-            status: 'active',
-        });
-        await newAccount.save();
-
-        newUser.accounts.push({
-            account_number: accountNumber,
-            name: newAccount.name,
-            icon: 'solar:home-2-bold-duotone',
-            role: 'owner',
-        });
-        await newUser.save();
-
-        const inviteToken = cleanText(req.body?.inviteToken, '');
-        if (inviteToken) {
-            try {
-                const invitedAccount = await Account.findOne({
-                    'invitations.token': inviteToken,
-                    'invitations.status': 'pending',
-                });
-                const invite = invitedAccount?.invitations?.find(item => item.token === inviteToken && item.status === 'pending');
-                if (invitedAccount && invite && (!invite.expiresAt || new Date() < new Date(invite.expiresAt))) {
-                    invitedAccount.users.push({
-                        userId: newUser._id.toString(),
-                        email: newUser.email,
-                        role: invite.role,
-                        status: 'active',
-                        invitedBy: invite.invitedBy,
-                        joinedAt: new Date(),
-                    });
-                    invite.status = 'accepted';
-                    await invitedAccount.save();
-
-                    newUser.accounts.push({
-                        account_number: invitedAccount.account_number,
-                        name: invitedAccount.name,
-                        icon: invitedAccount.icon || 'solar:home-2-bold-duotone',
-                        role: invite.role,
-                        joinedAt: new Date(),
-                    });
-                    await newUser.save();
-                    await convertPendingInvitesToGrants(invitedAccount.account_number, newUser.email, newUser._id);
-                }
-            } catch (inviteError) {
-                console.error('[MobileAPI] Auto-accept invite error:', inviteError.message);
-            }
-        }
-
-        await issueVerificationEmail(req, newUser);
-
-        res.status(201).json({
+        return res.status(201).json({
             success: true,
             verificationRequired: true,
             message: 'Compte cree. Verifiez votre email pour confirmer votre compte avant connexion.',
-            user: userPayload(newUser),
+            user: userPayload(registration.user),
         });
+
     } catch (error) {
+        if (error instanceof RegistrationError) {
+            return sendError(res, error.status || 400, error.message, error.code);
+        }
+
         console.error('[MobileAPI] Register error:', error);
         sendError(res, 500, 'Erreur serveur');
     }

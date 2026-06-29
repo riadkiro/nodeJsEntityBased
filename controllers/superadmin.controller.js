@@ -17,7 +17,6 @@ const {
     convertPendingInvitesToGrants,
     invitationRedirectUrl,
 } = require("../services/record-access-invitations");
-const { ensureTenantDatabase } = require("../services/tenant-provisioning");
 const { invalidateCache } = require("../middleware/billing");
 const {
     BILLING_CYCLES,
@@ -31,6 +30,10 @@ const {
     getPlanLimits,
     getPlanSeatPolicy,
 } = require("../services/billing-catalog");
+const {
+    createAccountUser,
+    RegistrationError,
+} = require("../services/account-registration.service");
 
 function jsonForScript(value) {
     return JSON.stringify(value).replace(/</g, "\\u003c");
@@ -517,68 +520,32 @@ module.exports = {
     // ── API: Create User ──────────────────────────────────────
     createUser: async (req, res) => {
         try {
-            const { name, email, password, role, plan, status } = req.body;
-
-            if (!name || !email || !password) {
-                return res.status(400).json({ error: 'Name, email, and password are required' });
-            }
-
-            const existing = await User.findOne({ email: email.toLowerCase().trim() });
-            if (existing) {
-                return res.status(400).json({ error: 'Email already exists' });
-            }
-
-            const limits = User.getPlanLimits(plan || 'free');
-
-            const newUser = new User({
-                name: name.trim(),
-                email: email.toLowerCase().trim(),
-                password,
-                role: role || 'user',
-                status: status || 'active',
-                authProvider: 'local',
-                membership: {
-                    plan: plan || 'free',
-                    startDate: new Date(),
-                    expiresAt: plan && plan !== 'free'
-                        ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-                        : null,
-                    ...limits,
-                },
+            const registration = await createAccountUser({
+                req,
+                name: req.body.name,
+                email: req.body.email,
+                password: req.body.password,
+                confirmPassword: req.body.password,
+                role: req.body.role || 'user',
+                plan: req.body.plan || 'free',
+                status: req.body.status || 'active',
+                requireEmailVerification: false,
+                requirePasswordConfirmation: false,
             });
 
-            // Auto-create first workspace
-            let account_number;
-            let attempts = 0;
-            do {
-                account_number = (5000 + Math.floor(Math.random() * 5000)).toString();
-                const exists = await Account.findOne({ account_number });
-                if (!exists) break;
-                attempts++;
-            } while (attempts < 100);
-
-            if (attempts >= 100) {
-                return res.status(500).json({ error: 'Could not generate unique account number' });
-            }
-
-            await ensureTenantDatabase(account_number);
-            await newUser.save();
-
-            const newAccount = new Account({
-                name: `${name.trim()}'s Workspace`,
-                icon: 'solar:home-2-bold-duotone',
-                ownerId: newUser._id,
-                users: [{ userId: newUser._id.toString(), email: newUser.email, role: 'owner', status: 'active' }],
-                account_number,
-                status: 'active',
+            res.json({
+                success: true,
+                userId: registration.user._id,
+                account_number: registration.account_number,
             });
-            await newAccount.save();
-
-            newUser.accounts.push({ account_number, name: newAccount.name, icon: 'solar:home-2-bold-duotone', role: 'owner' });
-            await newUser.save();
-
-            res.json({ success: true, userId: newUser._id, account_number });
         } catch (error) {
+            if (error instanceof RegistrationError) {
+                return res.status(error.status || 400).json({
+                    error: error.message,
+                    code: error.code,
+                });
+            }
+
             console.error("[SuperAdmin] Create user error:", error);
             res.status(500).json({ error: "Server Error" });
         }

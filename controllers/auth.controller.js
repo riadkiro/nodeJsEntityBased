@@ -3,8 +3,10 @@ const User = require("../models/user.model");
 const Account = require("../models/account.model");
 const crypto = require("crypto");
 const mailer = require("../services/mailer");
-const { convertPendingInvitesToGrants } = require("../services/record-access-invitations");
-const { ensureTenantDatabase } = require("../services/tenant-provisioning");
+const {
+  createAccountUser,
+  RegistrationError,
+} = require("../services/account-registration.service");
 
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
@@ -304,147 +306,32 @@ module.exports = {
   // ── Register (POST) ──────────────────────────────────────
   register: async (req, res) => {
     try {
-      const { name, email, password, confirmPassword } = req.body;
-      const normalizedEmail = normalizeEmail(email);
-      const errors = [];
-
-      if (!name || !name.trim()) errors.push("Le nom est requis");
-      if (!email || !email.trim()) errors.push("L'email est requis");
-      if (!password || password.length < 6) errors.push("Le mot de passe doit contenir au moins 6 caractères");
-      if (password !== confirmPassword) errors.push("Les mots de passe ne correspondent pas");
-
-      if (errors.length > 0) {
-        return res.render("auth/auth-register", {
-          layout: false,
-          error_msg: errors.join(". "),
-          error: null,
-          name, email
-        });
-      }
-
-      // Check if email already exists
-      const existing = await User.findOne({ email: normalizedEmail });
-      if (existing) {
-        return res.render("auth/auth-register", {
-          layout: false,
-          error_msg: "Cet email est déjà utilisé",
-          error: null,
-          name, email
-        });
-      }
-
-      // Create user with free plan
-      const newUser = new User({
-        name: name.trim(),
-        email: normalizedEmail,
-        password,
-        authProvider: 'local',
-        status: 'pending',
-        emailVerified: false,
+      const registration = await createAccountUser({
+        req,
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+        confirmPassword: req.body.confirmPassword,
+        plan: req.body.plan || 'free',
         role: 'user',
-        membership: {
-          plan: 'free',
-          startDate: new Date(),
-          maxAccounts: 1,
-          maxUsersPerAccount: 3,
-          storageLimit: 500,
-        },
-        loginCount: 0,
+        requireEmailVerification: true,
+        requirePasswordConfirmation: true,
+        inviteToken: req.body.inviteToken,
       });
+      const successMessage = encodeURIComponent("Compte cree. Verifiez votre email pour confirmer votre compte avant connexion.");
+      return res.redirect(`/auth/login?success=${successMessage}&unverified=1&email=${encodeURIComponent(registration.user.email)}`);
 
-      // Auto-create first account/workspace
-      let account_number;
-      let attempts = 0;
-      do {
-        account_number = (5000 + Math.floor(Math.random() * 5000)).toString();
-        const existing = await Account.findOne({ account_number });
-        if (!existing) break;
-        attempts++;
-      } while (attempts < 100);
-
-      if (attempts >= 100) {
+    } catch (error) {
+      if (error instanceof RegistrationError) {
         return res.render("auth/auth-register", {
           layout: false,
-          error_msg: "Impossible de générer un numéro d'espace unique",
+          error_msg: error.message,
           error: null,
-          name, email
+          name: req.body.name,
+          email: req.body.email,
         });
       }
 
-      await ensureTenantDatabase(account_number);
-      await newUser.save();
-
-      const newAccount = new Account({
-        name: `${name.trim()}'s Workspace`,
-        icon: 'solar:home-2-bold-duotone',
-        ownerId: newUser._id,
-        users: [{
-          userId: newUser._id.toString(),
-          email: newUser.email,
-          role: 'owner',
-          status: 'active',
-        }],
-        account_number,
-        status: 'active',
-      });
-
-      await newAccount.save();
-
-      // Add account to user
-      newUser.accounts.push({
-        account_number,
-        name: newAccount.name,
-        icon: 'solar:home-2-bold-duotone',
-        role: 'owner',
-      });
-      await newUser.save();
-
-      // Auto-accept invitation if invite token is present
-      const inviteToken = req.body.inviteToken;
-      if (inviteToken) {
-        try {
-          const invAcc = await Account.findOne({
-            'invitations.token': inviteToken,
-            'invitations.status': 'pending',
-          });
-          if (invAcc) {
-            const inv = invAcc.invitations.find(i => i.token === inviteToken && i.status === 'pending');
-            if (inv && (!inv.expiresAt || new Date() < new Date(inv.expiresAt))) {
-              // Add user to the inviting account
-              invAcc.users.push({
-                userId: newUser._id.toString(),
-                email: newUser.email,
-                role: inv.role,
-                status: 'active',
-                invitedBy: inv.invitedBy,
-                joinedAt: new Date(),
-              });
-              inv.status = 'accepted';
-              await invAcc.save();
-
-              // Add the inviting account to user's accounts
-              newUser.accounts.push({
-                account_number: invAcc.account_number,
-                name: invAcc.name,
-                icon: invAcc.icon || 'solar:home-2-bold-duotone',
-                role: inv.role,
-                joinedAt: new Date(),
-              });
-              await newUser.save();
-              await convertPendingInvitesToGrants(invAcc.account_number, newUser.email, newUser._id);
-              console.log(`[Register] Auto-accepted invitation for ${newUser.email} → account ${invAcc.account_number}`);
-            }
-          }
-        } catch (invErr) {
-          console.error('[Register] Auto-accept invite error:', invErr.message);
-        }
-      }
-
-      await issueVerificationEmail(req, newUser);
-
-      const success = encodeURIComponent("Compte créé. Vérifiez votre email pour confirmer votre compte avant connexion.");
-      return res.redirect(`/auth/login?success=${success}&unverified=1&email=${encodeURIComponent(newUser.email)}`);
-    } catch (error) {
       console.error("[Register] Error:", error);
       res.render("auth/auth-register", {
         layout: false,

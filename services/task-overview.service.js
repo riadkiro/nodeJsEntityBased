@@ -187,20 +187,33 @@ function createDateTools(query = {}) {
     };
 }
 
+function taskDateKeyFor(value, tools) {
+    return value ? tools.formatKey(value) : '';
+}
+
+function taskStartDateKey(task, tools) {
+    return taskDateKeyFor(task?.startDate, tools);
+}
+
+function taskDueDateKey(task, tools) {
+    return taskDateKeyFor(task?.dueDate, tools);
+}
+
 function taskScheduleDateKey(task, tools) {
-    const value = task?.startDate || task?.dueDate || null;
-    return value ? tools.formatKey(value) : '';
+    return taskDateKeyFor(task?.dueDate || task?.startDate, tools);
 }
 
-function taskOverdueDateKey(task, tools) {
-    const value = task?.dueDate || task?.startDate || null;
-    return value ? tools.formatKey(value) : '';
-}
-
-function taskMatchesDate(task, tools) {
-    const key = taskScheduleDateKey(task, tools);
-    if (key) return key === tools.dateKey;
-    return tools.dateKey === tools.todayKey ? !!(task?.isDayPriority || task?.listIsToday) : false;
+function taskMatchesDate(task, tools, dateKey = tools.dateKey) {
+    if (!dateKey) return false;
+    const startKey = taskStartDateKey(task, tools);
+    const dueKey = taskDueDateKey(task, tools);
+    if (dateKey === tools.todayKey) {
+        if (task?.isDayPriority && (!startKey || startKey <= dateKey) && (!dueKey || dueKey >= dateKey)) return true;
+        if (startKey && startKey <= dateKey && (!dueKey || dueKey >= dateKey)) return true;
+        return !startKey && dueKey === dateKey;
+    }
+    if (startKey === dateKey || dueKey === dateKey) return true;
+    return !!(startKey && dueKey && startKey <= dateKey && dueKey >= dateKey);
 }
 
 function taskTimestamp(value) {
@@ -278,8 +291,8 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
 
 function compareBoardTasks(tools) {
     const overdueRank = task => {
-        const key = taskOverdueDateKey(task, tools);
-        return !isDone(task) && key && key < tools.dateKey ? 0 : 1;
+        const key = taskScheduleDateKey(task, tools);
+        return !isDone(task) && key && key < tools.todayKey ? 0 : 1;
     };
     return (a, b) => {
         const aoRank = overdueRank(a);
@@ -291,6 +304,18 @@ function compareBoardTasks(tools) {
         const ad = taskTimestamp(a.startDate || a.dueDate || 8640000000000000);
         const bd = taskTimestamp(b.startDate || b.dueDate || 8640000000000000);
         if (ad !== bd) return ad - bd;
+        return taskTimestamp(a.createdAt) - taskTimestamp(b.createdAt);
+    };
+}
+
+function compareDayTasks(tools) {
+    return (a, b) => {
+        const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+        const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+        if (ao !== bo) return ao - bo;
+        const ap = taskScheduleDateKey(a, tools) || '9999-12-31';
+        const bp = taskScheduleDateKey(b, tools) || '9999-12-31';
+        if (ap !== bp) return ap.localeCompare(bp);
         return taskTimestamp(a.createdAt) - taskTimestamp(b.createdAt);
     };
 }
@@ -388,18 +413,20 @@ async function buildTaskBoard(req, options = {}) {
         });
 
     const boardSorter = compareBoardTasks(tools);
+    const daySorter = compareDayTasks(tools);
     const isBeforeTarget = task => {
-        const key = taskOverdueDateKey(task, tools);
-        return !!key && key < tools.dateKey;
+        const key = taskScheduleDateKey(task, tools);
+        return !!key && key < tools.todayKey;
     };
     const isOverdue = task => !isDone(task) && isBeforeTarget(task);
     const selected = rows
+        .filter(task => !isDone(task))
         .filter(task => tools.day === 'overdue' ? isOverdue(task) : taskMatchesDate(task, tools))
-        .sort(boardSorter);
+        .sort(daySorter);
     const completedToday = rows
-        .filter(task => isDone(task) && taskMatchesDate(task, tools))
+        .filter(task => isDone(task) && taskDateKeyFor(task.completedAt || task.updatedAt, tools) === tools.dateKey)
         .sort(compareCompletedTasks);
-    const overdueTasks = rows.filter(isOverdue).sort(boardSorter);
+    const overdueTasks = rows.filter(isOverdue).sort(daySorter);
     const openTasksSorted = rows.filter(task => !isDone(task)).sort(boardSorter);
 
     const tasksByList = {};
@@ -523,6 +550,8 @@ module.exports = {
     resolveTimeZone,
     createDateTools,
     taskScheduleDateKey,
+    taskMatchesDate,
+    compareDayTasks,
     compareCompletedTasks,
     serializeTaskRow,
     buildTaskBoard,

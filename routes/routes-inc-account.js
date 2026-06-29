@@ -752,6 +752,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                     startDate: t.startDate || null,
                     dueDate: t.dueDate || null,
                     assignedTo: t.assignedTo || '',
+                    order: Number.isFinite(Number(t.order)) ? Number(t.order) : 0,
                     createdAt: t.createdAt || null,
                     updatedAt: t.updatedAt || null,
                     completedAt: t.completedAt || null,

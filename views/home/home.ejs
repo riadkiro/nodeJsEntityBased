@@ -4676,18 +4676,23 @@ document.addEventListener('alpine:init', () => {
 	            if (this.todayWidgetIsToday(wid)) return 'Ajouter une tâche...';
 	            return 'Ajouter une tâche pour ' + this.todayWidgetDatePhrase(wid) + '...';
 	        },
-	        taskScheduleDateKey(task = {}) {
-	            const value = task.startDate || task.dueDate;
+	        todayWidgetValueDateKey(value) {
 	            if (!value) return '';
-	            const useLocal = this.dateValueHasExplicitTime(value);
-	            return this.taskDateKey(value, useLocal);
-	        },
-	        todayWidgetTaskReferenceKey(task = {}) {
-	            const value = task.dueDate || task.startDate || '';
-	            if (!value) return '';
-	            const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+	            const match = String(value || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
 	            if (match) return `${match[1]}-${match[2]}-${match[3]}`;
 	            return this.taskDateKey(value, this.dateValueHasExplicitTime(value));
+	        },
+	        todayWidgetStartDateKey(task = {}) {
+	            return this.todayWidgetValueDateKey(task.startDate);
+	        },
+	        todayWidgetDueDateKey(task = {}) {
+	            return this.todayWidgetValueDateKey(task.dueDate);
+	        },
+	        taskScheduleDateKey(task = {}) {
+	            return this.todayWidgetTaskReferenceKey(task);
+	        },
+	        todayWidgetTaskReferenceKey(task = {}) {
+	            return this.todayWidgetValueDateKey(task.dueDate || task.startDate || '');
 	        },
 	        compareTodayWidgetTasks(a = {}, b = {}) {
 	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
@@ -4700,9 +4705,16 @@ document.addEventListener('alpine:init', () => {
 	        },
 	        taskMatchesTodayWidgetDate(task, wid) {
 	            const selected = this.todayWidgetDate(wid);
-	            const scheduled = this.taskScheduleDateKey(task);
-	            if (scheduled) return scheduled === selected;
-	            return selected === this.todayDateKey();
+	            if (!selected) return false;
+	            const startKey = this.todayWidgetStartDateKey(task);
+	            const dueKey = this.todayWidgetDueDateKey(task);
+	            if (selected === this.todayDateKey()) {
+	                if (task?.isDayPriority && (!startKey || startKey <= selected) && (!dueKey || dueKey >= selected)) return true;
+	                if (startKey && startKey <= selected && (!dueKey || dueKey >= selected)) return true;
+	                return !startKey && dueKey === selected;
+	            }
+	            if (startKey === selected || dueKey === selected) return true;
+	            return !!(startKey && dueKey && startKey <= selected && dueKey >= selected);
 	        },
 	        todayWidgetSourceTasks(wid) {
 	            const list = this.homeTaskListForWidget(wid);
@@ -4715,10 +4727,10 @@ document.addEventListener('alpine:init', () => {
 	            };
 	            (this.todayTasks || []).forEach(addTask);
 	            (this.allTasks || []).forEach(task => {
-	                if (this.taskScheduleDateKey(task) === selected) addTask(task);
+	                if (this.taskMatchesTodayWidgetDate(task, wid)) addTask(task);
 	            });
 	            (this.completedTodayData || []).forEach(task => {
-	                if (this.taskScheduleDateKey(task) === selected) addTask(task);
+	                if (this.todayWidgetValueDateKey(task?.completedAt || task?.updatedAt) === selected) addTask(task);
 	            });
 	            const source = Array.from(byId.values());
 	            return source.filter(t => t && (t._id || t.id));
@@ -4806,7 +4818,6 @@ document.addEventListener('alpine:init', () => {
 	        completedTodayTasks() {
 	            const todayKey = this.todayDateKey();
 	            const allSources = [...(this.completedTodayData || []), ...(this.todayTasks || []), ...(this.allTasks || [])];
-	            // De-duplicate by id
 	            const seen = new Set();
 	            const result = [];
 	            for (const t of allSources) {
@@ -4814,10 +4825,7 @@ document.addEventListener('alpine:init', () => {
 	                if (!id || seen.has(id)) continue;
 	                seen.add(id);
 	                if (t.status !== 'Terminé') continue;
-	                const key = this.taskScheduleDateKey(t);
-	                if (key ? key === todayKey : (t.isDayPriority || t.listIsToday)) {
-	                    result.push(t);
-	                }
+	                if (this.todayWidgetValueDateKey(t.completedAt || t.updatedAt) === todayKey) result.push(t);
 	            }
 	            return result.sort((a, b) => this.compareCompletedHomeTasks(a, b));
 	        },
@@ -4838,10 +4846,21 @@ document.addEventListener('alpine:init', () => {
 	            if (!wid) {
 	                return this.completedTodayTasks();
 	            }
-	            const source = wid ? this.todayWidgetDateTasks(wid) : (this.todayTasks || []);
-	            return source
-	                .filter(t => t && t.status === 'Terminé')
-	                .sort((a, b) => this.compareCompletedHomeTasks(a, b));
+	            const selected = this.todayWidgetDate(wid);
+	            const list = this.homeTaskListForWidget(wid);
+	            const source = list
+	                ? (list.tasks || [])
+	                : [...(this.completedTodayData || []), ...(this.todayTasks || []), ...(this.allTasks || [])];
+	            const seen = new Set();
+	            const result = [];
+	            source.forEach(task => {
+	                const id = this.homeTaskId(task);
+	                if (!id || seen.has(id) || task?.status !== 'Terminé') return;
+	                if (this.todayWidgetValueDateKey(task.completedAt || task.updatedAt) !== selected) return;
+	                seen.add(id);
+	                result.push(task);
+	            });
+	            return result.sort((a, b) => this.compareCompletedHomeTasks(a, b));
 	        },
 	        completedDayTitle(wid) {
 	            const phrase = this.todayWidgetDatePhrase(wid);
@@ -5191,11 +5210,8 @@ document.addEventListener('alpine:init', () => {
 	        },
 	        isOverdue(task) {
 	            if (!task || task.status === 'Terminé') return false;
-	            if (task.dueDate) return this.taskDueState(task) === 'overdue';
-	            if (!task.startDate) return false;
-	            const date = new Date(task.startDate);
-	            if (Number.isNaN(date.getTime())) return false;
-	            return this.taskDayDiff(task.startDate, this.dateValueHasExplicitTime(task.startDate)) < 0;
+	            const key = this.todayWidgetTaskReferenceKey(task);
+	            return !!key && key < this.todayDateKey();
 	        },
         timeAgo(dateStr) {
             if (!dateStr) return '';

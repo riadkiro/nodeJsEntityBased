@@ -3621,6 +3621,14 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 return Math.round((toUtcDay(key) - toUtcDay(this.todayDateKey())) / 86400000);
             },
 
+            todayWidgetStartDateKey(task = {}) {
+                return this.taskDateKey(task.startDate);
+            },
+
+            todayWidgetDueDateKey(task = {}) {
+                return this.taskDateKey(task.dueDate);
+            },
+
             taskScheduleDateKey(task = {}) {
                 const value = task.dueDate || task.startDate;
                 return value ? this.taskDateKey(value) : '';
@@ -3628,15 +3636,16 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
             taskMatchesTodayWidgetDate(task, wid) {
                 const selected = this.todayWidgetDate(wid);
-                if (selected === this.todayDateKey() && task?.isDayPriority === true) return true;
-                const scheduled = this.taskScheduleDateKey(task);
-                if (scheduled) return scheduled === selected;
-                return false;
-            },
-
-            homeTaskSortDate(task = {}) {
-                const d = task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt || Date.now());
-                return Number.isNaN(d.getTime()) ? Date.now() : d.getTime();
+                if (!selected) return false;
+                const startKey = this.todayWidgetStartDateKey(task);
+                const dueKey = this.todayWidgetDueDateKey(task);
+                if (selected === this.todayDateKey()) {
+                    if (task?.isDayPriority && (!startKey || startKey <= selected) && (!dueKey || dueKey >= selected)) return true;
+                    if (startKey && startKey <= selected && (!dueKey || dueKey >= selected)) return true;
+                    return !startKey && dueKey === selected;
+                }
+                if (startKey === selected || dueKey === selected) return true;
+                return !!(startKey && dueKey && startKey <= selected && dueKey >= selected);
             },
 
             sortTodayWidgetTasks(tasks = []) {
@@ -3645,7 +3654,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     if (a.status !== 'Terminé' && b.status === 'Terminé') return -1;
                     const orderDiff = Number(a.order || 0) - Number(b.order || 0);
                     if (orderDiff !== 0) return orderDiff;
-                    return this.homeTaskSortDate(a) - this.homeTaskSortDate(b);
+                    const aKey = this.taskScheduleDateKey(a) || '9999-12-31';
+                    const bKey = this.taskScheduleDateKey(b) || '9999-12-31';
+                    if (aKey !== bKey) return aKey.localeCompare(bKey);
+                    return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
                 });
             },
 
@@ -3668,9 +3680,8 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
             isOverdue(task) {
                 if (!task || task.status === 'Terminé') return false;
-                if (task.dueDate) return this.taskDueState(task) === 'overdue';
-                if (!task.startDate) return false;
-                return this.taskDayDiff(task.startDate) < 0;
+                const key = this.taskScheduleDateKey(task);
+                return !!key && key < this.todayDateKey();
             },
 
             todayWidgetOverdueTasks() {

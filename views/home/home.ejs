@@ -4682,6 +4682,22 @@ document.addEventListener('alpine:init', () => {
 	            const useLocal = this.dateValueHasExplicitTime(value);
 	            return this.taskDateKey(value, useLocal);
 	        },
+	        todayWidgetTaskReferenceKey(task = {}) {
+	            const value = task.dueDate || task.startDate || '';
+	            if (!value) return '';
+	            const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})/);
+	            if (match) return `${match[1]}-${match[2]}-${match[3]}`;
+	            return this.taskDateKey(value, this.dateValueHasExplicitTime(value));
+	        },
+	        compareTodayWidgetTasks(a = {}, b = {}) {
+	            const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
+	            const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 0;
+	            if (ao !== bo) return ao - bo;
+	            const ap = this.todayWidgetTaskReferenceKey(a) || '9999-12-31';
+	            const bp = this.todayWidgetTaskReferenceKey(b) || '9999-12-31';
+	            if (ap !== bp) return ap.localeCompare(bp);
+	            return new Date(a.createdAt || 0) - new Date(b.createdAt || 0);
+	        },
 	        taskMatchesTodayWidgetDate(task, wid) {
 	            const selected = this.todayWidgetDate(wid);
 	            const scheduled = this.taskScheduleDateKey(task);
@@ -4710,7 +4726,8 @@ document.addEventListener('alpine:init', () => {
 	        todayWidgetDateTasks(wid) {
 	            if (this.todayWidgetIsOverdue(wid)) return this.todayWidgetOverdueTasks(wid);
 	            return this.todayWidgetSourceTasks(wid)
-	                .filter(task => this.taskMatchesTodayWidgetDate(task, wid));
+	                .filter(task => this.taskMatchesTodayWidgetDate(task, wid))
+	                .sort((a, b) => this.compareTodayWidgetTasks(a, b));
 	        },
 	        todayWidgetTasks(wid) {
 	            const all = this.todayWidgetDateTasks(wid);
@@ -4732,7 +4749,7 @@ document.addEventListener('alpine:init', () => {
 		                if (!id || seen.has(id) || task.status === 'Terminé' || !this.isOverdue(task)) return false;
 		                seen.add(id);
 		                return true;
-		            });
+		            }).sort((a, b) => this.compareTodayWidgetTasks(a, b));
 		        },
 		        todayWidgetOverdueCount(wid) {
 		            return this.todayWidgetOverdueTasks(wid).length;

@@ -133,7 +133,7 @@ function recordTitle(record = {}, fallback = 'Sans titre') {
 
 function defaultRecordTaskListLabel(record = {}) {
     const title = recordTitle(record, '');
-    return title ? `Tâches ${title}` : 'Tâches du record';
+    return title || 'Tâches du record';
 }
 
 function isPersonalTaskRecord(record = {}, entity = {}) {
@@ -342,6 +342,10 @@ async function updateTaskListConfig(req, listId, input = {}) {
     const previousTags = normalizeTaskTagOptions(list.tags);
     if (tagsChanged) list.tags = normalizeTaskTagOptions(input.tags);
     if (input.displayOptions !== undefined) list.displayOptions = normalizeTaskListDisplayOptions(input.displayOptions);
+    if (input.isDefault === true && list.contextType !== 'account') {
+        await TaskList.updateMany({ recordId: list.recordId, _id: { $ne: list._id } }, { $set: { isDefault: false } });
+        list.isDefault = true;
+    }
     if (list.contextType === 'account') {
         list.showInMyLists = true;
     }

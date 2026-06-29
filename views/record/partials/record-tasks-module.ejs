@@ -1,7 +1,5 @@
 <%# ═══ TASKS MODULE — Two-level: Lists → Tasks ═══ %>
 <% var _isTasksTabLocal = (typeof _isTasksTab !== 'undefined') ? _isTasksTab : true; %>
-<link rel="stylesheet" href="/css/app/rich-text-editor.css">
-<script src="/js/rich-text-editor.js"></script>
 <style>
     .tl-wrap { max-width: 1120px; }
     /* ─── Full-screen kanban app ─── */
@@ -234,10 +232,11 @@
     .tl-preview-sdot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
     /* ─── Add list input ─── */
     .tl-overview-layout {
-        display: grid; grid-template-columns: minmax(0, 1fr) 280px;
+        display: grid; grid-template-columns: 280px minmax(0, 1fr);
         gap: 24px; align-items: start;
     }
     .tl-overview-main { min-width: 0; }
+    .tl-task-side { order: -1; }
     .tl-list-detail-view { max-width: 820px; }
     .tl-list-toolbar {
         display: flex; justify-content: flex-end; align-items: center;
@@ -643,292 +642,6 @@
     }
     .tl-kb-add-input::placeholder { color: #bfc9d4; }
 
-    /* ─── Detail panel (full-screen modal) ─── */
-    .tl-overlay {
-        position: fixed; inset: 0; z-index: 900;
-        background: rgba(0,0,0,0.35); opacity: 0;
-        transition: opacity 0.25s; pointer-events: none;
-        backdrop-filter: blur(2px);
-    }
-    .tl-overlay.open { opacity: 1; pointer-events: auto; }
-    .tl-detail {
-        position: fixed; top: 50%; left: 50%;
-        transform: translate(-50%, -50%) scale(0.95);
-        width: 90vw; max-width: 960px;
-        height: 85vh; max-height: 680px;
-        z-index: 901; background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 24px 80px rgba(0,0,0,0.18);
-        opacity: 0; pointer-events: none;
-        transition: all 0.3s cubic-bezier(0.4,0,0.2,1);
-        display: flex; flex-direction: column; overflow: hidden;
-    }
-    .tl-detail.open { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%) scale(1); }
-    .tl-detail-header {
-        display: flex; align-items: center; gap: 10px;
-        padding: 18px 24px; border-bottom: 1px solid #f1f3f5;
-        flex-shrink: 0;
-    }
-    .tl-detail-header-title {
-        font-size: 12px; font-weight: 600; color: #94a3b8; flex: 1;
-    }
-    .tl-detail-close {
-        width: 32px; height: 32px; border: none; background: #f8fafc;
-        border-radius: 8px; cursor: pointer; display: flex;
-        align-items: center; justify-content: center; color: #94a3b8;
-        transition: all 0.2s;
-    }
-    .tl-detail-close:hover { background: #fef2f2; color: #ef4444; }
-    .tl-detail-content {
-        flex: 1; display: flex; overflow: hidden;
-    }
-    .tl-detail-main {
-        flex: 1; overflow-y: auto; padding: 28px 32px;
-        border-right: 1px solid #f1f3f5;
-    }
-    .tl-detail-sidebar {
-        width: 280px; flex-shrink: 0; overflow-y: auto; padding: 24px 20px;
-    }
-    .tl-detail-title-input {
-        width: 100%; border: none; outline: none; background: none;
-        font-size: 22px; font-weight: 700; color: #0e1726;
-        font-family: inherit; padding: 0 0 16px; line-height: 1.3;
-        border-bottom: 2px solid transparent; transition: border-color 0.2s;
-    }
-    .tl-detail-title-input:focus { border-bottom-color: #4361ee; }
-    .tl-detail-desc-label {
-        font-size: 11px; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.5px; color: #94a3b8; margin: 20px 0 8px;
-    }
-    .tl-detail-textarea {
-        width: 100%; padding: 12px 14px; border: 1.5px solid #e8ecf1;
-        border-radius: 10px; font-size: 13px; font-family: inherit;
-        color: #0e1726; background: #fafbfc; min-height: 200px; resize: vertical;
-        transition: border-color 0.2s; box-sizing: border-box; line-height: 1.6;
-    }
-    .tl-detail-textarea:focus { outline: none; border-color: #4361ee; background: #fff; box-shadow: 0 0 0 3px #4361ee10; }
-    .tl-detail-desc-editor { min-height: 292px; }
-    .tl-detail-desc-area { min-height: 240px; max-height: 48vh; }
-    .tl-detail-desc-status {
-        min-height: 16px; margin-top: 6px;
-        font-size: 11px; font-weight: 600; color: #94a3b8;
-    }
-    .tl-detail-hidden-input { display: none !important; }
-
-    /* Sidebar property rows */
-    .tl-detail-prop {
-        display: flex; align-items: center; gap: 10px;
-        padding: 10px 0; border-bottom: 1px solid #f8f9fa;
-    }
-    .tl-detail-prop:last-child { border-bottom: none; }
-    .tl-detail-prop-icon { width: 16px; color: #bfc9d4; flex-shrink: 0; display: flex; }
-    .tl-detail-prop-label {
-        font-size: 11.5px; font-weight: 600; color: #94a3b8;
-        min-width: 70px; flex-shrink: 0;
-    }
-    .tl-detail-prop-value { flex: 1; min-width: 0; }
-
-    /* Clickable pills */
-    .tl-pill {
-        display: inline-flex; align-items: center; gap: 5px;
-        padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
-        cursor: pointer; transition: all 0.15s; border: none; background: none;
-        font-family: inherit; position: relative;
-    }
-    .tl-pill:hover { filter: brightness(0.95); }
-    .tl-pill-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-
-    /* Pill dropdown */
-    .tl-pill-menu {
-        position: absolute; top: calc(100% + 4px); left: 0;
-        background: #fff; border: 1px solid #e8ecf1;
-        border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.1);
-        padding: 4px; min-width: 160px; z-index: 10;
-    }
-    .tl-pill-menu button {
-        display: flex; align-items: center; gap: 8px;
-        width: 100%; padding: 7px 10px; border: none; background: none;
-        font-size: 12px; font-weight: 500; color: #0e1726;
-        cursor: pointer; border-radius: 6px; font-family: inherit;
-        transition: background 0.1s;
-    }
-    .tl-pill-menu button:hover { background: #f8fafc; }
-    .tl-pill-menu .pm-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
-
-    /* Date inputs in sidebar */
-    .tl-detail-date-input {
-        width: 100%; padding: 4px 8px; border: 1.5px solid transparent;
-        border-radius: 6px; font-size: 12px; font-family: inherit;
-        color: #0e1726; background: #f8fafc; cursor: pointer;
-        transition: border-color 0.2s;
-    }
-    .tl-detail-date-input:focus { outline: none; border-color: #4361ee; background: #fff; }
-    .tl-detail-datetime {
-        display: flex; align-items: center; gap: 6px;
-        width: 100%; min-width: 0;
-    }
-    .tl-detail-reminder-prop {
-        align-items: flex-start; flex-wrap: wrap; row-gap: 6px;
-    }
-    .tl-detail-reminder-prop .tl-detail-prop-value {
-        flex: 0 0 100%; width: 100%;
-    }
-    .tl-detail-reminder-prop .tl-detail-datetime {
-        max-width: 100%;
-    }
-    .tl-detail-datetime .tl-detail-date-input {
-        flex: 1 1 118px; min-width: 0;
-    }
-    .tl-detail-time-input {
-        width: 70px; flex: 0 0 70px; padding: 4px 6px;
-        border: 1.5px solid transparent; border-radius: 6px;
-        font-size: 12px; font-family: inherit; color: #0e1726;
-        background: #f8fafc; cursor: pointer; transition: border-color 0.2s;
-    }
-    .tl-detail-time-input:focus { outline: none; border-color: #4361ee; background: #fff; }
-    .tl-detail-time-input:disabled { opacity: 0.45; cursor: not-allowed; }
-    .tl-detail-reminder-clear {
-        width: 26px; height: 26px; flex: 0 0 26px; border: none;
-        border-radius: 7px; background: #f8fafc; color: #94a3b8;
-        display: inline-flex; align-items: center; justify-content: center;
-        cursor: pointer; transition: all 0.15s;
-    }
-    .tl-detail-reminder-clear:hover { background: #fef2f2; color: #ef4444; }
-
-    /* Assignee input */
-    .tl-detail-text-input {
-        width: 100%; padding: 4px 8px; border: 1.5px solid transparent;
-        border-radius: 6px; font-size: 12px; font-family: inherit;
-        color: #0e1726; background: #f8fafc;
-        transition: border-color 0.2s;
-    }
-    .tl-detail-text-input:focus { outline: none; border-color: #4361ee; background: #fff; }
-    .tl-detail-text-input::placeholder { color: #bfc9d4; }
-
-    /* Footer */
-    .tl-detail-footer {
-        padding: 14px 24px; border-top: 1px solid #f1f3f5;
-        display: flex; align-items: center; justify-content: space-between; flex-shrink: 0;
-    }
-    .tl-detail-delete {
-        padding: 6px 14px; border-radius: 8px; border: 1.5px solid #fecaca;
-        background: #fff; color: #ef4444; font-size: 12px; font-weight: 600;
-        cursor: pointer; transition: all 0.2s; font-family: inherit;
-    }
-    .tl-detail-delete:hover { background: #fef2f2; border-color: #ef4444; }
-    .tl-detail-time { font-size: 10.5px; color: #bfc9d4; }
-
-    /* ─── Comments panel (3rd column) ─── */
-    .tl-detail-comments {
-        width: 300px; flex-shrink: 0; display: flex; flex-direction: column;
-        border-left: 1px solid #f1f3f5; background: #fafbfc;
-    }
-    .tl-detail-comments-header {
-        display: flex; align-items: center; gap: 8px;
-        padding: 16px 16px 12px; font-size: 12px; font-weight: 700;
-        text-transform: uppercase; letter-spacing: 0.4px; color: #94a3b8;
-        border-bottom: 1px solid #f1f3f5;
-    }
-    .tl-detail-comments-header iconify-icon { color: #4361ee; }
-    .tl-comments-feed {
-        flex: 1; overflow-y: auto; padding: 12px 10px;
-        display: flex; flex-direction: column; gap: 6px;
-    }
-    .tl-comments-feed::-webkit-scrollbar { width: 4px; }
-    .tl-comments-feed::-webkit-scrollbar-thumb { background: #e0e6ed; border-radius: 4px; }
-    .tl-comments-empty {
-        flex: 1; display: flex; flex-direction: column;
-        align-items: center; justify-content: center; gap: 6px;
-        color: #bfc9d4; font-size: 12px; text-align: center; padding: 20px;
-    }
-    .tl-comments-empty iconify-icon { opacity: 0.4; }
-    /* Chat message row */
-    .tl-msg-row { display: flex; flex-direction: column; align-items: flex-start; max-width: 88%; }
-    .tl-msg-row.mine { align-items: flex-end; align-self: flex-end; }
-    .tl-msg-name { font-size: 10px; font-weight: 600; color: #94a3b8; margin-bottom: 2px; padding: 0 6px; }
-    .tl-msg-row.mine .tl-msg-name { display: none; }
-    /* Comment bubble */
-    .tl-comment {
-        padding: 8px 12px; border-radius: 14px 14px 14px 4px;
-        background: #fff; border: 1px solid #e8ecf1;
-        position: relative;
-    }
-    .tl-msg-row.mine .tl-comment {
-        background: linear-gradient(135deg, #4361ee, #5a73f0);
-        border-color: transparent; border-radius: 14px 14px 4px 14px;
-    }
-    .tl-comment-text {
-        font-size: 12.5px; color: #334155; line-height: 1.5;
-        word-break: break-word; white-space: pre-wrap;
-    }
-    .tl-msg-row.mine .tl-comment-text { color: #fff; }
-    .tl-msg-meta {
-        display: flex; align-items: center; gap: 4px; margin-top: 2px; padding: 0 6px;
-    }
-    .tl-msg-time { font-size: 9px; color: #bfc9d4; white-space: nowrap; }
-    .tl-msg-badge {
-        display: inline-flex; align-items: center; gap: 2px;
-        font-size: 8.5px; color: #94a3b8; background: #f1f5f9;
-        border-radius: 3px; padding: 0 4px; line-height: 16px;
-    }
-    .tl-msg-row.mine .tl-msg-badge { background: rgba(67,97,238,0.1); color: #4361ee; }
-    /* Activity entry (centered) */
-    .tl-activity {
-        align-self: center; text-align: center;
-        padding: 4px 10px; font-size: 10px; color: #94a3b8;
-        background: #f8fafc; border-radius: 8px; max-width: 92%;
-        line-height: 1.5;
-    }
-    .tl-activity-user { font-weight: 600; color: #64748b; }
-    .tl-activity-val {
-        display: inline-flex; align-items: center; gap: 3px;
-        padding: 1px 6px; border-radius: 4px; font-weight: 600; font-size: 9px;
-    }
-    .tl-activity-time { font-size: 9px; color: #cbd5e1; margin-top: 1px; }
-    /* Comment input */
-    .tl-comment-input-wrap {
-        padding: 10px 10px; border-top: 1px solid #f1f3f5;
-    }
-    .tl-comment-textarea {
-        width: 100%; padding: 8px 12px; border: 1.5px solid #e8ecf1;
-        border-radius: 10px; font-size: 12px; font-family: inherit;
-        color: #0e1726; background: #fff; min-height: 44px; max-height: 100px;
-        resize: none; transition: border-color 0.2s; box-sizing: border-box;
-        line-height: 1.5;
-    }
-    .tl-comment-textarea:focus { outline: none; border-color: #4361ee; box-shadow: 0 0 0 3px #4361ee10; }
-    .tl-comment-textarea::placeholder { color: #bfc9d4; }
-    .tl-comment-actions {
-        display: flex; align-items: center; gap: 8px; margin-top: 6px;
-    }
-    .tl-comment-send {
-        padding: 6px 14px; border: none; border-radius: 8px;
-        background: linear-gradient(135deg, #4361ee, #6366f1);
-        color: #fff; font-size: 11px; font-weight: 700;
-        cursor: pointer; font-family: inherit; transition: all 0.15s;
-        display: inline-flex; align-items: center; gap: 5px;
-    }
-    .tl-comment-send:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(67,97,238,0.3); }
-    .tl-comment-send:disabled { opacity: 0.5; cursor: default; transform: none; box-shadow: none; }
-    .tl-chat-toggle {
-        display: flex; align-items: center; gap: 5px;
-        font-size: 10.5px; color: #94a3b8; cursor: pointer;
-        user-select: none; margin-left: auto;
-    }
-    .tl-chat-toggle-switch {
-        width: 28px; height: 16px; border-radius: 8px;
-        background: #e0e6ed; position: relative; transition: background 0.2s;
-        flex-shrink: 0;
-    }
-    .tl-chat-toggle-switch.active { background: #4361ee; }
-    .tl-chat-toggle-switch::after {
-        content: ''; position: absolute; top: 2px; left: 2px;
-        width: 12px; height: 12px; border-radius: 50%;
-        background: #fff; transition: transform 0.2s;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-    }
-    .tl-chat-toggle-switch.active::after { transform: translateX(12px); }
-
     /* ─── Status manager popover ─── */
     .tl-status-mgr {
         position: absolute; top: calc(100% + 8px); right: 0;
@@ -1018,44 +731,10 @@
     .dark .tl-kanban::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
     .dark .tl-kb-add-input { background: #1b2e4b; border-color: #4361ee; color: #e0e6ed; }
     .dark .tl-kb-empty { color: #506690; }
-    .dark .tl-detail { background: #0e1726; }
-    .dark .tl-detail-header { border-color: #253b5c; }
-    .dark .tl-detail-close { background: #1b2e4b; color: #94a3b8; }
-    .dark .tl-detail-main { border-color: #253b5c; }
-    .dark .tl-detail-title-input { color: #e0e6ed; }
-    .dark .tl-detail-textarea { background: #1b2e4b; border-color: #253b5c; color: #e0e6ed; }
-    .dark .tl-detail-date-input,
-    .dark .tl-detail-text-input { background: #1b2e4b; color: #e0e6ed; }
-    .dark .tl-detail-footer { border-color: #253b5c; }
-    .dark .tl-detail-prop { border-color: #1b2e4b; }
-    .dark .tl-detail-comments { background: #0b1320; border-color: #253b5c; }
-    .dark .tl-detail-comments-header { border-color: #253b5c; }
-    .dark .tl-comment { background: #1b2e4b; border-color: #253b5c; }
-    .dark .tl-msg-row.mine .tl-comment { background: linear-gradient(135deg, #4361ee, #5a73f0); border-color: transparent; }
-    .dark .tl-msg-name { color: #506690; }
-    .dark .tl-comment-text { color: #c1cad6; }
-    .dark .tl-msg-row.mine .tl-comment-text { color: #fff; }
-    .dark .tl-activity { background: #1b2e4b; }
-    .dark .tl-msg-badge { background: #1b2e4b; color: #506690; }
-    .dark .tl-comment-chat-badge { background: #1b2e4b; }
-    .dark .tl-activity-icon { background: #1b2e4b; }
-    .dark .tl-comment-textarea { background: #0e1726; border-color: #253b5c; color: #e0e6ed; }
-    .dark .tl-comment-input-wrap { border-color: #253b5c; }
-    .dark .tl-chat-toggle-switch { background: #253b5c; }
-    .dark .tl-comments-feed::-webkit-scrollbar-thumb { background: #253b5c; }
-    .dark .tl-pill-menu { background: #0e1726; border-color: #253b5c; }
-    .dark .tl-pill-menu button { color: #e0e6ed; }
-    .dark .tl-pill-menu button:hover { background: #1b2e4b; }
     .dark .tl-status-mgr { background: #0e1726; border-color: #253b5c; }
     .dark .tl-status-mgr-label { color: #e0e6ed; }
     .dark .tl-meta-avatar { background: #253b5c; color: #94a3b8; }
     .dark .tl-meta-overdue { color: #ef4444 !important; background: #7f1d1d30 !important; }
-    .dark .tl-detail-header-title { color: #94a3b8; }
-    .dark .tl-detail-desc-label { color: #506690; }
-    .dark .tl-detail-prop-label { color: #506690; }
-    .dark .tl-detail-prop-icon { color: #506690; }
-    .dark .tl-detail-delete { background: #1b2e4b; border-color: #7f1d1d; }
-    .dark .tl-detail-time { color: #506690; }
     .dark .tl-back { color: #506690; }
     .dark .tl-back:hover { color: #818cf8; background: #1b2e4b; }
     .dark .tl-task-add { background: #0e1726; border-color: #253b5c; }
@@ -1111,7 +790,7 @@
     .tl-kpi-card strong { display:block;color:#111827;font-size:17px;font-weight:850;line-height:1; }
     .tl-kpi-card span { display:block;margin-top:4px;color:#64748b;font-size:12px;font-weight:600; }
     .tl-list-toolbar-legacy { display:none!important; }
-    .tl-overview-layout { grid-template-columns:minmax(0,1fr) 292px;gap:18px; }
+    .tl-overview-layout { grid-template-columns:292px minmax(0,1fr);gap:18px; }
     .tl-card {
         border-color:#e8ecf1;border-radius:13px;padding:14px 16px;box-shadow:0 10px 28px rgba(15,23,42,.026);
     }
@@ -1158,7 +837,7 @@
     .tl-kpi-icon { width:36px;height:36px;border-radius:10px; }
     .tl-kpi-card strong { font-size:16px; }
     .tl-kpi-card span { font-size:11.5px; }
-    .tl-overview-layout { grid-template-columns:minmax(0,1fr) 300px;gap:18px;overflow:visible; }
+    .tl-overview-layout { grid-template-columns:300px minmax(0,1fr);gap:18px;overflow:visible; }
     .tl-overview-main { overflow:visible;position:relative; }
     .tl-record-list-stack { display:flex;flex-direction:column;gap:10px;overflow:visible;position:relative; }
     .tl-record-section {
@@ -1216,33 +895,83 @@
     .tl-record-row.tl-row-menu-open { z-index:90; }
     .tl-record-row.sortable-ghost { opacity:.35;background:#eef2ff;transform:scale(.98); }
     .tl-record-row.sortable-chosen { background:#fbfcff; }
-    .tl-priority-section .tl-record-row {
-        grid-template-columns:42px minmax(160px,1.22fr) minmax(92px,.42fr) minmax(82px,.34fr) minmax(88px,.38fr) minmax(76px,.34fr) minmax(74px,.32fr) 26px;
-    }
-    .tl-priority-section {
-        background:linear-gradient(180deg,#fffefb 0%,#ffffff 100%);
-        border-color:#efe8d8;
-        box-shadow:0 10px 28px rgba(15,23,42,.026);
-    }
-    .tl-priority-section:hover {
-        border-color:#e8deca;
-        box-shadow:0 12px 24px rgba(15,23,42,.045);
-    }
+    .tl-priority-section { background:#fff;border-color:#dfe7f3;box-shadow:0 12px 28px rgba(15,23,42,.04); }
+    .tl-priority-section:hover { border-color:#cfdaf0;box-shadow:0 16px 32px rgba(15,23,42,.055); }
     .tl-priority-section .tl-record-section-head {
-        background:linear-gradient(180deg,#fffefb 0%,#fffdf8 100%);
+        background:#fff;
     }
-    .tl-priority-section .tl-table-body {
-        background:#fffefc;
-        border-top-color:#f0e8d8;
+    .tl-day-section-head {
+        grid-template-columns:34px minmax(0,1fr) auto 88px 24px;
     }
-    .tl-priority-section .tl-record-row {
-        background:rgba(255,255,255,.72);
-        border-bottom-color:#f2eadb;
+    .tl-day-count-pill,.tl-day-overdue-pill {
+        height:22px;border-radius:999px;display:inline-flex;align-items:center;gap:5px;padding:0 9px;font-size:11px;font-weight:850;
     }
-    .tl-priority-section .tl-record-row:hover,
-    .tl-priority-section .tl-record-row:focus-within {
-        background:#fffdf5;
+    .tl-day-count-pill { background:#ede9fe;color:#7c3aed; }
+    .tl-day-overdue-pill { background:#fff7ed;border:1px solid #fed7aa;color:#f97316; }
+    .tl-day-switch {
+        display:inline-flex;
+        align-items:center;
+        gap:6px;
+        min-width:0;
     }
+    .tl-day-switch button {
+        height:26px;
+        border:1px solid #e0e7ff;
+        border-radius:8px;
+        background:#fff;
+        color:#6b7280;
+        font:inherit;
+        font-size:11px;
+        font-weight:850;
+        padding:0 10px;
+        cursor:pointer;
+    }
+    .tl-day-switch button.active {
+        background:#ede9fe;
+        border-color:#ddd6fe;
+        color:#6d5dfc;
+    }
+    .tl-day-switch > span {
+        height:26px;
+        border:1px solid #edf2f7;
+        border-radius:8px;
+        background:#fff;
+        color:#94a3b8;
+        font-size:10.5px;
+        font-weight:800;
+        padding:0 8px;
+        display:inline-flex;
+        align-items:center;
+        gap:5px;
+        white-space:nowrap;
+    }
+    .tl-priority-section .tl-table-body { background:#fff;border-top-color:#edf2f7; }
+    .tl-day-body {
+        display:grid;
+        grid-template-columns:minmax(0,1fr) minmax(220px,286px);
+        align-items:start;
+        gap:22px;
+        padding:12px 18px 0;
+    }
+    .tl-day-main { min-width:0;display:flex;flex-direction:column;min-height:178px; }
+    .tl-day-row { grid-template-columns:30px minmax(0,1fr) auto auto 28px;min-height:42px;padding:0;border-bottom-color:#edf2f7;background:#fff; }
+    .tl-day-row:hover,.tl-day-row:focus-within { background:#fbfcff; }
+    .tl-row-accent { width:3px;height:20px;border-radius:999px;background:var(--row-accent,#cbd5e1);display:inline-block; }
+    .tl-day-add { min-height:38px;border-bottom:0; }
+    .tl-day-completed { border-left:1px solid #e8edf5;padding:0 0 12px 22px;box-sizing:border-box;min-width:0;align-self:start;min-height:178px; }
+    .tl-day-completed-head { display:flex;align-items:center;gap:7px;color:#0e1726;font-size:12px;font-weight:850;margin-bottom:14px; }
+    .tl-day-completed-head iconify-icon { color:#22c55e; }
+    .tl-day-completed-list { display:flex;flex-direction:column;gap:7px;max-height:136px;overflow:auto;padding:0 4px 14px 0;margin-bottom:10px;scrollbar-gutter:stable; }
+    .tl-day-completed-list::-webkit-scrollbar { width:5px; }
+    .tl-day-completed-list::-webkit-scrollbar-track { margin-bottom:10px;margin-top:2px; }
+    .tl-day-completed-list::-webkit-scrollbar-button:vertical:start:decrement { display:block;height:2px;background:transparent; }
+    .tl-day-completed-list::-webkit-scrollbar-button:vertical:end:increment { display:block;height:10px;background:transparent; }
+    .tl-day-completed-list::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:999px; }
+    .tl-day-completed-row { display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:7px;align-items:center;min-height:23px;color:#94a3b8;font-size:12px;font-weight:650; }
+    .tl-day-completed-row span { min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;cursor:pointer; }
+    .tl-day-completed-row b { font-size:10px;font-weight:800;color:#8fa0bd;white-space:nowrap; }
+    .tl-day-done-action { width:16px;height:16px;border:0;background:transparent;color:#22c55e;display:inline-flex;align-items:center;justify-content:center;padding:0;cursor:pointer; }
+    .tl-day-completed-empty { color:#9aa6bf;font-size:12px;font-weight:650;padding:4px 0; }
     .tl-record-row.done .tl-row-title { color:#94a3b8;text-decoration:line-through; }
     .tl-row-check {
         width:17px;height:17px;border:1.7px solid #cbd5e1;border-radius:5px;background:#fff;
@@ -1253,7 +982,6 @@
     .tl-row-check.checked svg { opacity:1; }
     .tl-row-title { font-size:12.8px;font-weight:620;color:#172033;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
     .tl-task-title,.tl-preview-title,.tl-kb-card-title { font-weight:620; }
-    .tl-detail-title-input { font-size:20px;font-weight:650; }
     .tl-row-sub { display:flex;align-items:center;gap:6px;margin-top:4px;color:#7c89a6;font-size:10.8px;font-weight:650; }
     .tl-mini-chip {
         height:21px;padding:0 8px;border-radius:7px;display:inline-flex;align-items:center;gap:4px;
@@ -1282,7 +1010,21 @@
     }
     .tl-record-add input { flex:1;min-width:0;border:0;outline:0;background:transparent;color:#0f172a;font:inherit;font-weight:650; }
     .tl-record-add input::placeholder { color:#b8c3d5; }
+    .tl-day-add-form { display:grid;grid-template-columns:minmax(0,1fr) 34px;gap:8px;padding:10px 0 0;background:#fff; }
+    .tl-day-add-field { height:30px;min-width:0;border:1px solid #dbe3ee;border-radius:8px;background:#fff;color:#9aa6bf;display:flex;align-items:center;gap:7px;padding:0 10px; }
+    .tl-day-add-field:focus-within { border-color:#8b7cf8;box-shadow:0 0 0 3px rgba(139,124,248,.14); }
+    .tl-day-add-field input { flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:#17223c;font:inherit;font-size:12px;font-weight:600;padding:0; }
+    .tl-day-add-field input::placeholder { color:#b8c3d5; }
+    .tl-day-add-btn { width:34px;height:30px;border:1px solid #dbe3ee;border-radius:8px;background:#fff;color:#5b55f4;display:inline-flex;align-items:center;justify-content:center;cursor:pointer; }
+    .tl-day-add-btn:hover { background:#f5f7ff;border-color:#c7d2fe; }
     .tl-record-empty { padding:18px 16px;color:#9aa6bf;font-size:12px;font-weight:650;font-style:italic;border-bottom:1px solid #f1f4f8; }
+    .tl-day-more-row { display:flex;justify-content:center;padding:10px 12px;border-bottom:1px solid #edf2f7;background:#fff; }
+    .tl-day-more-btn { height:28px;border:1px solid #dbe4ff;border-radius:9px;background:#fff;color:#4f46e5;font:inherit;font-size:11.5px;font-weight:800;padding:0 11px;display:inline-flex;align-items:center;gap:7px;cursor:pointer; }
+    .tl-day-more-btn:hover { background:#f5f7ff;border-color:#c7d2fe; }
+    .tl-load-more-row { display:flex;justify-content:center;padding:10px 12px;border-bottom:1px solid #f1f4f8;background:#fbfcff; }
+    .tl-load-more-btn { height:30px;border:1px solid #dbe4ff;border-radius:9px;background:#fff;color:#4f46e5;font:inherit;font-size:11.5px;font-weight:800;padding:0 12px;display:inline-flex;align-items:center;gap:7px;cursor:pointer; }
+    .tl-load-more-btn:hover { background:#f5f7ff;border-color:#c7d2fe; }
+    .tl-load-more-btn:disabled { opacity:.6;cursor:wait; }
     .tl-row-status-wrap { position:relative;justify-self:start;z-index:25; }
     .tl-row-status-wrap .tl-preview-smenu { right:0;top:calc(100% + 4px);z-index:220; }
     .tl-row-status-wrap.flip-up .tl-preview-smenu { top:auto;bottom:calc(100% + 4px); }
@@ -1332,11 +1074,6 @@
     .tl-side-action:last-child { border-bottom:0; }
     .tl-side-action-icon { width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex:0 0 auto; }
     .tl-side-action-title { color:#172033;font-size:12.5px;font-weight:680;line-height:1.25; }
-    .tl-detail-select {
-        width:100%;padding:5px 8px;border:1.5px solid transparent;border-radius:6px;
-        background:#f8fafc;color:#0e1726;font-size:12px;font-family:inherit;outline:none;
-    }
-    .tl-detail-select:focus { border-color:#4361ee;background:#fff; }
     .tl-side-action-sub { margin-top:3px;color:#7c89a6;font-size:11px;font-weight:650; }
     .tl-side-empty { color:#94a3b8;font-size:12px;font-weight:650;padding:4px 0 2px; }
     .dark .tl-record-section,.dark .tl-record-section-head,.dark .tl-table-body,.dark .tl-side-panel {
@@ -1355,13 +1092,15 @@
     .dark .tl-side-kpi strong { color:#e0e6ed; }
     .dark .tl-side-kpi span { color:#8ea0bd; }
     .dark .tl-record-add input { color:#e0e6ed; }
-    .dark .tl-detail-select { background:#1b2e4b;color:#e0e6ed; }
+    .dark .tl-load-more-row { background:#0b1320;border-color:#253b5c; }
+    .dark .tl-load-more-btn { background:#111f35;border-color:#253b5c;color:#c7d2fe; }
+    .dark .tl-load-more-btn:hover { background:#17233a;border-color:#355276; }
     .dark .tl-priority-section {
         background:#0e1726;
-        border-color:#3a3153;
+        border-color:#253b5c;
         box-shadow:none;
     }
-    .dark .tl-priority-section:hover { border-color:#4a4263;box-shadow:none; }
+    .dark .tl-priority-section:hover { border-color:#355276;box-shadow:none; }
     .dark .tl-priority-section .tl-record-section-head,
     .dark .tl-priority-section .tl-table-body,
     .dark .tl-priority-section .tl-record-add {
@@ -1376,6 +1115,18 @@
     .dark .tl-priority-section .tl-record-row:focus-within {
         background:#111f35;
     }
+    .dark .tl-day-switch button,
+    .dark .tl-day-switch > span { background:#0e1726;border-color:#253b5c;color:#9fb0cb; }
+    .dark .tl-day-add-form { background:#0e1726;border-color:#253b5c; }
+    .dark .tl-day-add-field,
+    .dark .tl-day-add-btn { background:#0b1320;border-color:#253b5c;color:#9fb0cb; }
+    .dark .tl-day-add-field input { color:#e0e6ed; }
+    .dark .tl-day-switch button.active { background:#1b2447;border-color:#4f46e5;color:#a5b4fc; }
+    .dark .tl-day-completed { border-color:#253b5c; }
+    .dark .tl-day-completed-head { color:#e0e6ed; }
+    .dark .tl-day-completed-row { color:#8ea0bd; }
+    .dark .tl-day-completed-row b { color:#6b7f9e; }
+    .dark .tl-day-completed-empty { color:#6b7f9e; }
     /* Align task typography with the record Overview surface */
     .tl-pro-title h2 { font-size:14px;font-weight:700;color:#0e1726;line-height:1.25; }
     .tl-pro-title p { font-size:12px;font-weight:500;color:#888da8;line-height:1.35; }
@@ -1395,11 +1146,7 @@
     .tl-side-action-sub,.tl-side-empty { color:#888da8;font-weight:500; }
     .tl-side-kpi strong,.tl-side-metric b,.tl-side-legend-row b { font-weight:700; }
     .tl-side-kpi span,.tl-side-metric span,.tl-side-bar-label { font-weight:600; }
-    .tl-detail-title-input { font-size:20px;font-weight:600;color:#0e1726; }
-    .tl-detail-header-title,.tl-detail-prop-label { color:#94a3b8;font-weight:600; }
-    .tl-detail-textarea,.tl-detail-text-input,.tl-detail-date-input,.tl-detail-select { font-size:13px;font-weight:500;color:#0e1726; }
-    .tl-pill { font-size:12px;font-weight:600; }
-    .tl-pill-menu button,.tl-preview-smenu button { font-weight:500; }
+    .tl-preview-smenu button { font-weight:500; }
     @media (max-width: 1040px) {
         .tl-overview-layout { grid-template-columns: 1fr; }
         .tl-progress-panel,.tl-task-side { position: static; order: -1; }
@@ -1407,11 +1154,27 @@
         .tl-kpi-grid { grid-template-columns:repeat(2,minmax(0,1fr)); }
         .tl-pro-header { align-items:flex-start;flex-direction:column; }
         .tl-pro-actions { justify-content:flex-start; }
+        .tl-day-section-head { grid-template-columns:34px minmax(0,1fr) 24px; }
+        .tl-day-switch,.tl-priority-section .tl-record-progress { grid-column:2 / 3; }
+        .tl-day-switch { margin-top:7px;flex-wrap:wrap; }
+        .tl-day-switch > span { display:none; }
+        .tl-day-body { grid-template-columns:1fr; }
+        .tl-day-completed { border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:16px; }
+        .tl-day-row { grid-template-columns:30px minmax(0,1fr) 28px; }
+        .tl-day-row > .tl-mini-chip,
+        .tl-day-row > .tl-row-pill,
+        .tl-day-row > .tl-row-status-wrap { display:none; }
         .tl-record-row { grid-template-columns:42px minmax(0,1fr) 30px; }
         .tl-record-row > .tl-row-assignee,
         .tl-record-row > .tl-row-date,
         .tl-record-row > .tl-row-pill,
         .tl-record-row > .tl-row-status-wrap { display:none; }
+        .tl-card.tl-list-all-loaded .tl-record-row {
+            grid-template-columns:42px minmax(0,1fr) minmax(58px,76px) 30px;
+        }
+        .tl-card.tl-list-all-loaded .tl-record-row > .tl-row-assignee {
+            display:flex;
+        }
     }
     @media (max-width: 560px) {
         .tl-progress-body { align-items: flex-start; flex-direction: column; }
@@ -1421,7 +1184,7 @@
     }
 </style>
 
-<div class="tl-wrap" :class="{'tl-fs-active': kanbanList}" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null; statusMgrListId = null; detailStatusMenu = false; detailPriorityMenu = false" @contextmenu.prevent>
+<div class="tl-wrap" :class="{'tl-fs-active': kanbanList}" x-data="recordTaskLists()" @click.window="statusMenuId = null; ctxMenu = null; previewStatusMenu = null; previewStatusListId = null; taskCtx = null; statusMgrListId = null" @contextmenu.prevent>
 
     <% if (_isTasksTabLocal) { %>
     <!-- ════════ VIEW 1: LISTS ════════ -->
@@ -1491,86 +1254,114 @@
                     <iconify-icon icon="line-md:loading-twotone-loop" width="24" style="color:#4361ee"></iconify-icon>
                 </div>
 
-                <!-- Day priority view (independent from the real task list) -->
-                <section class="tl-record-section tl-priority-section" x-show="!loading && priorityTasks.length > 0" :class="{'tl-record-section-menu-open': isSectionMenuOpen(null, 'priority'), 'tl-card-expanded': priorityExpanded}">
-                    <div class="tl-record-section-head" @click="priorityExpanded = !priorityExpanded" style="grid-template-columns:22px 34px minmax(0,1fr) 84px 24px">
-                        <span></span>
+                <!-- Day task view -->
+                <section class="tl-record-section tl-priority-section tl-day-card" x-show="!loading" :class="{'tl-record-section-menu-open': isSectionMenuOpen(null, 'priority'), 'tl-card-expanded': priorityExpanded}">
+                    <div class="tl-record-section-head tl-day-section-head" @click="priorityExpanded = !priorityExpanded">
                         <div class="tl-record-icon" style="background:#f5f3ff;color:#6366f1">
-                            <iconify-icon icon="solar:star-bold-duotone" width="17"></iconify-icon>
+                            <iconify-icon icon="solar:bolt-bold-duotone" width="17"></iconify-icon>
                         </div>
                         <div style="min-width:0">
-                            <div class="tl-record-list-name">À faire aujourd'hui</div>
+                            <div class="tl-record-list-name" x-text="dayTaskTitle"></div>
                             <div class="tl-record-meta">
-                                <span><span x-text="priorityTasks.length"></span> tâche<span x-show="priorityTasks.length !== 1">s</span></span>
-                                <template x-if="priorityDoneCount > 0">
-                                    <span style="color:#10b981">· <span x-text="priorityDoneCount"></span> terminée<span x-show="priorityDoneCount !== 1">s</span></span>
-                                </template>
+                                <span class="tl-day-count-pill"><span x-text="dayOpenTasks.length"></span> à faire</span>
+                                <span class="tl-day-overdue-pill" x-show="dayTaskOverdueCount > 0"><iconify-icon icon="solar:danger-triangle-linear" width="11"></iconify-icon><span x-text="dayTaskOverdueCount + ' en retard'"></span></span>
                             </div>
                         </div>
-                        <div class="tl-record-progress" x-show="priorityTasks.length > 0">
-                            <span :style="'width:' + priorityCompletionPct + '%;background:#6366f1'"></span>
+                        <div class="tl-day-switch" @click.stop>
+                            <button type="button" x-show="dayTaskOffset !== 0" @click="setDayTaskOffset(0)">Aujourd'hui</button>
+                            <button type="button" :class="{ active: dayTaskOffset === 1 }" @click="setDayTaskOffset(1)">Demain</button>
+                            <span><iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon><span x-text="dayTaskDateLabel"></span></span>
+                        </div>
+                        <div class="tl-record-progress" x-show="dayPanelTaskCount > 0">
+                            <span :style="'width:' + dayTaskCompletionPct + '%;background:#6366f1'"></span>
                         </div>
                         <iconify-icon icon="solar:alt-arrow-down-linear" width="15" class="tl-record-chevron" :class="{'expanded': priorityExpanded}" @click.stop="priorityExpanded = !priorityExpanded"></iconify-icon>
                     </div>
 
-                    <div class="tl-table-body" x-show="priorityExpanded" x-collapse @click.stop>
-                        <template x-for="pt in priorityTasks" :key="'priority-' + pt._id">
-                            <div class="tl-record-row" :class="{'done': pt.status === 'Terminé', 'tl-row-menu-open': isStatusMenuOpen(pt, pt._list, 'priority')}"
-                                 :style="'--row-accent:' + taskAccent(pt, pt._list)"
-                                 @click.stop="openDetail(pt._list, pt)"
-                                 @contextmenu.prevent.stop="openTaskCtx($event, pt._list, pt)">
-                                <div style="display:flex;align-items:center;gap:7px">
-                                    <span style="width:12px"></span>
-                                    <div class="tl-row-check" :class="{'checked': pt.status === 'Terminé'}" @click.stop="previewToggle(pt._list, pt)">
-                                        <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                    <div class="tl-table-body tl-day-body" x-show="priorityExpanded" x-collapse @click.stop>
+                        <div class="tl-day-main">
+                            <template x-for="pt in dayVisibleOpenTasks" :key="'day-open-' + dayTaskOffset + '-' + pt._id">
+                                <div class="tl-record-row tl-day-row" :class="{'tl-row-menu-open': isStatusMenuOpen(pt, pt._list, 'priority')}"
+                                     :style="'--row-accent:' + taskAccent(pt, pt._list)"
+                                     @click.stop="openDetail(pt._list, pt)"
+                                     @contextmenu.prevent.stop="openTaskCtx($event, pt._list, pt)">
+                                    <div style="display:flex;align-items:center;gap:7px">
+                                        <span class="tl-row-accent"></span>
+                                        <div class="tl-row-check" @click.stop="previewToggle(pt._list, pt)">
+                                            <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                                        </div>
                                     </div>
-                                </div>
-                                <div style="min-width:0">
-                                    <div class="tl-row-title" x-text="pt.title"></div>
-                                </div>
-                                <div>
-                                    <span class="tl-mini-chip">
-                                        <iconify-icon icon="solar:list-linear" width="12"></iconify-icon>
-                                        <span x-text="pt._list?.label || 'À faire'"></span>
-                                    </span>
-                                </div>
-                                <div class="tl-row-assignee">
-                                    <span class="tl-row-avatar" x-text="taskAssigneeInitials(pt)"></span>
-                                    <span x-text="taskAssigneeLabel(pt)"></span>
-                                </div>
-                                <div class="tl-row-date">
-                                    <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
-                                    <span x-text="formatTaskDate(pt.dueDate || pt.createdAt)"></span>
-                                </div>
-                                <span class="tl-row-pill" :style="priorityStyle(pt.priority)" x-text="pt.priority || 'Aucune'"></span>
-                                <div class="tl-row-status-wrap" :class="{'flip-up': isStatusMenuOpen(pt, pt._list, 'priority') && previewStatusFlip}">
-                                    <span class="tl-row-pill"
-                                          :style="statusPillStyle(pt.status, pt.statusColor)"
-                                          x-text="pt.status || 'À faire'"
-                                          @click.stop="toggleStatusMenu($event, pt, pt._list, 'priority')"></span>
-                                    <div class="tl-preview-smenu" x-show="isStatusMenuOpen(pt, pt._list, 'priority')" x-cloak @click.stop>
-                                        <template x-for="s in getStatuses(pt._list)" :key="s.label">
-                                            <button @click="previewSetStatus(pt._list, pt, s.label); previewStatusMenu = null">
-                                                <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
-                                                <span x-text="s.label"></span>
-                                            </button>
-                                        </template>
+                                    <div style="min-width:0">
+                                        <div class="tl-row-title" x-text="pt.title"></div>
+                                        <div class="tl-row-sub">
+                                            <template x-if="pt.description">
+                                                <span class="tl-mini-chip"><iconify-icon icon="solar:document-text-linear" width="12"></iconify-icon> Note</span>
+                                            </template>
+                                            <template x-if="isTaskOverdue(pt)">
+                                                <span style="color:#ef4444;font-weight:850">En retard</span>
+                                            </template>
+                                        </div>
                                     </div>
+                                    <span class="tl-row-pill" :style="priorityStyle(pt.priority)" x-text="pt.priority || 'Aucune'"></span>
+                                    <div class="tl-row-status-wrap" :class="{'flip-up': isStatusMenuOpen(pt, pt._list, 'priority') && previewStatusFlip}">
+                                        <span class="tl-row-pill"
+                                              :style="statusPillStyle(pt.status, pt.statusColor)"
+                                              x-text="pt.status || 'À faire'"
+                                              @click.stop="toggleStatusMenu($event, pt, pt._list, 'priority')"></span>
+                                        <div class="tl-preview-smenu" x-show="isStatusMenuOpen(pt, pt._list, 'priority')" x-cloak @click.stop>
+                                            <template x-for="s in getStatuses(pt._list)" :key="s.label">
+                                                <button @click="previewSetStatus(pt._list, pt, s.label); previewStatusMenu = null">
+                                                    <span class="tl-preview-sdot" :style="'background:' + s.color"></span>
+                                                    <span x-text="s.label"></span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                    <iconify-icon class="tl-row-menu" icon="solar:flag-linear" width="16" @click.stop="openTaskCtx($event, pt._list, pt)"></iconify-icon>
                                 </div>
-                                <iconify-icon class="tl-row-menu" icon="solar:menu-dots-bold" width="16" @click.stop="openTaskCtx($event, pt._list, pt)"></iconify-icon>
+                            </template>
+                            <template x-if="dayOpenTasks.length === 0">
+                                <div class="tl-record-empty" x-text="dayTaskEmptyLabel"></div>
+                            </template>
+                            <div class="tl-day-more-row" x-show="dayOpenTasks.length > dayOpenLimit" x-cloak>
+                                <button type="button" class="tl-day-more-btn" @click.stop="dayOpenExpanded = !dayOpenExpanded">
+                                    <iconify-icon :icon="dayOpenExpanded ? 'solar:alt-arrow-up-linear' : 'solar:add-circle-linear'" width="13"></iconify-icon>
+                                    <span x-text="dayOpenExpanded ? 'Afficher moins' : ('Afficher plus (' + dayHiddenOpenCount + ')')"></span>
+                                </button>
                             </div>
-                        </template>
-                        <template x-if="priorityTasks.length === 0">
-                            <div class="tl-record-empty">Aucune tâche à faire aujourd'hui</div>
-                        </template>
-                        <div class="tl-record-add">
-                            <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
-                            <input type="text" placeholder="Ajouter une tâche pour aujourd'hui..." x-model="priorityNewTaskTitle"
-                                   x-init="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
-                                   @input="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
-                                   @keydown.enter="addPriorityTask()"
-                                   @keydown.escape="priorityNewTaskTitle = ''">
+                            <form class="tl-day-add-form" @submit.prevent="addPriorityTask()">
+                                <label class="tl-day-add-field">
+                                    <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
+                                    <input type="text" :placeholder="dayTaskInputPlaceholder" x-model="priorityNewTaskTitle"
+                                           x-init="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
+                                           @input="priorityNewTaskTitle = normalizeDraftValue(priorityNewTaskTitle)"
+                                           @keydown.escape="priorityNewTaskTitle = ''">
+                                </label>
+                                <button type="submit" class="tl-day-add-btn" title="Ajouter">
+                                    <iconify-icon icon="tabler:plus" width="15"></iconify-icon>
+                                </button>
+                            </form>
                         </div>
+                        <aside class="tl-day-completed">
+                            <div class="tl-day-completed-head">
+                                <iconify-icon icon="solar:check-circle-bold" width="15"></iconify-icon>
+                                <strong x-text="dayCompletedTitle"></strong>
+                            </div>
+                            <div class="tl-day-completed-list">
+                                <template x-for="pt in dayCompletedTasks" :key="'day-done-' + dayTaskOffset + '-' + pt._id">
+                                    <div class="tl-day-completed-row">
+                                        <button type="button" class="tl-day-done-action" @click.stop="previewToggle(pt._list, pt)" title="Remettre à faire">
+                                            <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                                        </button>
+                                        <span x-text="pt.title" @click.stop="openDetail(pt._list, pt)"></span>
+                                        <b x-text="pt._list?.label || _recordTitle"></b>
+                                    </div>
+                                </template>
+                                <template x-if="dayCompletedTasks.length === 0">
+                                    <div class="tl-day-completed-empty" x-text="dayCompletedEmptyLabel"></div>
+                                </template>
+                            </div>
+                        </aside>
                     </div>
                 </section>
 
@@ -1579,7 +1370,7 @@
                      x-init="$nextTick(() => initListSortable($el))"
                      x-effect="lists.length; $nextTick(() => initListSortable($el))">
                     <template x-for="(list, idx) in lists" :key="list._id">
-                        <section class="tl-record-section tl-card" :data-list-id="list._id" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === 'list:' + list._id, 'tl-record-section-menu-open': isSectionMenuOpen(list, 'list')}" :style="'animation-delay:' + idx * 40 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
+                        <section class="tl-record-section tl-card" :data-list-id="list._id" :class="{'tl-card-expanded': expandedListIds.includes(list._id), 'tl-card-menu-open': previewStatusListId === 'list:' + list._id, 'tl-record-section-menu-open': isSectionMenuOpen(list, 'list'), 'tl-list-all-loaded': list.allTasksLoaded === true}" :style="'animation-delay:' + idx * 40 + 'ms'" @contextmenu.prevent.stop="openCtx($event, 'list', list)">
                             <div class="tl-record-section-head" @click="if(editingListId !== list._id) toggleExpand(list._id)">
                                 <iconify-icon icon="solar:hamburger-menu-linear" width="14" class="tl-list-drag" @click.stop title="Réorganiser"></iconify-icon>
                                 <div class="tl-record-icon" :style="'background:' + list.color + '12'">
@@ -1682,6 +1473,18 @@
                                 <template x-if="!list.tasks || list.tasks.length === 0">
                                     <div class="tl-record-empty">Aucune tâche pour l'instant</div>
                                 </template>
+                                <div class="tl-load-more-row" x-show="list.hasMoreTasks">
+                                    <button type="button" class="tl-load-more-btn" :disabled="list.loadingAllTasks" @click.stop="loadAllTasks(list)">
+                                        <iconify-icon :icon="list.loadingAllTasks ? 'line-md:loading-twotone-loop' : 'solar:refresh-circle-linear'" width="14"></iconify-icon>
+                                        <span x-text="list.loadingAllTasks ? 'Chargement...' : ('Charger toutes les tâches' + (list.remainingTasks ? ' (' + list.remainingTasks + ')' : ''))"></span>
+                                    </button>
+                                </div>
+                                <div class="tl-load-more-row" x-show="list.allTasksLoaded" x-cloak>
+                                    <button type="button" class="tl-load-more-btn" @click.stop="collapseListTasks(list)">
+                                        <iconify-icon icon="solar:alt-arrow-up-linear" width="14"></iconify-icon>
+                                        <span>Afficher moins</span>
+                                    </button>
+                                </div>
                                 <div class="tl-record-add">
                                     <iconify-icon icon="solar:add-circle-linear" width="14" style="color:#bfc9d4;flex-shrink:0"></iconify-icon>
                                     <input type="text" placeholder="Ajouter une tâche..." x-model="previewNewTask[list._id]"
@@ -1871,7 +1674,7 @@
                     </div>
                     <div class="tl-grid">
                         <template x-for="task in activeTasks" :key="task._id">
-                            <div class="tl-task" :class="{'has-menu-open': statusMenuId === task._id}" @contextmenu.prevent.stop="openCtx($event, 'task', task)" :style="'animation-delay:' + activeTasks.indexOf(task)*30 + 'ms'">
+                            <div class="tl-task" :class="{'has-menu-open': statusMenuId === task._id}" @click.stop="openDetail(activeList, task)" @contextmenu.prevent.stop="openCtx($event, 'task', task)" :style="'animation-delay:' + activeTasks.indexOf(task)*30 + 'ms'">
                                 <div class="tl-task-check" @click.stop="toggleDone(task)">
                                     <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                 </div>
@@ -1915,7 +1718,7 @@
                         </div>
                         <div class="tl-grid" x-show="showDone" x-collapse>
                             <template x-for="task in doneTasks" :key="task._id">
-                                <div class="tl-task done">
+                                <div class="tl-task done" @click.stop="openDetail(activeList, task)">
                                     <div class="tl-task-check checked" @click.stop="toggleDone(task)">
                                         <svg viewBox="0 0 24 24" fill="none"><path d="M5 13l4 4L19 7" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
                                     </div>
@@ -2124,266 +1927,10 @@
     </template>
     <% } %>
 
-    <!-- ════════ DETAIL MODAL (full-screen centered) ════════ -->
-    <div x-show="detailTask" x-cloak class="tl-overlay" :class="{'open': detailTask}" @click="closeDetail()"></div>
-    <div x-show="detailTask" x-cloak class="tl-detail" :class="{'open': detailTask}" @click.stop @keydown.escape.window="closeDetail()">
-        <template x-if="detailTask">
-            <div style="display:flex;flex-direction:column;height:100%">
-                <div class="tl-detail-header">
-                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
-                    <span class="tl-detail-header-title" x-text="detailList ? detailList.label : 'Détails de la tâche'"></span>
-                    <button type="button" class="tl-detail-close" @click="closeDetail()">
-                        <iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon>
-                    </button>
-                </div>
-                <div class="tl-detail-content">
-                    <!-- Left: Title + Description -->
-                    <div class="tl-detail-main">
-                        <input type="text" class="tl-detail-title-input"
-                               x-model="detailTask.title"
-                               @change="saveDetail('title', detailTask.title)"
-                               placeholder="Titre de la tâche...">
-
-                        <div class="tl-detail-desc-label">Description</div>
-                        <div class="tl-detail-desc-editor dx-rte" @click.stop
-                             x-init="initDetailDescriptionEditor($el)"
-                             x-effect="syncDetailDescriptionEditor()">
-                            <div class="dx-rte-toolbar" data-dx-rte-toolbar></div>
-                            <input class="tl-detail-hidden-input" data-task-description-image type="file" accept="image/*" multiple
-                                   @change="detailDescriptionEditor?.handleImageFiles($event.target.files); $event.target.value = ''">
-                            <div class="tl-detail-desc-area"
-                                 data-dx-rte-editor
-                                 contenteditable="true"
-                                 data-placeholder="Ajouter une description détaillée...">
-                            </div>
-                            <div class="dx-rte-image-toolbar" data-dx-rte-image-toolbar></div>
-                        </div>
-                        <div class="tl-detail-desc-status" x-text="detailDescriptionStatus"></div>
-                    </div>
-
-                    <!-- Right: Properties sidebar -->
-                    <div class="tl-detail-sidebar">
-                        <!-- Status -->
-                        <div class="tl-detail-prop">
-	                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:check-circle-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Statut</div>
-                            <div class="tl-detail-prop-value" style="position:relative">
-                                <div class="tl-pill" :style="'background:' + getStatusColor(detailTask.status) + '15;color:' + getStatusColor(detailTask.status)"
-                                     @click.stop="detailStatusMenu = !detailStatusMenu">
-                                    <span class="tl-pill-dot" :style="'background:' + getStatusColor(detailTask.status)"></span>
-                                    <span x-text="detailTask.status || 'À faire'"></span>
-                                </div>
-                                <div class="tl-pill-menu" x-show="detailStatusMenu" x-cloak @click.stop>
-                                    <template x-for="s in getListStatuses()" :key="s.label">
-                                        <button @click="detailTask.status = s.label; detailTask.statusColor = s.color; saveDetail('status', s.label); detailStatusMenu = false">
-                                            <span class="pm-dot" :style="'background:' + s.color"></span>
-                                            <span x-text="s.label"></span>
-                                        </button>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Priority -->
-                        <div class="tl-detail-prop">
-	                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:flag-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Priorité</div>
-                            <div class="tl-detail-prop-value" style="position:relative">
-                                <div class="tl-pill" :style="'background:' + getPriorityColor(detailTask.priority) + '15;color:' + (getPriorityColor(detailTask.priority) || '#94a3b8')"
-                                     @click.stop="detailPriorityMenu = !detailPriorityMenu">
-                                    <span class="tl-pill-dot" :style="'background:' + (getPriorityColor(detailTask.priority) || '#d1d5db')"></span>
-                                    <span x-text="detailTask.priority || 'Aucune'"></span>
-                                </div>
-                                <div class="tl-pill-menu" x-show="detailPriorityMenu" x-cloak @click.stop>
-                                    <template x-for="p in priorities" :key="p.label">
-                                        <button @click="detailTask.priority = p.label; detailTask.priorityColor = p.color; saveDetail('priority', p.label); detailPriorityMenu = false">
-                                            <span class="pm-dot" :style="'background:' + (p.color || '#d1d5db')"></span>
-                                            <span x-text="p.label"></span>
-                                        </button>
-                                    </template>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Day priority -->
-                        <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:star-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">À faire aujourd'hui</div>
-                            <div class="tl-detail-prop-value">
-                                <button type="button" class="tl-pill"
-                                        :style="detailTask.isDayPriority ? 'background:#eef2ff;color:#4f46e5' : 'background:#f8fafc;color:#94a3b8'"
-                                        @click.stop="detailTask.isDayPriority = !detailTask.isDayPriority; saveDetail('isDayPriority', detailTask.isDayPriority)">
-                                    <span class="tl-pill-dot" :style="'background:' + (detailTask.isDayPriority ? '#6366f1' : '#d1d5db')"></span>
-                                    <span x-text="detailTask.isDayPriority ? 'Oui' : 'Non'"></span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Assignee -->
-                        <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:user-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Assigné</div>
-                            <div class="tl-detail-prop-value">
-                                <input type="text" class="tl-detail-text-input" placeholder="Non assigné"
-                                       x-model="detailTask.assignedTo"
-                                       @change="saveDetail('assignedTo', detailTask.assignedTo)">
-                            </div>
-                        </div>
-
-                        <!-- Start date -->
-                        <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:calendar-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Début</div>
-                            <div class="tl-detail-prop-value">
-                                <input type="date" class="tl-detail-date-input"
-                                       :value="detailTask.startDate ? new Date(detailTask.startDate).toISOString().split('T')[0] : ''"
-                                       @change="detailTask.startDate = $event.target.value || null; saveDetail('startDate', detailTask.startDate)">
-                            </div>
-                        </div>
-
-                        <!-- Due date -->
-                        <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:calendar-mark-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Échéance</div>
-                            <div class="tl-detail-prop-value">
-                                <input type="date" class="tl-detail-date-input"
-                                       :value="detailTask.dueDate ? new Date(detailTask.dueDate).toISOString().split('T')[0] : ''"
-                                       @change="detailTask.dueDate = $event.target.value || null; saveDetail('dueDate', detailTask.dueDate)">
-                            </div>
-                        </div>
-
-                        <!-- Reminder -->
-                        <div class="tl-detail-prop tl-detail-reminder-prop">
-                            <div class="tl-detail-prop-icon" style="color:#6366f1"><iconify-icon icon="solar:bell-bing-bold-duotone" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Rappel</div>
-                            <div class="tl-detail-prop-value">
-                                <div class="tl-detail-datetime">
-                                    <input type="date" class="tl-detail-date-input"
-                                           x-model="detailReminderDraft.date"
-                                           @input="setDetailReminderDraftPart('date', $event.target.value || '')"
-                                           @change="updateDetailReminderPart('date', $event.target.value || '')">
-                                    <input type="time" class="tl-detail-time-input"
-                                           x-model="detailReminderDraft.time"
-                                           :disabled="!detailReminderDateVal()"
-                                           @input="setDetailReminderDraftPart('time', $event.target.value || '')"
-                                           @change="updateDetailReminderPart('time', $event.target.value || '')">
-                                    <button type="button" class="tl-detail-reminder-clear" title="Supprimer le rappel"
-                                            x-show="detailTask.reminder"
-                                            @click.stop="clearDetailReminder()">
-                                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13"></iconify-icon>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- List name -->
-                        <div class="tl-detail-prop">
-                            <div class="tl-detail-prop-icon"><iconify-icon icon="solar:list-linear" width="14"></iconify-icon></div>
-                            <div class="tl-detail-prop-label">Liste</div>
-                            <div class="tl-detail-prop-value">
-	                                <select class="tl-detail-select"
-	                                        x-model="detailTask.taskListId"
-                                            x-effect="$el.value = detailTask.taskListId || ''"
-	                                        @change="detailTask.taskListId = $event.target.value; changeTaskList($event.target.value)">
-	                                    <template x-for="list in lists" :key="list._id">
-	                                        <option :value="list._id" :selected="list._id === detailTask.taskListId" x-text="list.label"></option>
-	                                    </template>
-	                                </select>
-                            </div>
-                        </div>
-
-                        <!-- Created at -->
-                        <div style="margin-top:16px;padding-top:12px;border-top:1px solid #f1f3f5">
-                            <span class="tl-detail-time" x-show="detailTask.createdAt"
-                                  x-text="'Créée le ' + (detailTask.createdAt ? new Date(detailTask.createdAt).toLocaleDateString('fr-FR',{day:'2-digit',month:'short',year:'numeric'}) : '')"></span>
-                        </div>
-                    </div>
-
-                    <!-- Comments / Activity Panel -->
-                    <div class="tl-detail-comments">
-                        <div class="tl-detail-comments-header">
-                            <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="15"></iconify-icon>
-                            Conversation
-                            <span style="font-weight:500;text-transform:none;letter-spacing:0;font-size:11px" x-text="'(' + (detailComments||[]).length + ')'"></span>
-                        </div>
-                        <div class="tl-comments-feed" x-ref="commentsFeed">
-                            <template x-if="!detailComments || detailComments.length === 0">
-                                <div class="tl-comments-empty">
-                                    <iconify-icon icon="solar:chat-round-dots-linear" width="32"></iconify-icon>
-                                    <span>Aucun message</span>
-                                    <span style="font-size:11px">Échangez avec votre équipe ici</span>
-                                </div>
-                            </template>
-                            <template x-for="c in (detailComments||[])" :key="c._id">
-                                <div>
-                                    <!-- Comment as chat bubble -->
-                                    <template x-if="c.type === 'comment'">
-                                        <div class="tl-msg-row" :class="{'mine': isMyComment(c)}">
-                                            <div class="tl-msg-name" x-text="c.userName || 'Anonyme'"></div>
-                                            <div class="tl-comment">
-                                                <div class="tl-comment-text" x-text="c.text"></div>
-                                            </div>
-                                            <div class="tl-msg-meta">
-                                                <span class="tl-msg-time" x-text="formatCommentTime(c.createdAt)"></span>
-                                                <template x-if="c.publishedToChat">
-                                                    <span class="tl-msg-badge">
-                                                        <iconify-icon icon="solar:chat-round-dots-linear" width="8"></iconify-icon>
-                                                        chat
-                                                    </span>
-                                                </template>
-                                            </div>
-                                        </div>
-                                    </template>
-                                    <!-- Activity (centered pill) -->
-                                    <template x-if="c.type === 'activity'">
-                                        <div class="tl-activity">
-                                            <span class="tl-activity-user" x-text="c.userName || 'Système'"></span>
-                                            a changé
-                                            <span x-text="c.metadata?.field === 'status' ? 'le statut' : 'la priorité'"></span>
-                                            :
-                                            <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.oldValue) + '15;color:' + getStatusColor(c.metadata?.oldValue)" x-text="c.metadata?.oldValue || '—'"></span>
-                                            →
-                                            <span class="tl-activity-val" :style="'background:' + getStatusColor(c.metadata?.newValue) + '15;color:' + getStatusColor(c.metadata?.newValue)" x-text="c.metadata?.newValue || '—'"></span>
-                                            <div class="tl-activity-time" x-text="formatCommentTime(c.createdAt)"></div>
-                                        </div>
-                                    </template>
-                                </div>
-                            </template>
-                        </div>
-                        <!-- Comment input -->
-                        <div class="tl-comment-input-wrap">
-                            <textarea class="tl-comment-textarea"
-                                      placeholder="Écrire un message..."
-                                      x-model="detailNewComment"
-                                      @keydown.ctrl.enter="postComment()"
-                                      @keydown.meta.enter="postComment()"></textarea>
-                            <div class="tl-comment-actions">
-                                <button type="button" class="tl-comment-send"
-                                        :disabled="!detailNewComment?.trim() || detailPostingComment"
-                                        @click="postComment()">
-                                    <iconify-icon icon="solar:plain-bold" width="12"></iconify-icon>
-                                    Envoyer
-                                </button>
-                                <label class="tl-chat-toggle" @click="detailPublishToChat = !detailPublishToChat">
-                                    <div class="tl-chat-toggle-switch" :class="{'active': detailPublishToChat}"></div>
-                                    <iconify-icon icon="solar:chat-round-dots-linear" width="12"></iconify-icon>
-                                    Chat
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                <div class="tl-detail-footer">
-                    <button type="button" class="tl-detail-delete" @click="detailDelete()">
-                        <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="13" style="margin-right:4px"></iconify-icon>
-                        Supprimer
-                    </button>
-                    <span style="font-size:11px;color:#bfc9d4">Esc pour fermer</span>
-                </div>
-            </div>
-        </template>
-    </div>
+    <!-- Shared task detail modal. Keep task detail UI in one reusable partial. -->
 </div>
+
+<%- include('../../partials/task-detail-modal') %>
 
 <script>
 document.addEventListener('alpine:init', () => {
@@ -2412,6 +1959,9 @@ document.addEventListener('alpine:init', () => {
         previewEditTitle: '',
         priorityExpanded: true,
         priorityNewTaskTitle: '',
+        dayTaskOffset: 0,
+        dayOpenExpanded: false,
+        dayOpenLimit: 10,
         myListSavingId: null,
         taskCtx: null,
         kanbanListIds: [],
@@ -2419,24 +1969,7 @@ document.addEventListener('alpine:init', () => {
         kanbanAddStatus: null,
         kanbanAddListId: null,
         kanbanNewTitle: '',
-        detailTask: null,
-        detailList: null,
-        detailStatusMenu: false,
-        detailPriorityMenu: false,
-        detailComments: [],
-        detailNewComment: '',
-        detailPublishToChat: true,
         _currentUserId: '',
-        detailPostingComment: false,
-        detailLoadingComments: false,
-        detailUploadBusy: false,
-        detailReminderDraft: { date: '', time: '', dirty: false },
-        detailReminderSaving: false,
-        detailDescriptionEditor: null,
-        detailDescriptionStatus: '',
-        _detailDescriptionSaveTimer: null,
-        _detailDescriptionSavedHtml: '',
-        _detailDescriptionEditorSyncing: false,
         statusMgrListId: null,
         statusMgrStatuses: [],
         statusMgrColorIdx: null,
@@ -2507,22 +2040,104 @@ document.addEventListener('alpine:init', () => {
                 return task;
             }));
         },
+        get daySourceTasks() {
+            const byId = new Map();
+            const add = (list, task) => {
+                if (!list || !task?._id || byId.has(task._id)) return;
+                task._list = list;
+                task._listId = list._id;
+                task.taskListId = list._id;
+                byId.set(task._id, task);
+            };
+            (this.lists || []).forEach(list => {
+                (list.tasks || []).forEach(task => add(list, task));
+                (list.dayTasks || []).forEach(task => add(list, task));
+            });
+            return [...byId.values()];
+        },
         get priorityTasks() {
-            return this.allTasksFlat
-                .filter(task => !!task.isDayPriority)
-                .sort((a, b) => this.sortTaskDate(a) - this.sortTaskDate(b));
+            return this.dayTasks;
+        },
+        get dayTasks() {
+            return this.daySourceTasks
+                .filter(task => this.taskMatchesDay(task, this.dayTaskOffset))
+                .sort((a, b) => {
+                    if (a.status === 'Terminé' && b.status !== 'Terminé') return 1;
+                    if (a.status !== 'Terminé' && b.status === 'Terminé') return -1;
+                    const orderDiff = Number(a.order || 0) - Number(b.order || 0);
+                    if (orderDiff !== 0) return orderDiff;
+                    return this.sortTaskDate(a) - this.sortTaskDate(b);
+                });
+        },
+        get dayTaskDoneCount() {
+            return this.dayCompletedTasks.length;
+        },
+        get dayPanelTaskCount() {
+            return this.dayOpenTasks.length + this.dayCompletedTasks.length;
+        },
+        get dayOpenTasks() {
+            return this.dayTasks.filter(task => task.status !== 'Terminé');
+        },
+        get dayVisibleOpenTasks() {
+            return this.dayOpenExpanded ? this.dayOpenTasks : this.dayOpenTasks.slice(0, this.dayOpenLimit);
+        },
+        get dayHiddenOpenCount() {
+            return Math.max(0, this.dayOpenTasks.length - this.dayOpenLimit);
+        },
+        get dayCompletedTasks() {
+            const selected = this.dayTaskDateKey(this.dayTaskOffset);
+            return this.daySourceTasks
+                .filter(task => {
+                    if (!task || task.status !== 'Terminé') return false;
+                    const completed = this.taskDateKey(task.completedAt || task.updatedAt);
+                    if (completed) return completed === selected;
+                    return this.taskMatchesDay(task, this.dayTaskOffset);
+                })
+                .sort((a, b) => new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0));
+        },
+        get dayTaskOverdueCount() {
+            return this.dayOpenTasks.filter(task => this.isTaskOverdue(task)).length;
+        },
+        get dayTaskCompletionPct() {
+            const total = this.dayOpenTasks.length + this.dayCompletedTasks.length;
+            return total ? Math.round((this.dayCompletedTasks.length / total) * 100) : 0;
+        },
+        get dayTaskTitle() {
+            return 'Tâches du jour';
+        },
+        get dayTaskEmptyLabel() {
+            return this.dayTaskOffset === 1 ? 'Aucune tâche prévue demain' : "Aucune tâche à faire aujourd'hui";
+        },
+        get dayTaskInputPlaceholder() {
+            return this.dayTaskOffset === 1 ? 'Ajouter une tâche pour demain...' : "Ajouter une tâche pour aujourd'hui...";
+        },
+        get dayTaskDateLabel() {
+            const d = this.dateForOffset(this.dayTaskOffset);
+            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' });
+        },
+        get dayCompletedTitle() {
+            const label = this.dayTaskOffset === 1 ? 'demain' : "aujourd'hui";
+            return `Terminées ${label} (${this.dayCompletedTasks.length})`;
+        },
+        get dayCompletedEmptyLabel() {
+            return this.dayTaskOffset === 1 ? 'Aucune tâche terminée demain' : "Aucune tâche terminée aujourd'hui";
         },
         get priorityDoneCount() {
-            return this.priorityTasks.filter(task => task.status === 'Terminé').length;
+            return this.dayTaskDoneCount;
         },
         get priorityCompletionPct() {
-            return this.priorityTasks.length ? Math.round((this.priorityDoneCount / this.priorityTasks.length) * 100) : 0;
+            return this.dayTaskCompletionPct;
+        },
+        get legacyPriorityTasks() {
+            return this.daySourceTasks
+                .filter(task => !!task.isDayPriority)
+                .sort((a, b) => this.sortTaskDate(a) - this.sortTaskDate(b));
         },
         get overdueTaskCount() {
             return this.allTasksFlat.filter(task => this.isTaskOverdue(task)).length;
         },
         get todayTaskCount() {
-            return this.allTasksFlat.filter(task => this.isTaskToday(task)).length;
+            return this.daySourceTasks.filter(task => this.taskMatchesDay(task, 0)).length;
         },
         get activeListsCount() {
             return this.lists.filter(list => this.listTaskCount(list) > 0).length;
@@ -2569,7 +2184,22 @@ document.addEventListener('alpine:init', () => {
 
         defaultRecordListLabel() {
             const title = this.displayTaskText(this._recordTitle, '').trim();
+            return title || 'Tâches du record';
+        },
+
+        legacyDefaultRecordListLabel() {
+            const title = this.displayTaskText(this._recordTitle, '').trim();
             return title ? `Tâches ${title}` : 'Tâches du record';
+        },
+
+        taskListKey(value = '') {
+            return String(value || '').trim().toLowerCase();
+        },
+
+        findTaskListByLabel(label = '') {
+            const key = this.taskListKey(label);
+            if (!key) return null;
+            return this.lists.find(list => this.taskListKey(list.label) === key || this.taskListKey(list.rawLabel) === key) || null;
         },
 
         isLegacyDayPriorityLabel(value) {
@@ -2622,9 +2252,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         async focusQuickAdd() {
-            if (!this.lists.length) {
-                await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
-            }
+            await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
             const target = this.getDefaultTaskList() || this.lists[0];
             if (!target) return;
             if (!this.expandedListIds.includes(target._id)) this.expandedListIds.push(target._id);
@@ -2641,26 +2269,37 @@ document.addEventListener('alpine:init', () => {
         },
 
         getDefaultTaskList() {
-            return this.lists.find(list => !!list.isDefault)
-                || this.lists.find(list => String(list.label || '').toLowerCase() === this.defaultRecordListLabel().toLowerCase())
-                || this.lists.find(list => String(list.label || '').toLowerCase() === 'à faire')
-                || this.lists.find(list => String(list.rawLabel || '').toLowerCase() === 'à faire')
+            return this.findTaskListByLabel(this.defaultRecordListLabel())
+                || this.lists.find(list => !!list.isDefault)
+                || this.findTaskListByLabel(this.legacyDefaultRecordListLabel())
+                || this.findTaskListByLabel('À faire')
                 || null;
         },
 
         async ensureTaskList(label = 'Liste sans nom', options = {}) {
-            const existing = this.lists.find(list => String(list.label || '').toLowerCase() === String(label).toLowerCase());
+            const desiredLabel = this.cleanTaskTitle(label) || this.defaultRecordListLabel();
+            if (options.isDefault === true) {
+                const exact = this.findTaskListByLabel(desiredLabel);
+                if (exact) {
+                    if (exact.isDefault) return exact;
+                    return this.updateTaskListConfig(exact, { label: desiredLabel, isDefault: true });
+                }
+                const legacy = this.findTaskListByLabel(this.legacyDefaultRecordListLabel()) || this.findTaskListByLabel('À faire');
+                if (legacy) return this.updateTaskListConfig(legacy, { label: desiredLabel, isDefault: true });
+            }
+            const existing = this.findTaskListByLabel(desiredLabel);
             if (existing) return existing;
             try {
                 const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ label, isDefault: options.isDefault === true })
+                    body: JSON.stringify({ label: desiredLabel, isDefault: options.isDefault === true })
                 });
                 const data = await res.json();
                 if (data.success && data.list) {
                     const newList = this.normalizeList(data.list);
+                    if (newList.isDefault) this.lists = this.lists.map(item => ({ ...item, isDefault: false }));
                     this.lists.push(newList);
                     return newList;
                 }
@@ -2668,7 +2307,84 @@ document.addEventListener('alpine:init', () => {
             return null;
         },
 
+        async updateTaskListConfig(list = {}, payload = {}) {
+            const id = String(list._id || '');
+            if (!id) return list;
+            const body = {
+                label: payload.label || list.rawLabel || list.label || this.defaultRecordListLabel(),
+                color: payload.color || list.color || '#6366f1',
+                icon: payload.icon || list.icon || 'solar:checklist-bold-duotone',
+                viewMode: payload.viewMode || list.viewMode || 'kanban',
+                tags: Array.isArray(payload.tags) ? payload.tags : (Array.isArray(list.tags) ? list.tags : []),
+                displayOptions: payload.displayOptions || list.displayOptions || undefined,
+                isDefault: payload.isDefault === true || list.isDefault === true
+            };
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(body)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false || !data.list) throw new Error(data.error || 'Mise à jour de liste impossible');
+                const updated = this.normalizeList({ ...list, ...data.list, tasks: list.tasks || [] });
+                this.lists = this.lists.map(item => {
+                    if (String(item._id || '') === id) return updated;
+                    return updated.isDefault ? { ...item, isDefault: false } : item;
+                });
+                return updated;
+            } catch (e) {
+                console.error('[TaskLists] Update list config error:', e);
+                return list;
+            }
+        },
+
+        normalizeTagOptions(options = []) {
+            const seen = new Set();
+            return (Array.isArray(options) ? options : [])
+                .map((item, index) => {
+                    const label = String(item?.label || item || '').trim();
+                    return {
+                        label,
+                        color: item?.color || this.statusColors[index % this.statusColors.length] || '#6366f1',
+                        order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index
+                    };
+                })
+                .filter(item => {
+                    const key = item.label.toLowerCase();
+                    if (!item.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
+                .sort((a, b) => a.order - b.order);
+        },
+
+        normalizeTaskTags(tags = [], options = []) {
+            const optionByLabel = new Map(this.normalizeTagOptions(options)
+                .map(option => [option.label.toLowerCase(), option]));
+            const seen = new Set();
+            return (Array.isArray(tags) ? tags : [])
+                .map((item, index) => {
+                    const label = String(item?.label || item || '').trim();
+                    const option = optionByLabel.get(label.toLowerCase());
+                    return {
+                        label,
+                        color: item?.color || option?.color || '#6366f1',
+                        order: Number.isFinite(Number(item?.order)) ? Number(item.order) : (option?.order ?? index)
+                    };
+                })
+                .filter(item => {
+                    const key = item.label.toLowerCase();
+                    if (!item.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
+                .sort((a, b) => a.order - b.order);
+        },
+
         normalizeTask(task = {}) {
+            const tagOptions = this.normalizeTagOptions(task.tagOptions || []);
             return {
                 ...task,
                 title: this.displayTaskText(task.title),
@@ -2680,335 +2396,10 @@ document.addEventListener('alpine:init', () => {
                 isDayPriority: !!task.isDayPriority,
                 taskListId: task.taskListId ? String(task.taskListId) : '',
                 assignedTo: typeof task.assignedTo === 'string' ? task.assignedTo : '',
+                tags: this.normalizeTaskTags(task.tags || [], tagOptions),
+                tagOptions,
                 attachments: Array.isArray(task.attachments) ? task.attachments : []
             };
-        },
-
-        escapeHtml(value = '') {
-            return window.DexRichTextEditor
-                ? window.DexRichTextEditor.escapeHtml(value)
-                : String(value || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-        },
-
-        plainDescriptionToHtml(value = '') {
-            return window.DexRichTextEditor ? window.DexRichTextEditor.plainToHtml(value) : this.escapeHtml(value);
-        },
-
-        normalizeDescriptionHtml(value = '') {
-            return window.DexRichTextEditor ? window.DexRichTextEditor.normalizeHtml(value) : this.plainDescriptionToHtml(value);
-        },
-
-        sanitizeDescriptionHtml(html = '') {
-            return window.DexRichTextEditor ? window.DexRichTextEditor.sanitizeHtml(html) : String(html || '');
-        },
-
-        detailReminderDateFromValue(value) {
-            if (!value) return '';
-            const d = new Date(value);
-            if (Number.isNaN(d.getTime())) return '';
-            return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        },
-
-        detailReminderTimeFromValue(value) {
-            if (!value) return '';
-            const d = new Date(value);
-            if (Number.isNaN(d.getTime())) return '';
-            return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        },
-
-        composeDetailReminderDateTime(dateValue, timeValue) {
-            const date = String(dateValue || '').trim();
-            const time = String(timeValue || '').trim();
-            if (!date || !time) return null;
-            const [year, month, day] = date.split('-').map(Number);
-            const [hour, minute] = time.split(':').map(Number);
-            if (!year || !month || !day || !Number.isFinite(hour) || !Number.isFinite(minute)) return null;
-            return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
-        },
-
-        detailReminderTimeZone() {
-            try {
-                return Intl.DateTimeFormat().resolvedOptions().timeZone || 'Africa/Casablanca';
-            } catch (_) {
-                return 'Africa/Casablanca';
-            }
-        },
-
-        syncDetailReminderDraft({ force = false } = {}) {
-            if (!this.detailTask) return;
-            if (!force && (this.detailReminderDraft.dirty || this.detailReminderSaving)) return;
-            const scheduledAt = this.detailTask.reminder?.scheduledAt || '';
-            this.detailReminderDraft = {
-                date: this.detailReminderDateFromValue(scheduledAt),
-                time: this.detailReminderTimeFromValue(scheduledAt),
-                dirty: false
-            };
-        },
-
-        detailReminderDateVal() {
-            return this.detailReminderDraft.date || '';
-        },
-
-        setDetailReminderDraftPart(part, value, { dirty = true } = {}) {
-            const currentDate = this.detailReminderDraft.date || '';
-            const currentTime = this.detailReminderDraft.time || '';
-            const nextDate = part === 'date' ? String(value || '') : currentDate;
-            const nextTime = nextDate ? (part === 'time' ? String(value || '') : currentTime) : '';
-            this.detailReminderDraft = {
-                date: nextDate,
-                time: nextTime,
-                dirty: dirty || this.detailReminderDraft.dirty
-            };
-            return this.detailReminderDraft;
-        },
-
-        async updateDetailReminderPart(part, value) {
-            if (!this.detailTask?._id) return;
-            const draft = this.setDetailReminderDraftPart(part, value);
-            if (!draft.date) {
-                this.detailReminderDraft = { date: '', time: '', dirty: !!this.detailTask.reminder };
-                if (this.detailTask.reminder) await this.clearDetailReminder();
-                return;
-            }
-            if (!draft.time) return;
-            const scheduledAt = this.composeDetailReminderDateTime(draft.date, draft.time);
-            if (!scheduledAt) return;
-            await this.setDetailReminder(scheduledAt);
-        },
-
-        async setDetailReminder(scheduledAt) {
-            if (!this.detailTask?._id) return false;
-            const taskId = this.detailTask._id;
-            const previous = this.detailTask.reminder || null;
-            const previousDraft = { ...this.detailReminderDraft };
-            const taskSnapshot = { ...this.detailTask };
-            const optimistic = {
-                ...(previous || {}),
-                targetId: taskId,
-                title: this.detailTask.title || 'Tache',
-                scheduledAt,
-                timeZone: this.detailReminderTimeZone(),
-                status: 'scheduled'
-            };
-
-            this.detailReminderSaving = true;
-            this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: optimistic });
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/reminder`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        scheduledAt,
-                        timeZone: this.detailReminderTimeZone()
-                    })
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Rappel impossible');
-                this.syncUpdatedDetailTask(data.task || { ...taskSnapshot, reminder: data.reminder || optimistic });
-                this.detailReminderSaving = false;
-                this.detailReminderDraft.dirty = false;
-                this.syncDetailReminderDraft({ force: true });
-                if (window.showMessage) window.showMessage('Rappel enregistré', 'success');
-                return true;
-            } catch (e) {
-                this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: previous });
-                this.detailReminderSaving = false;
-                this.detailReminderDraft = { ...previousDraft, dirty: true };
-                if (window.showMessage) window.showMessage(e.message || 'Erreur lors du rappel', 'danger');
-                return false;
-            }
-        },
-
-        async clearDetailReminder() {
-            if (!this.detailTask?._id) return false;
-            const taskId = this.detailTask._id;
-            const previous = this.detailTask.reminder || null;
-            const previousDraft = { ...this.detailReminderDraft };
-            const taskSnapshot = { ...this.detailTask };
-
-            this.detailReminderSaving = true;
-            this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: null });
-            this.detailReminderDraft = { date: '', time: '', dirty: true };
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/reminder`, {
-                    method: 'DELETE',
-                    credentials: 'include'
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
-                this.syncUpdatedDetailTask(data.task || { ...taskSnapshot, reminder: null });
-                this.detailReminderSaving = false;
-                this.detailReminderDraft = { date: '', time: '', dirty: false };
-                if (window.showMessage) window.showMessage('Rappel supprimé', 'success');
-                return true;
-            } catch (e) {
-                this.syncUpdatedDetailTask({ ...taskSnapshot, reminder: previous });
-                this.detailReminderSaving = false;
-                this.detailReminderDraft = previousDraft;
-                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de la suppression', 'danger');
-                return false;
-            }
-        },
-
-        initDetailDescriptionEditor(root) {
-            if (!root) return;
-            if (this.detailDescriptionEditor?.root === root) return;
-            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
-
-            const initialHtml = this.normalizeDescriptionHtml(this.detailTask?.description || '');
-            this._detailDescriptionSavedHtml = initialHtml;
-
-            if (!window.DexRichTextEditor) {
-                const editor = root.querySelector('[data-dx-rte-editor]');
-                if (!editor) return;
-                editor.innerHTML = initialHtml;
-                const onInput = () => this.onDetailDescriptionInput(editor.innerHTML);
-                editor.addEventListener('input', onInput);
-                this.detailDescriptionEditor = {
-                    root,
-                    editor,
-                    getHtml: () => editor.innerHTML,
-                    setHtml: (html = '') => { editor.innerHTML = this.normalizeDescriptionHtml(html); },
-                    destroy: () => editor.removeEventListener('input', onInput),
-                    handleImageFiles: () => []
-                };
-                return;
-            }
-
-            this.detailDescriptionEditor = window.DexRichTextEditor.create(root, {
-                key: String(this.detailTask?._id || ''),
-                initialHtml,
-                placeholder: 'Ajouter une description détaillée...',
-                features: ['heading', 'bold', 'italic', 'underline', 'unorderedList', 'orderedList', 'quote', 'checklist', 'link', 'image', 'clear'],
-                onPickImage: (editor) => editor.root?.querySelector('[data-task-description-image]')?.click(),
-                uploadImages: (files) => this.uploadDetailDescriptionImages(files),
-                onChange: (html) => this.onDetailDescriptionInput(html),
-                onBlur: () => this.flushDetailDescriptionSave()
-            });
-        },
-
-        syncDetailDescriptionEditor() {
-            if (!this.detailDescriptionEditor || !this.detailTask) return;
-            this._detailDescriptionEditorSyncing = true;
-            this.detailDescriptionEditor.setHtml(this.detailTask.description || '', {
-                key: String(this.detailTask._id || '')
-            });
-            this._detailDescriptionEditorSyncing = false;
-        },
-
-        onDetailDescriptionInput(payload) {
-            if (this._detailDescriptionEditorSyncing || !this.detailTask) return;
-            const html = typeof payload === 'string'
-                ? this.sanitizeDescriptionHtml(payload)
-                : (this.detailDescriptionEditor?.getHtml() || '');
-            this.detailTask.description = html;
-            this.detailDescriptionStatus = 'Modifications en cours...';
-            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
-            this._detailDescriptionSaveTimer = setTimeout(() => this.flushDetailDescriptionSave(), 850);
-        },
-
-        async flushDetailDescriptionSave() {
-            if (!this.detailTask?._id) return false;
-            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
-            this._detailDescriptionSaveTimer = null;
-
-            const clean = this.detailDescriptionEditor?.getHtml()
-                || this.sanitizeDescriptionHtml(this.detailTask.description || '');
-            this.detailTask.description = clean;
-            if (clean === this._detailDescriptionSavedHtml) {
-                this.detailDescriptionStatus = '';
-                return true;
-            }
-
-            this.detailDescriptionStatus = 'Enregistrement...';
-            const saved = await this.saveDetail('description', clean, { silent: true });
-            if (saved !== false) {
-                this._detailDescriptionSavedHtml = clean;
-                this.detailDescriptionStatus = 'Enregistré';
-                setTimeout(() => {
-                    if (this.detailDescriptionStatus === 'Enregistré') this.detailDescriptionStatus = '';
-                }, 1100);
-                return true;
-            }
-
-            this.detailDescriptionStatus = 'Erreur d’enregistrement';
-            return false;
-        },
-
-        attachmentUrl(attachment = {}) {
-            return attachment.url || (attachment.filename ? `/account/${this._accountNumber}/uploads/attachments/${attachment.filename}` : '');
-        },
-
-        attachmentName(attachment = {}) {
-            return attachment.originalName || attachment.filename || 'image';
-        },
-
-        isImageAttachment(attachment = {}) {
-            const mime = String(attachment.mimeType || '');
-            const name = String(attachment.originalName || attachment.filename || '');
-            return mime.startsWith('image/') || /\.(png|jpe?g|gif|webp|svg)$/i.test(name);
-        },
-
-        syncUpdatedDetailTask(taskData = {}) {
-            if (!taskData?._id) return null;
-            const targetList = this.detailList
-                || this.lists.find(list => list._id === String(taskData.taskListId || ''))
-                || this.lists.find(list => (list.tasks || []).some(task => task._id === taskData._id));
-            const normalizedTask = this.normalizeTask({
-                ...taskData,
-                taskListId: targetList?._id || taskData.taskListId
-            });
-            if (targetList) {
-                const arr = targetList.tasks || [];
-                const idx = arr.findIndex(t => t._id === normalizedTask._id);
-                if (idx >= 0) Object.assign(arr[idx], normalizedTask);
-                targetList.doneCount = arr.filter(t => t.status === 'Terminé').length;
-            }
-            if (this.detailTask && this.detailTask._id === normalizedTask._id) Object.assign(this.detailTask, normalizedTask);
-            return normalizedTask;
-        },
-
-        async uploadDetailDescriptionImages(files) {
-            const images = Array.from(files || []).filter(file => file && String(file.type || '').startsWith('image/'));
-            if (!this.detailTask?._id || !images.length || this.detailUploadBusy) return [];
-
-            const taskId = this.detailTask._id;
-            const before = new Set((this.detailTask.attachments || []).map(att => att._id || att.filename));
-            const draftDescription = this.detailDescriptionEditor?.getHtml()
-                || this.sanitizeDescriptionHtml(this.detailTask.description || '');
-            this.detailUploadBusy = true;
-
-            try {
-                const body = new FormData();
-                images.forEach(file => body.append('files', file, file.name || 'image.png'));
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/attachments`, {
-                    method: 'POST',
-                    credentials: 'include',
-                    body
-                });
-                const data = await res.json().catch(() => ({}));
-                if (!res.ok || data.success === false) throw new Error(data.error || 'Upload impossible');
-
-                const updatedTask = data.task
-                    ? { ...data.task, description: draftDescription }
-                    : { ...this.detailTask, attachments: data.attachments || [], description: draftDescription };
-                this.syncUpdatedDetailTask(updatedTask);
-
-                const inserted = (this.detailTask.attachments || [])
-                    .filter(att => !before.has(att._id || att.filename) && this.isImageAttachment(att));
-                if (window.showMessage) window.showMessage('Image ajoutée', 'success');
-                return inserted.map(att => ({
-                    url: this.attachmentUrl(att),
-                    alt: this.attachmentName(att)
-                }));
-            } catch (e) {
-                console.error('[TaskLists] Description image upload error:', e);
-                if (window.showMessage) window.showMessage(e.message || 'Erreur lors de l’ajout de l’image', 'danger');
-                return [];
-            } finally {
-                this.detailUploadBusy = false;
-            }
         },
 
         normalizeList(list = {}) {
@@ -3016,6 +2407,7 @@ document.addEventListener('alpine:init', () => {
             if (id && this.previewNewTask[id] === undefined) this.previewNewTask[id] = '';
             const legacyDayPriority = this.isLegacyDayPriorityLabel(list.rawLabel || list.label);
             const label = this.displayTaskListLabel(list.rawLabel || list.label);
+            const listTags = this.normalizeTagOptions(list.tags || []);
             return {
                 ...list,
                 _id: id,
@@ -3028,8 +2420,20 @@ document.addEventListener('alpine:init', () => {
                 myListOrder: Number(list.myListOrder) || 0,
                 color: typeof list.color === 'string' && list.color ? list.color : '#6366f1',
                 priorities: Array.isArray(list.priorities) && list.priorities.length ? list.priorities : this.priorities,
+                tags: listTags,
+                tasksLimit: Number.isFinite(Number(list.tasksLimit)) ? Number(list.tasksLimit) : 0,
+                tasksLoadedCount: Number.isFinite(Number(list.tasksLoadedCount)) ? Number(list.tasksLoadedCount) : ((list.tasks || []).length),
+                hasMoreTasks: list.hasMoreTasks === true || (Number(list.count || 0) > (list.tasks || []).length),
+                remainingTasks: Number.isFinite(Number(list.remainingTasks)) ? Math.max(0, Number(list.remainingTasks)) : Math.max(0, Number(list.count || 0) - (list.tasks || []).length),
+                loadingAllTasks: false,
+                allTasksLoaded: list.allTasksLoaded === true,
                 tasks: (list.tasks || []).map(task => {
-                    const normalized = this.normalizeTask({ ...task, taskListId: id });
+                    const normalized = this.normalizeTask({ ...task, taskListId: id, tagOptions: task.tagOptions || listTags });
+                    if (legacyDayPriority) normalized.isDayPriority = true;
+                    return normalized;
+                }),
+                dayTasks: (list.dayTasks || []).map(task => {
+                    const normalized = this.normalizeTask({ ...task, taskListId: id, tagOptions: task.tagOptions || listTags });
                     if (legacyDayPriority) normalized.isDayPriority = true;
                     return normalized;
                 })
@@ -3039,6 +2443,43 @@ document.addEventListener('alpine:init', () => {
         listCompletionPct(list = {}) {
             const total = this.listTaskCount(list);
             return total ? Math.round((this.listDoneCount(list) / total) * 100) : 0;
+        },
+
+        setDayTaskOffset(offset = 0) {
+            this.dayTaskOffset = Number(offset) === 1 ? 1 : 0;
+            this.dayOpenExpanded = false;
+            this.priorityExpanded = true;
+            this.previewStatusMenu = null;
+            this.previewStatusListId = null;
+        },
+
+        dateForOffset(offset = 0) {
+            const d = new Date();
+            d.setHours(12, 0, 0, 0);
+            d.setDate(d.getDate() + (Number(offset) || 0));
+            return d;
+        },
+
+        taskDateKey(value) {
+            if (!value) return '';
+            const d = new Date(value);
+            if (Number.isNaN(d.getTime())) return '';
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        },
+
+        dayTaskDateKey(offset = this.dayTaskOffset) {
+            return this.taskDateKey(this.dateForOffset(offset));
+        },
+
+        taskMatchesDay(task = {}, offset = this.dayTaskOffset) {
+            const selected = this.dayTaskDateKey(offset);
+            if (selected && Number(offset) === 0 && task.isDayPriority === true) return true;
+            const scheduled = this.taskDateKey(task.dueDate || task.startDate);
+            if (scheduled) return scheduled === selected;
+            return false;
         },
 
         sortTaskDate(task = {}) {
@@ -3127,15 +2568,44 @@ document.addEventListener('alpine:init', () => {
             const params = new URLSearchParams(window.location.search);
             const openTaskId = params.get('openTask');
             if (openTaskId) {
+                let openedTask = false;
                 // Find the task across all lists
                 for (const list of this.lists) {
                     const task = (list.tasks || []).find(t => t._id === openTaskId);
                     if (task) {
                         this.openDetail(list, task);
-                        // Clean URL
-                        window.history.replaceState({}, '', window.location.pathname);
+                        openedTask = true;
                         break;
                     }
+                }
+                if (!openedTask) {
+                    try {
+                        const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${openTaskId}`, { credentials: 'include' });
+                        const data = await res.json().catch(() => ({}));
+                        if (res.ok && data.success !== false && data.task) {
+                            let list = this.lists.find(l => l._id === data.task.taskListId);
+                            if (!list) {
+                                list = this.normalizeList({ _id: data.task.taskListId, label: data.task.listLabel || 'À faire', tasks: [data.task], statuses: data.task.statuses || this.defaultStatuses });
+                                this.lists.push(list);
+                            }
+                            this.openDetail(list, this.normalizeTask(data.task));
+                            openedTask = true;
+                        }
+                    } catch (err) {
+                        console.error('[TaskLists] openTask fallback error:', err);
+                    }
+                }
+                if (openedTask) window.history.replaceState({}, '', window.location.pathname);
+            }
+            if (!openTaskId) {
+                const openKanbanListId = params.get('kanbanList');
+                const openListId = params.get('list');
+                if (openKanbanListId) {
+                    const list = this.lists.find(item => item._id === openKanbanListId);
+                    if (list) this.openKanban(list);
+                } else if (openListId) {
+                    const list = this.lists.find(item => item._id === openListId);
+                    if (list) this.openList(list);
                 }
             }
             // Listen for cross-tab task detail opens (e.g. from chat)
@@ -3169,7 +2639,7 @@ document.addEventListener('alpine:init', () => {
         // Helper: get color for a status/priority label from current list's statuses
         getStatusColor(statusLabel) {
             if (!statusLabel) return '#9ca3af';
-            const list = this.detailList || this.kanbanList;
+            const list = this.kanbanList || null;
             if (list) {
                 const found = this.lists.find(l => l._id === list._id);
                 const listStatuses = (found && found.statuses) || (list.statuses) || this.defaultStatuses;
@@ -3183,7 +2653,7 @@ document.addEventListener('alpine:init', () => {
 
         // Helper: get color for priority label
         getPriorityColor(priorityLabel) {
-            const list = this.detailList || this.kanbanList;
+            const list = this.kanbanList || null;
             const found = list ? this.lists.find(l => l._id === list._id) : null;
             const source = (found?.priorities && found.priorities.length)
                 ? found.priorities
@@ -3192,47 +2662,9 @@ document.addEventListener('alpine:init', () => {
             return p ? p.color : '';
         },
 
-        // Helper: get statuses for current detail list
-        getListStatuses() {
-            if (!this.detailList) return this.defaultStatuses;
-            const list = this.lists.find(l => l._id === this.detailList._id);
-            return (list && list.statuses && list.statuses.length > 0) ? list.statuses : this.defaultStatuses;
-        },
-
         // Helper: get statuses for a specific list (kanban)
         getStatuses(list) {
             return (list && list.statuses && list.statuses.length > 0) ? list.statuses : this.defaultStatuses;
-        },
-
-        closeDetail() {
-            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
-            this._detailDescriptionSaveTimer = null;
-            const pendingDescription = this.detailDescriptionEditor?.getHtml?.()
-                || this.sanitizeDescriptionHtml(this.detailTask?.description || '');
-            if (this.detailTask?._id && pendingDescription !== this._detailDescriptionSavedHtml) {
-                const taskId = this.detailTask._id;
-                fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ description: pendingDescription })
-                }).catch(e => console.error('[TaskLists] Save description on close error:', e));
-            }
-            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
-            this.detailDescriptionEditor = null;
-            this.detailDescriptionStatus = '';
-            this._detailDescriptionSavedHtml = '';
-            this._detailDescriptionEditorSyncing = false;
-            this.detailTask = null;
-            this.detailList = null;
-            this.detailStatusMenu = false;
-            this.detailPriorityMenu = false;
-            this.detailComments = [];
-            this.detailNewComment = '';
-            this.detailPostingComment = false;
-            this.detailUploadBusy = false;
-            this.detailReminderDraft = { date: '', time: '', dirty: false };
-            this.detailReminderSaving = false;
         },
 
         // ─── Status Manager ───
@@ -3300,20 +2732,8 @@ document.addEventListener('alpine:init', () => {
                         this.priorities = data.priorities;
                     }
                     this.lists = (data.lists || []).map(list => this.normalizeList(list));
-                    // Auto-create the real default list if no lists exist.
-                    if (this.lists.length === 0) {
-                        const cr = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            credentials: 'include',
-                            body: JSON.stringify({ label: this.defaultRecordListLabel(), color: '#6366f1', isDefault: true })
-                        });
-                        const crData = await cr.json();
-                        if (crData.success && crData.list) {
-                            crData.list.tasks = [];
-                            this.lists.push(this.normalizeList(crData.list));
-                        }
-                    }
+                    await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
+                    await this.refreshDayTasksForLists();
                     if (this.lists.length > 0) {
                         this.priorityExpanded = true;
                         this.expandedListIds = [];
@@ -3321,6 +2741,26 @@ document.addEventListener('alpine:init', () => {
                 }
             } catch (e) { console.error('[TaskLists] Load error:', e); }
             this.loading = false;
+        },
+
+        async refreshDayTasksForLists() {
+            const targets = (this.lists || []).filter(list => {
+                if (!list?._id) return false;
+                if (list.hasMoreTasks === true) return true;
+                return Number(list.count || 0) > (list.tasks || []).length;
+            });
+            if (!targets.length) return;
+            await Promise.all(targets.map(async list => {
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list._id}/tasks?scope=day`, { credentials: 'include' });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !Array.isArray(data.tasks)) throw new Error(data.error || 'Chargement des tâches du jour impossible');
+                    const tagOptions = this.normalizeTagOptions(list.tags || []);
+                    list.dayTasks = data.tasks.map(task => this.normalizeTask({ ...task, taskListId: list._id, tagOptions: task.tagOptions || tagOptions }));
+                } catch (e) {
+                    console.error('[TaskLists] Day tasks hydrate error:', e);
+                }
+            }));
         },
 
         async addList() {
@@ -3484,6 +2924,8 @@ document.addEventListener('alpine:init', () => {
                 if (data.success) {
                     pt.status = data.status;
                     pt.statusColor = data.statusColor;
+                    pt.completedAt = data.completedAt || data.task?.completedAt || null;
+                    if (data.task) this.syncTaskFromModal(data.task);
                     const isDone = pt.status === 'Terminé';
                     if (list && wasDone !== isDone) {
                         list.doneCount = Math.max(0, (Number(list.doneCount) || 0) + (isDone ? 1 : -1));
@@ -3501,7 +2943,12 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ title, isDayPriority: !!options.isDayPriority })
+                    body: JSON.stringify({
+                        title,
+                        isDayPriority: !!options.isDayPriority,
+                        startDate: options.startDate || undefined,
+                        dueDate: options.dueDate || undefined
+                    })
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
@@ -3513,16 +2960,64 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { console.error('[TaskLists] Preview add error:', e); }
         },
 
+        async loadAllTasks(list = {}) {
+            const listId = String(list._id || '');
+            if (!listId || list.loadingAllTasks) return;
+            list.loadingAllTasks = true;
+            try {
+                const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/tasks`, { credentials: 'include' });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || data.success === false || !Array.isArray(data.tasks)) throw new Error(data.error || 'Chargement impossible');
+                const tagOptions = this.normalizeTagOptions(list.tags || []);
+                list.tasks = data.tasks.map(task => this.normalizeTask({ ...task, taskListId: listId, tagOptions: task.tagOptions || tagOptions }));
+                list.count = list.tasks.length;
+                list.doneCount = list.tasks.filter(task => task.status === 'Terminé').length;
+                list.tasksLoadedCount = list.tasks.length;
+                list.remainingTasks = 0;
+                list.hasMoreTasks = false;
+                list.allTasksLoaded = true;
+                this.$nextTick(() => {
+                    const container = this.$el.querySelector(`.sortable-tasks-container[data-list-id="${listId}"]`);
+                    if (container) this.initPreviewSortable(container, list);
+                });
+            } catch (e) {
+                console.error('[TaskLists] Load all tasks error:', e);
+                window.showMessage && window.showMessage(e.message || 'Chargement impossible', 'danger');
+            } finally {
+                list.loadingAllTasks = false;
+            }
+        },
+
+        collapseListTasks(list = {}) {
+            const listId = String(list._id || '');
+            if (!listId || !Array.isArray(list.tasks)) return;
+            const limit = Math.max(1, Number(list.tasksLimit || 10));
+            const total = Math.max(Number(list.count || 0), list.tasks.length);
+            list.tasks = list.tasks.slice(0, limit);
+            list.tasksLoadedCount = list.tasks.length;
+            list.remainingTasks = Math.max(0, total - list.tasks.length);
+            list.hasMoreTasks = list.remainingTasks > 0;
+            list.allTasksLoaded = false;
+            this.$nextTick(() => {
+                const container = this.$el.querySelector(`.sortable-tasks-container[data-list-id="${listId}"]`);
+                if (container) this.initPreviewSortable(container, list);
+            });
+        },
+
         async addPriorityTask() {
             const title = this.cleanTaskTitle(this.priorityNewTaskTitle);
             this.priorityNewTaskTitle = title;
             if (!title) return;
-            let list = this.getDefaultTaskList();
-            if (!list) list = await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
+            const list = await this.ensureTaskList(this.defaultRecordListLabel(), { isDefault: true });
             if (!list) return;
             if (this.previewNewTask[list._id] === undefined) this.previewNewTask[list._id] = '';
             this.previewNewTask[list._id] = title;
-            await this.previewAddTask(list, { isDayPriority: true });
+            const selectedDate = this.dayTaskDateKey(this.dayTaskOffset);
+            await this.previewAddTask(list, {
+                isDayPriority: this.dayTaskOffset === 0,
+                startDate: selectedDate,
+                dueDate: selectedDate
+            });
             this.priorityNewTaskTitle = '';
             this.priorityExpanded = true;
         },
@@ -3582,6 +3077,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success) {
                     list.tasks = (list.tasks || []).filter(t => t._id !== task._id);
+                    list.dayTasks = (list.dayTasks || []).filter(t => t._id !== task._id);
                     list.count = Math.max(0, (list.count || 1) - 1);
                     if (task.status === 'Terminé') list.doneCount = Math.max(0, (list.doneCount || 1) - 1);
                 }
@@ -4020,197 +3516,157 @@ document.addEventListener('alpine:init', () => {
                 || null;
         },
 
+        taskListOptionsForModal() {
+            return (this.lists || []).map((list, index) => ({
+                _id: list._id,
+                label: list.label,
+                color: list.color,
+                icon: list.icon || 'solar:list-check-bold-duotone',
+                order: Number.isFinite(Number(list.order)) ? Number(list.order) : index
+            }));
+        },
+
+        taskPayloadForModal(list, task) {
+            const sourceList = this.resolveTaskList(task, list);
+            const sourceTask = sourceList?.tasks?.find(t => t._id === task?._id) || task;
+            const taskListId = sourceList?._id || sourceTask?.taskListId || '';
+            return this.normalizeTask({
+                ...sourceTask,
+                taskListId,
+                listLabel: sourceList?.label || sourceTask?.listLabel || 'Liste des tâches',
+                listColor: sourceList?.color || sourceTask?.listColor || '#6366f1',
+                listIcon: sourceList?.icon || sourceTask?.listIcon || 'solar:list-check-bold-duotone',
+                statuses: this.getStatuses(sourceList),
+                priorities: sourceList?.priorities || this.priorities,
+                tagOptions: sourceTask?.tagOptions || sourceList?.tags || [],
+                listOptions: this.taskListOptionsForModal(),
+                publishToChatDefault: true
+            });
+        },
+
+        recalcListStats(list) {
+            if (!list) return;
+            list.count = (list.tasks || []).length;
+            list.doneCount = (list.tasks || []).filter(task => task.status === 'Terminé').length;
+        },
+
+        taskCompletedOnDay(task = {}, offset = 0) {
+            if (!task || task.status !== 'Terminé') return false;
+            const completed = this.taskDateKey(task.completedAt || task.updatedAt);
+            return !!completed && completed === this.dayTaskDateKey(offset);
+        },
+
+        taskBelongsInDayCache(task = {}) {
+            return this.taskMatchesDay(task, 0)
+                || this.taskMatchesDay(task, 1)
+                || this.taskCompletedOnDay(task, 0)
+                || this.taskCompletedOnDay(task, 1);
+        },
+
+        syncDayTaskForList(list, task) {
+            if (!list || !task?._id) return;
+            if (!Array.isArray(list.dayTasks)) list.dayTasks = [];
+            const idx = list.dayTasks.findIndex(item => item._id === task._id);
+            if (this.taskBelongsInDayCache(task)) {
+                const normalized = this.normalizeTask({
+                    ...task,
+                    taskListId: list._id,
+                    tagOptions: task.tagOptions || list.tags || []
+                });
+                if (idx >= 0) list.dayTasks.splice(idx, 1, { ...list.dayTasks[idx], ...normalized });
+                else list.dayTasks.unshift(normalized);
+                return;
+            }
+            if (idx >= 0) list.dayTasks.splice(idx, 1);
+        },
+
+        removeTaskLocally(taskId) {
+            const id = String(taskId || '');
+            if (!id) return;
+            this.lists.forEach(list => {
+                const before = (list.tasks || []).length;
+                list.tasks = (list.tasks || []).filter(task => task._id !== id);
+                list.dayTasks = (list.dayTasks || []).filter(task => task._id !== id);
+                if ((list.tasks || []).length !== before) this.recalcListStats(list);
+            });
+            this.tasks = (this.tasks || []).filter(task => task._id !== id);
+        },
+
+        syncTaskFromModal(taskData = {}) {
+            if (!taskData?._id) return null;
+            const targetListId = String(taskData.taskListId || '');
+            let targetList = this.lists.find(list => list._id === targetListId)
+                || this.lists.find(list => (list.tasks || []).some(task => task._id === taskData._id))
+                || this.lists.find(list => (list.dayTasks || []).some(task => task._id === taskData._id))
+                || null;
+            const normalizedTask = this.normalizeTask({
+                ...taskData,
+                taskListId: targetList?._id || targetListId,
+                tagOptions: taskData.tagOptions || targetList?.tags || []
+            });
+
+            this.lists.forEach(list => {
+                if (targetList && list._id === targetList._id) return;
+                const before = (list.tasks || []).length;
+                list.tasks = (list.tasks || []).filter(task => task._id !== normalizedTask._id);
+                list.dayTasks = (list.dayTasks || []).filter(task => task._id !== normalizedTask._id);
+                if ((list.tasks || []).length !== before) this.recalcListStats(list);
+            });
+
+            if (targetList) {
+                if (!targetList.tasks) targetList.tasks = [];
+                const idx = targetList.tasks.findIndex(task => task._id === normalizedTask._id);
+                if (idx >= 0) targetList.tasks.splice(idx, 1, { ...targetList.tasks[idx], ...normalizedTask });
+                else if (!targetList.hasMoreTasks) targetList.tasks.unshift(normalizedTask);
+                this.syncDayTaskForList(targetList, normalizedTask);
+                if (!targetList.hasMoreTasks) this.recalcListStats(targetList);
+            }
+
+            const activeIdx = (this.tasks || []).findIndex(task => task._id === normalizedTask._id);
+            if (this.activeList && normalizedTask.taskListId === this.activeList._id) {
+                if (activeIdx >= 0) this.tasks.splice(activeIdx, 1, { ...this.tasks[activeIdx], ...normalizedTask });
+                else this.tasks.unshift(normalizedTask);
+            } else if (activeIdx >= 0) {
+                this.tasks.splice(activeIdx, 1);
+            }
+            return normalizedTask;
+        },
+
+        handleTaskModalUpdate(taskId, field, value, updatedTask = {}) {
+            const listId = String(updatedTask?.taskListId || '');
+            const list = this.lists.find(item => item._id === listId)
+                || this.lists.find(item => (item.tasks || []).some(task => task._id === taskId));
+            if (field === 'statuses' && list && Array.isArray(value)) list.statuses = value;
+            if (field === 'tagOptions' && list && Array.isArray(value)) list.tags = this.normalizeTagOptions(value);
+            if (field === 'priorities' && Array.isArray(value)) {
+                this.priorities = value;
+                this.lists.forEach(item => { item.priorities = value; });
+            }
+            if (updatedTask?._id) this.syncTaskFromModal(updatedTask);
+        },
+
         openDetail(list, task) {
             this.previewStatusMenu = null;
             this.previewStatusListId = null;
             this.taskCtx = null;
             this.ctxMenu = null;
-            this.detailDescriptionStatus = '';
-            if (this._detailDescriptionSaveTimer) clearTimeout(this._detailDescriptionSaveTimer);
-            this._detailDescriptionSaveTimer = null;
-            if (this.detailDescriptionEditor) this.detailDescriptionEditor.destroy?.();
-            this.detailDescriptionEditor = null;
-            this.detailReminderSaving = false;
-            this.detailReminderDraft = { date: '', time: '', dirty: false };
-            const sourceList = this.resolveTaskList(task, list);
-            const sourceTask = sourceList?.tasks?.find(t => t._id === task?._id) || task;
-            this.detailList = sourceList;
-            this.detailTask = this.normalizeTask({ ...sourceTask, taskListId: sourceList?._id || sourceTask?.taskListId || '' });
-            this._detailDescriptionSavedHtml = this.normalizeDescriptionHtml(this.detailTask.description || '');
-            this.syncDetailReminderDraft({ force: true });
-            this.detailComments = [];
-            this.detailNewComment = '';
-            this.loadComments(task._id);
-        },
-
-        async changeTaskList(targetListId) {
-            if (!this.detailTask || !targetListId) return;
-            const taskId = this.detailTask._id;
-            const oldList = this.detailList;
-            const targetList = this.lists.find(list => list._id === targetListId);
-            if (!targetList) return;
-            if (oldList && oldList._id === targetList._id) return;
-
-            const previousListId = oldList?._id || this.detailTask.taskListId || '';
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ taskListId: targetList._id })
-                });
-                const data = await res.json();
-                if (!data.success || !data.task) throw new Error(data.error || 'Move failed');
-
-                const normalizedTask = this.normalizeTask(data.task);
-                let movingTask = this.detailTask;
-                if (oldList) {
-                    const oldTasks = oldList.tasks || [];
-                    const idx = oldTasks.findIndex(task => task._id === taskId);
-                    if (idx >= 0) {
-                        movingTask = { ...oldTasks[idx], ...normalizedTask };
-                        oldTasks.splice(idx, 1);
-                        oldList.count = Math.max(0, (oldList.count || 1) - 1);
-                        oldList.doneCount = oldTasks.filter(task => task.status === 'Terminé').length;
+            const modalTask = this.taskPayloadForModal(list, task);
+            if (!window.Alpine?.store('taskModal')) {
+                window.dispatchEvent(new CustomEvent('open-task-modal', {
+                    detail: {
+                        task: modalTask,
+                        onUpdate: (taskId, field, value, updatedTask) => this.handleTaskModalUpdate(taskId, field, value, updatedTask),
+                        onDelete: (taskId) => this.removeTaskLocally(taskId)
                     }
-                }
-
-                if (!targetList.tasks) targetList.tasks = [];
-                const existingIdx = targetList.tasks.findIndex(task => task._id === taskId);
-                const nextTask = this.normalizeTask({ ...movingTask, ...normalizedTask, taskListId: targetList._id });
-                if (existingIdx >= 0) targetList.tasks.splice(existingIdx, 1, nextTask);
-                else targetList.tasks.unshift(nextTask);
-                targetList.count = targetList.tasks.length;
-                targetList.doneCount = targetList.tasks.filter(task => task.status === 'Terminé').length;
-
-                this.detailList = targetList;
-                Object.assign(this.detailTask, nextTask);
-            } catch (e) {
-                this.detailTask.taskListId = previousListId;
-                console.error('[TaskLists] Change task list error:', e);
+                }));
+                return;
             }
+            window.Alpine.store('taskModal').open(modalTask, {
+                onUpdate: (taskId, field, value, updatedTask) => this.handleTaskModalUpdate(taskId, field, value, updatedTask),
+                onDelete: (taskId) => this.removeTaskLocally(taskId)
+            });
         },
 
-
-        async saveDetail(field, value, options = {}) {
-            if (!this.detailTask) return false;
-            const taskId = this.detailTask._id;
-            if (field === 'title') {
-                value = this.cleanTaskTitle(value);
-                if (!value) return false;
-                this.detailTask.title = value;
-            }
-            if (field === 'description') {
-                value = this.sanitizeDescriptionHtml(this.normalizeDescriptionHtml(value || ''));
-                this.detailTask.description = value;
-            }
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({ [field]: value })
-                });
-                const data = await res.json();
-                if (data.success && data.task) {
-                    const normalizedTask = this.syncUpdatedDetailTask(data.task);
-                    if (field === 'description' && normalizedTask) this._detailDescriptionSavedHtml = this.normalizeDescriptionHtml(normalizedTask.description || value);
-                    // Refresh comments if status or priority changed (activity logged)
-                    if (field === 'status' || field === 'priority') {
-                        this.loadComments(taskId);
-                    }
-                    return true;
-                }
-                if (!options.silent) console.error('[TaskLists] Save detail error:', data.error || data);
-                return false;
-            } catch (e) {
-                console.error('[TaskLists] Save detail error:', e);
-                return false;
-            }
-        },
-
-        async detailDelete() {
-            if (!this.detailTask || !this.detailList) return;
-            const taskId = this.detailTask._id;
-            const list = this.detailList;
-            this.closeDetail();
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}`, {
-                    method: 'DELETE', credentials: 'include'
-                });
-                const data = await res.json();
-                if (data.success) {
-                    const wasDone = (list.tasks || []).find(t => t._id === taskId)?.status === 'Terminé';
-                    list.tasks = (list.tasks || []).filter(t => t._id !== taskId);
-                    list.count = Math.max(0, (list.count || 1) - 1);
-                    if (wasDone) list.doneCount = Math.max(0, (list.doneCount || 1) - 1);
-                }
-            } catch (e) { console.error('[TaskLists] Detail delete error:', e); }
-        },
-
-        // ─── Comments / Activity ───
-        async loadComments(taskId) {
-            this.detailLoadingComments = true;
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${taskId}/comments`, {
-                    credentials: 'include'
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.detailComments = data.comments || [];
-                    // Auto-scroll to bottom
-                    this.$nextTick(() => {
-                        const feed = this.$refs.commentsFeed;
-                        if (feed) feed.scrollTop = feed.scrollHeight;
-                    });
-                }
-            } catch (e) { console.error('[TaskLists] Load comments error:', e); }
-            this.detailLoadingComments = false;
-        },
-
-        async postComment() {
-            if (!this.detailTask || !this.detailNewComment?.trim() || this.detailPostingComment) return;
-            this.detailPostingComment = true;
-            try {
-                const res = await fetch(`/account/${this._accountNumber}/api/record-tasks/${this.detailTask._id}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include',
-                    body: JSON.stringify({
-                        text: this.detailNewComment.trim(),
-                        publishToChat: this.detailPublishToChat
-                    })
-                });
-                const data = await res.json();
-                if (data.success && data.comment) {
-                    this.detailComments.push(data.comment);
-                    this.detailNewComment = '';
-                    // Auto-scroll to bottom
-                    this.$nextTick(() => {
-                        const feed = this.$refs.commentsFeed;
-                        if (feed) feed.scrollTop = feed.scrollHeight;
-                    });
-                }
-            } catch (e) { console.error('[TaskLists] Post comment error:', e); }
-            this.detailPostingComment = false;
-        },
-
-        isMyComment(c) {
-            if (!c.userId || !this._currentUserId) return false;
-            return c.userId === this._currentUserId;
-        },
-
-        formatCommentTime(dateStr) {
-            if (!dateStr) return '';
-            const d = new Date(dateStr);
-            const now = new Date();
-            const diff = now - d;
-            if (diff < 60000) return 'à l\'instant';
-            if (diff < 3600000) return Math.floor(diff / 60000) + ' min';
-            if (diff < 86400000) return Math.floor(diff / 3600000) + ' h';
-            if (diff < 172800000) return 'Hier';
-            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short' });
-        }
     }));
 });
 </script>

@@ -1785,9 +1785,15 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             },
             recordTaskLists: [],
             recordTodayTasks: [],
+            recordTasksLoading: true,
+            recordListAdding: false,
+            recordListCreating: false,
+            recordListNameDraft: '',
+            recordListTaskDrafts: {},
             newTaskTitles: {},
             todayWidgetDates: {},
             todayWidgetModes: {},
+            todayWidgetOpenExpanded: {},
             homeTaskRenderVersions: {},
             homeTaskMenu: null,
             editingHomeTaskId: '',
@@ -2558,79 +2564,271 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     rawLabel: String(list.rawLabel || list.label || 'À faire'),
                     color: list.color || '#6366f1',
                     icon: list.icon || 'solar:checklist-bold-duotone',
+                    order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0,
                     contextType: list.contextType || 'record',
                     isDefault: !!list.isDefault,
                     showInMyLists: !!list.showInMyLists,
                     statuses: Array.isArray(list.statuses) ? list.statuses : [],
                     priorities: Array.isArray(list.priorities) ? list.priorities : [],
+                    tags: Array.isArray(list.tags) ? list.tags : [],
                     count: Number(list.count || 0),
-                    doneCount: Number(list.doneCount || 0)
+                    doneCount: Number(list.doneCount || 0),
+                    tasksLimit: Number.isFinite(Number(list.tasksLimit)) ? Number(list.tasksLimit) : 0,
+                    tasksLoadedCount: Number.isFinite(Number(list.tasksLoadedCount)) ? Number(list.tasksLoadedCount) : 0,
+                    hasMoreTasks: list.hasMoreTasks === true,
+                    remainingTasks: Number.isFinite(Number(list.remainingTasks)) ? Math.max(0, Number(list.remainingTasks)) : 0
                 };
                 normalized.tasks = Array.isArray(list.tasks)
                     ? list.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id }, normalized))
                     : [];
-                this.refreshHomeTaskListCounts(normalized);
+                normalized.dayTasks = Array.isArray(list.dayTasks)
+                    ? list.dayTasks.map(task => this.normalizeHomeTask({ ...task, taskListId: id }, normalized))
+                    : [];
+                if (list.count === undefined || list.count === null) this.refreshHomeTaskListCounts(normalized);
                 return normalized;
             },
 
             async _loadRecordTodayTasks() {
+                this.recordTasksLoading = true;
                 try {
                     const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, { credentials: 'include' });
                     const data = await res.json().catch(() => ({}));
                     if (!res.ok || data.success === false) throw new Error(data.error || 'Chargement impossible');
-                    const baseLists = Array.isArray(data.lists) ? data.lists : [];
-                    const fullLists = await Promise.all(baseLists.map(async list => {
-                        const listId = String(list._id || list.id || '');
-                        if (!listId) return list;
-                        try {
-                            const taskRes = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/tasks`, { credentials: 'include' });
-                            const taskData = await taskRes.json().catch(() => ({}));
-                            if (taskRes.ok && taskData.success !== false && Array.isArray(taskData.tasks)) {
-                                return { ...list, tasks: taskData.tasks };
-                            }
-                        } catch (e) {
-                            console.error('[OvTodayTasks] list tasks error', e);
-                        }
-                        return list;
-                    }));
-                    this.recordTaskLists = fullLists.map(list => this.normalizeHomeTaskList(list));
-                    this.recordTodayTasks = this.recordTaskLists.flatMap(list => (list.tasks || []).map(task => this.normalizeHomeTask(task, list)));
+                    this.recordTaskLists = (Array.isArray(data.lists) ? data.lists : []).map(list => this.normalizeHomeTaskList(list));
+                    await this.ensureRecordTaskList(this.defaultRecordTaskListLabel(), { isDefault: true });
+                    await this.refreshRecordDayTasksForLists();
+                    this.recordTodayTasks = this.recordTaskLists.flatMap(list => (list.dayTasks || []).map(task => this.normalizeHomeTask(task, list)));
                     this.bumpHomeTaskRender('today-tasks');
                     this.$nextTick(() => this.refreshHomeTaskSortables());
                 } catch (e) {
                     console.error('[OvTodayTasks] load error', e);
                     this.recordTaskLists = [];
                     this.recordTodayTasks = [];
+                } finally {
+                    this.recordTasksLoading = false;
                 }
+            },
+
+            async refreshRecordDayTasksForLists() {
+                const targets = (this.recordTaskLists || []).filter(list => {
+                    if (!list?.id) return false;
+                    if (list.hasMoreTasks === true) return true;
+                    return Number(list.count || 0) > (list.tasks || []).length;
+                });
+                if (!targets.length) return;
+                await Promise.all(targets.map(async list => {
+                    try {
+                        const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list.id}/tasks?scope=day`, { credentials: 'include' });
+                        const data = await res.json().catch(() => ({}));
+                        if (!res.ok || data.success === false || !Array.isArray(data.tasks)) throw new Error(data.error || 'Chargement des tâches du jour impossible');
+                        list.dayTasks = data.tasks.map(task => this.normalizeHomeTask({ ...task, taskListId: list.id }, list));
+                    } catch (e) {
+                        console.error('[OvTodayTasks] day tasks hydrate error', e);
+                    }
+                }));
             },
 
             defaultRecordTaskListLabel() {
                 const title = String(this._recordTitle || '').trim();
+                return title || 'Tâches du record';
+            },
+
+            legacyDefaultRecordTaskListLabel() {
+                const title = String(this._recordTitle || '').trim();
                 return title ? `Tâches ${title}` : 'Tâches du record';
             },
 
+            recordTaskListKey(value = '') {
+                return String(value || '').trim().toLowerCase();
+            },
+
+            findRecordTaskListByLabel(label = '') {
+                const key = this.recordTaskListKey(label);
+                if (!key) return null;
+                return (this.recordTaskLists || []).find(list => this.recordTaskListKey(list.label) === key || this.recordTaskListKey(list.rawLabel) === key) || null;
+            },
+
             getDefaultRecordTaskList() {
-                return (this.recordTaskLists || []).find(list => !!list.isDefault)
-                    || (this.recordTaskLists || []).find(list => String(list.label || '').toLowerCase() === this.defaultRecordTaskListLabel().toLowerCase())
-                    || (this.recordTaskLists || []).find(list => String(list.label || '').toLowerCase() === 'à faire')
-                    || (this.recordTaskLists || [])[0]
+                return this.findRecordTaskListByLabel(this.defaultRecordTaskListLabel())
+                    || (this.recordTaskLists || []).find(list => !!list.isDefault)
+                    || this.findRecordTaskListByLabel(this.legacyDefaultRecordTaskListLabel())
+                    || this.findRecordTaskListByLabel('À faire')
                     || null;
             },
 
-            async ensureRecordTaskList(label = this.defaultRecordTaskListLabel()) {
-                const existing = (this.recordTaskLists || []).find(list => String(list.label || '').toLowerCase() === String(label).toLowerCase());
+            async ensureRecordTaskList(label = this.defaultRecordTaskListLabel(), options = {}) {
+                const desiredLabel = String(label || this.defaultRecordTaskListLabel()).trim() || this.defaultRecordTaskListLabel();
+                if (options.isDefault === true) {
+                    const exact = this.findRecordTaskListByLabel(desiredLabel);
+                    if (exact) {
+                        if (exact.isDefault) return exact;
+                        return this.updateRecordTaskListConfig(exact, { label: desiredLabel, isDefault: true });
+                    }
+                    const legacy = this.findRecordTaskListByLabel(this.legacyDefaultRecordTaskListLabel()) || this.findRecordTaskListByLabel('À faire');
+                    if (legacy) return this.updateRecordTaskListConfig(legacy, { label: desiredLabel, isDefault: true });
+                }
+                const existing = this.findRecordTaskListByLabel(desiredLabel);
                 if (existing) return existing;
                 const res = await fetch(`/account/${this._accountNumber}/api/record/${this._recordId}/task-lists`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ label, color: '#6366f1', isDefault: true })
+                    body: JSON.stringify({ label: desiredLabel, color: '#6366f1', isDefault: options.isDefault !== false })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false || !data.list) throw new Error(data.error || 'Création de liste impossible');
                 const list = this.normalizeHomeTaskList({ ...data.list, tasks: [] });
-                this.recordTaskLists = [...(this.recordTaskLists || []), list];
+                const currentLists = list.isDefault ? (this.recordTaskLists || []).map(item => ({ ...item, isDefault: false })) : (this.recordTaskLists || []);
+                this.recordTaskLists = [...currentLists, list];
                 return list;
+            },
+
+            async updateRecordTaskListConfig(list = {}, payload = {}) {
+                const id = String(list.id || list._id || '');
+                if (!id) return list;
+                try {
+                    const body = {
+                        label: payload.label || list.rawLabel || list.label || this.defaultRecordTaskListLabel(),
+                        color: payload.color || list.color || '#6366f1',
+                        icon: payload.icon || list.icon || 'solar:checklist-bold-duotone',
+                        viewMode: payload.viewMode || list.viewMode || 'kanban',
+                        tags: Array.isArray(payload.tags) ? payload.tags : (Array.isArray(list.tags) ? list.tags : []),
+                        displayOptions: payload.displayOptions || list.displayOptions || undefined,
+                        isDefault: payload.isDefault === true || list.isDefault === true
+                    };
+                    const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${id}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify(body)
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !data.list) throw new Error(data.error || 'Mise à jour de liste impossible');
+                    const updated = this.normalizeHomeTaskList({ ...list, ...data.list, tasks: list.tasks || [] });
+                    this.recordTaskLists = (this.recordTaskLists || []).map(item => {
+                        const same = String(item.id || item._id || '') === id;
+                        if (same) return updated;
+                        return updated.isDefault ? { ...item, isDefault: false } : item;
+                    });
+                    return updated;
+                } catch (e) {
+                    console.error('[OvTodayTasks] update list config error', e);
+                    return list;
+                }
+            },
+
+            listTaskCount(list = {}) {
+                const count = Number(list.count);
+                if (Number.isFinite(count)) return Math.max(0, count);
+                return Array.isArray(list.tasks) ? list.tasks.length : 0;
+            },
+
+            listDoneCount(list = {}) {
+                const doneCount = Number(list.doneCount);
+                if (Number.isFinite(doneCount)) return Math.min(this.listTaskCount(list), Math.max(0, doneCount));
+                return Array.isArray(list.tasks) ? list.tasks.filter(task => task.status === 'Terminé').length : 0;
+            },
+
+            isDefaultRecordTaskList(list = {}) {
+                const defaultList = this.getDefaultRecordTaskList();
+                return !!list.isDefault || (!!defaultList && String(defaultList.id || defaultList._id) === String(list.id || list._id));
+            },
+
+            recordTaskListsForPanel() {
+                return [...(this.recordTaskLists || [])].sort((a, b) => {
+                    const ad = this.isDefaultRecordTaskList(a) ? 0 : 1;
+                    const bd = this.isDefaultRecordTaskList(b) ? 0 : 1;
+                    if (ad !== bd) return ad - bd;
+                    const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 9999;
+                    const bo = Number.isFinite(Number(b.order)) ? Number(b.order) : 9999;
+                    if (ao !== bo) return ao - bo;
+                    return String(a.label || '').localeCompare(String(b.label || ''), 'fr');
+                });
+            },
+
+            recordListCompletionPct(list = {}) {
+                const total = this.listTaskCount(list);
+                return total ? Math.round((this.listDoneCount(list) / total) * 100) : 0;
+            },
+
+            recordListPreviewTasks(list = {}, limit = 4) {
+                return [...(list.tasks || [])]
+                    .sort((a, b) => {
+                        if (a.status === 'Terminé' && b.status !== 'Terminé') return 1;
+                        if (a.status !== 'Terminé' && b.status === 'Terminé') return -1;
+                        return Number(a.order || 0) - Number(b.order || 0);
+                    })
+                    .slice(0, limit)
+                    .map(task => this.normalizeHomeTask({ ...task, taskListId: task.taskListId || list.id || list._id }, list));
+            },
+
+            recordTaskListHref(list = {}, mode = 'list') {
+                const id = encodeURIComponent(String(list.id || list._id || ''));
+                if (!id) return this._recordTasksHref;
+                return `${this._recordTasksHref}?${mode === 'kanban' ? 'kanbanList' : 'list'}=${id}`;
+            },
+
+            startRecordListCreate() {
+                this.recordListAdding = true;
+                this.$nextTick(() => {
+                    const input = this.$el?.querySelector?.('.dx-record-list-create input');
+                    if (input) input.focus();
+                });
+            },
+
+            async createRecordTaskListFromPanel() {
+                const label = String(this.recordListNameDraft || '').trim();
+                if (!label || this.recordListCreating) return;
+                this.recordListCreating = true;
+                try {
+                    await this.ensureRecordTaskList(label, { isDefault: false });
+                    this.recordListNameDraft = '';
+                    this.recordListAdding = false;
+                } catch (e) {
+                    window.showMessage && window.showMessage(e.message || 'Création de liste impossible', 'danger');
+                } finally {
+                    this.recordListCreating = false;
+                }
+            },
+
+            recordListTaskDraft(list = {}) {
+                const key = String(list.id || list._id || '');
+                return this.recordListTaskDrafts?.[key] || '';
+            },
+
+            setRecordListTaskDraft(list = {}, value = '') {
+                const key = String(list.id || list._id || '');
+                if (!key) return;
+                this.recordListTaskDrafts = { ...(this.recordListTaskDrafts || {}), [key]: String(value || '') };
+            },
+
+            async addRecordListTask(list = {}) {
+                const listId = String(list.id || list._id || '');
+                const title = String(this.recordListTaskDraft(list) || '').trim();
+                if (!listId || !title) return;
+                this.setRecordListTaskDraft(list, '');
+                try {
+                    const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${listId}/tasks`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({ title, status: 'À faire', priority: 'Aucune' })
+                    });
+                    const data = await res.json().catch(() => ({}));
+                    if (!res.ok || data.success === false || !data.task) throw new Error(data.error || 'Ajout impossible');
+                    const target = (this.recordTaskLists || []).find(item => String(item.id || item._id) === listId) || list;
+                    const normalized = this.normalizeHomeTask(data.task, target);
+                    target.tasks = [...(target.tasks || []), normalized];
+                    this.refreshHomeTaskListCounts(target);
+                    if (this.taskMatchesTodayWidgetDate(normalized, 'today-tasks')) {
+                        this.recordTodayTasks = [...(this.recordTodayTasks || []), normalized];
+                    }
+                    this.bumpHomeTaskRender('today-tasks');
+                    this.$nextTick(() => this.refreshHomeTaskSortables());
+                } catch (e) {
+                    this.setRecordListTaskDraft(list, title);
+                    window.showMessage && window.showMessage(e.message || 'Ajout impossible', 'danger');
+                }
             },
 
             recordAllTasks() {
@@ -2640,7 +2838,10 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                     if (normalized._id && !byId.has(normalized._id)) byId.set(normalized._id, normalized);
                 };
                 (this.recordTodayTasks || []).forEach(add);
-                (this.recordTaskLists || []).forEach(list => (list.tasks || []).forEach(task => add({ ...task, taskListId: task.taskListId || list.id })));
+                (this.recordTaskLists || []).forEach(list => {
+                    (list.tasks || []).forEach(task => add({ ...task, taskListId: task.taskListId || list.id }));
+                    (list.dayTasks || []).forEach(task => add({ ...task, taskListId: task.taskListId || list.id }));
+                });
                 return Array.from(byId.values());
             },
 
@@ -2697,8 +2898,102 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 this.bumpHomeTaskRender('today-tasks');
             },
 
-            homeTaskListForWidget() {
-                return null;
+            homeTaskListOptionsForModal() {
+                return this.recordTaskListsForPanel().map(list => ({
+                    _id: String(list.id || list._id || ''),
+                    label: list.label || 'Liste des tâches',
+                    color: list.color || '#6366f1',
+                    icon: list.icon || 'solar:checklist-bold-duotone',
+                    order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0
+                })).filter(list => list._id);
+            },
+
+            homeTaskListForWidget(wid = '', task = {}) {
+                const taskListId = String(task.taskListId || task.listId || '');
+                return (this.recordTaskLists || []).find(list => String(list.id || list._id || '') === taskListId)
+                    || this.getDefaultRecordTaskList()
+                    || (this.recordTaskLists || [])[0]
+                    || null;
+            },
+
+            homeTaskPayloadForModal(wid, task = {}) {
+                const found = this.findHomeTask(this.homeTaskId(task));
+                const sourceTask = found?.task || task;
+                const list = found?.list || this.homeTaskListForWidget(wid, sourceTask);
+                const normalized = this.normalizeHomeTask(sourceTask, list);
+                return {
+                    ...normalized,
+                    _id: normalized._id || normalized.id,
+                    listLabel: normalized.listLabel || list?.label || this._recordTitle || 'Tâches',
+                    listIcon: normalized.listIcon || list?.icon || 'solar:checklist-bold-duotone',
+                    listColor: normalized.listColor || list?.color || '#6366f1',
+                    statuses: Array.isArray(list?.statuses) ? list.statuses : [],
+                    priorities: Array.isArray(list?.priorities) && list.priorities.length ? list.priorities : this.homeTaskPriorityChoices,
+                    tagOptions: Array.isArray(list?.tags) ? list.tags : [],
+                    listOptions: this.homeTaskListOptionsForModal()
+                };
+            },
+
+            moveHomeTaskToList(taskId, patch = {}, targetListId = '') {
+                const id = String(taskId || '');
+                const nextListId = String(targetListId || patch.taskListId || '');
+                if (!id || !nextListId) {
+                    this.patchHomeTaskEverywhere(id, patch);
+                    return;
+                }
+                const targetList = (this.recordTaskLists || []).find(list => String(list.id || list._id || '') === nextListId) || null;
+                this.recordTaskLists = (this.recordTaskLists || []).map(list => {
+                    const listId = String(list.id || list._id || '');
+                    const remaining = (list.tasks || []).filter(task => this.homeTaskId(task) !== id);
+                    let tasks = remaining;
+                    if (listId === nextListId) {
+                        tasks = [...remaining, this.normalizeHomeTask({ ...patch, taskListId: nextListId }, targetList || list)];
+                    }
+                    const nextList = { ...list, tasks };
+                    this.refreshHomeTaskListCounts(nextList);
+                    return nextList;
+                });
+                this.recordTodayTasks = (this.recordTodayTasks || [])
+                    .filter(task => this.homeTaskId(task) !== id);
+                const moved = this.findHomeTask(id)?.task || this.normalizeHomeTask({ ...patch, taskListId: nextListId }, targetList);
+                if (this.taskMatchesTodayWidgetDate(moved, 'today-tasks')) {
+                    this.recordTodayTasks = [...this.recordTodayTasks, moved];
+                }
+                this.bumpHomeTaskRender('today-tasks');
+            },
+
+            handleHomeTaskModalUpdate(taskId, field, value, updatedTask = null) {
+                const id = String(taskId || '');
+                if (!id) return;
+                const found = this.findHomeTask(id);
+                const base = found?.task || {};
+                const list = found?.list || this.homeTaskListForWidget('', base);
+                const patch = this.normalizeHomeTask({
+                    ...base,
+                    ...(updatedTask || {}),
+                    [field]: value
+                }, list);
+                if (field === 'priority') {
+                    patch.priority = this.homeTaskPriorityLabel(value);
+                    patch.priorityColor = updatedTask?.priorityColor || this.homeTaskPriorityColor(patch.priority, patch);
+                }
+                if (field === 'isDayPriority') patch.isDayPriority = value === true;
+                const targetListId = String(patch.taskListId || '');
+                const currentListId = String(base.taskListId || list?.id || list?._id || '');
+                if (field === 'taskListId' || (targetListId && currentListId && targetListId !== currentListId)) {
+                    this.moveHomeTaskToList(id, patch, targetListId);
+                    return;
+                }
+                this.patchHomeTaskEverywhere(id, patch);
+                const synced = this.findHomeTask(id)?.task || patch;
+                const existsInToday = (this.recordTodayTasks || []).some(task => this.homeTaskId(task) === id);
+                if (this.taskMatchesTodayWidgetDate(synced, 'today-tasks') && !existsInToday) {
+                    this.recordTodayTasks = [...(this.recordTodayTasks || []), this.normalizeHomeTask(synced, list)];
+                }
+                if (!this.taskMatchesTodayWidgetDate(synced, 'today-tasks')) {
+                    this.recordTodayTasks = (this.recordTodayTasks || []).filter(task => this.homeTaskId(task) !== id);
+                }
+                this.bumpHomeTaskRender('today-tasks');
             },
 
             homeTaskWidgetType(wid) {
@@ -2832,7 +3127,21 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 const id = this.homeTaskId(task);
                 this.closeHomeTaskMenu();
                 if (!id) return;
-                window.location.href = `${this._recordTasksHref}?openTask=${encodeURIComponent(id)}`;
+                const modalTask = this.homeTaskPayloadForModal(wid, task);
+                if (window.Alpine?.store('taskModal')) {
+                    window.Alpine.store('taskModal').open(modalTask, {
+                        onUpdate: (taskId, field, value, updatedTask = null) => this.handleHomeTaskModalUpdate(taskId, field, value, updatedTask),
+                        onDelete: (taskId) => this.removeHomeTaskEverywhere(taskId)
+                    });
+                    return;
+                }
+                window.dispatchEvent(new CustomEvent('open-task-modal', {
+                    detail: {
+                        task: modalTask,
+                        onUpdate: (taskId, field, value, updatedTask = null) => this.handleHomeTaskModalUpdate(taskId, field, value, updatedTask),
+                        onDelete: (taskId) => this.removeHomeTaskEverywhere(taskId)
+                    }
+                }));
             },
 
             async deleteHomeTaskFromMenu() {
@@ -3012,8 +3321,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 if (!title) return;
                 this.newTaskTitles[wid] = '';
                 try {
-                    let list = this.getDefaultRecordTaskList();
-                    if (!list) list = await this.ensureRecordTaskList();
+                    const list = await this.ensureRecordTaskList(this.defaultRecordTaskListLabel(), { isDefault: true });
                     if (!list?.id) throw new Error('Liste introuvable');
                     const selectedDate = this.todayWidgetDate(wid);
                     const res = await fetch(`/account/${this._accountNumber}/api/task-lists/${list.id}/tasks`, {
@@ -3024,7 +3332,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                             title,
                             status: 'À faire',
                             priority: 'Aucune',
-                            isDayPriority: true,
+                            isDayPriority: selectedDate === this.todayDateKey(),
                             startDate: selectedDate
                         })
                     });
@@ -3187,6 +3495,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
             setTodayWidgetMode(wid, mode = 'date') {
                 if (!wid) return;
                 this.todayWidgetModes = { ...(this.todayWidgetModes || {}), [wid]: mode };
+                this.todayWidgetOpenExpanded = { ...(this.todayWidgetOpenExpanded || {}), [wid]: false };
                 this.bumpHomeTaskRender(wid);
                 this.$nextTick(() => this.refreshHomeTaskSortables());
             },
@@ -3195,6 +3504,7 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 if (!wid) return;
                 this.todayWidgetDates = { ...(this.todayWidgetDates || {}), [wid]: this.normalizeDayDateKey(value) };
                 this.todayWidgetModes = { ...(this.todayWidgetModes || {}), [wid]: 'date' };
+                this.todayWidgetOpenExpanded = { ...(this.todayWidgetOpenExpanded || {}), [wid]: false };
                 this.bumpHomeTaskRender(wid);
                 this.$nextTick(() => this.refreshHomeTaskSortables());
             },
@@ -3318,18 +3628,34 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
             taskMatchesTodayWidgetDate(task, wid) {
                 const selected = this.todayWidgetDate(wid);
+                if (selected === this.todayDateKey() && task?.isDayPriority === true) return true;
                 const scheduled = this.taskScheduleDateKey(task);
                 if (scheduled) return scheduled === selected;
-                return selected === this.todayDateKey();
+                return false;
+            },
+
+            homeTaskSortDate(task = {}) {
+                const d = task.dueDate ? new Date(task.dueDate) : new Date(task.createdAt || Date.now());
+                return Number.isNaN(d.getTime()) ? Date.now() : d.getTime();
+            },
+
+            sortTodayWidgetTasks(tasks = []) {
+                return [...(tasks || [])].sort((a, b) => {
+                    if (a.status === 'Terminé' && b.status !== 'Terminé') return 1;
+                    if (a.status !== 'Terminé' && b.status === 'Terminé') return -1;
+                    const orderDiff = Number(a.order || 0) - Number(b.order || 0);
+                    if (orderDiff !== 0) return orderDiff;
+                    return this.homeTaskSortDate(a) - this.homeTaskSortDate(b);
+                });
             },
 
             todayWidgetSourceTasks() {
-                return this.recordAllTasks().sort((a, b) => Number(a.order || 0) - Number(b.order || 0));
+                return this.recordAllTasks();
             },
 
             todayWidgetDateTasks(wid) {
                 if (this.todayWidgetIsOverdue(wid)) return this.todayWidgetOverdueTasks(wid);
-                return this.todayWidgetSourceTasks(wid).filter(task => this.taskMatchesTodayWidgetDate(task, wid));
+                return this.sortTodayWidgetTasks(this.todayWidgetSourceTasks(wid).filter(task => this.taskMatchesTodayWidgetDate(task, wid)));
             },
 
             todayWidgetTasks(wid) {
@@ -3349,12 +3675,12 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
 
             todayWidgetOverdueTasks() {
                 const seen = new Set();
-                return this.todayWidgetSourceTasks().filter(task => {
+                return this.sortTodayWidgetTasks(this.todayWidgetSourceTasks().filter(task => {
                     const id = this.homeTaskId(task);
                     if (!id || seen.has(id) || !this.isOverdue(task)) return false;
                     seen.add(id);
                     return true;
-                });
+                }));
             },
 
             todayWidgetOverdueCount(wid) {
@@ -3376,9 +3702,43 @@ const _visibleRecordModuleNavItems = _sharedDataRoomOnly
                 return all.filter(task => task.status !== 'Terminé');
             },
 
+            todayWidgetOpenLimitFor(wid) {
+                return Math.max(1, Number(this.widgetOption(wid, 'openLimit', 10)) || 10);
+            },
+
+            todayWidgetExpanded(wid) {
+                return this.todayWidgetOpenExpanded?.[wid] === true;
+            },
+
+            toggleTodayWidgetExpanded(wid) {
+                this.todayWidgetOpenExpanded = {
+                    ...(this.todayWidgetOpenExpanded || {}),
+                    [wid]: !this.todayWidgetExpanded(wid)
+                };
+                this.bumpHomeTaskRender(wid);
+                this.$nextTick(() => this.refreshHomeTaskSortables());
+            },
+
+            todayWidgetHiddenOpenCount(wid) {
+                return Math.max(0, this.todayWidgetVisibleTasks(wid).length - this.todayWidgetOpenLimitFor(wid));
+            },
+
+            todayWidgetRenderedTasks(wid) {
+                const tasks = this.todayWidgetVisibleTasks(wid);
+                if (this.todayWidgetExpanded(wid)) return tasks;
+                return tasks.slice(0, this.todayWidgetOpenLimitFor(wid));
+            },
+
             completedTodayDayTasks(wid = null) {
-                const source = wid ? this.todayWidgetDateTasks(wid) : this.todayWidgetSourceTasks();
-                return source.filter(task => task && task.status === 'Terminé');
+                const selected = wid ? this.todayWidgetDate(wid) : this.todayDateKey();
+                return this.todayWidgetSourceTasks()
+                    .filter(task => {
+                        if (!task || task.status !== 'Terminé') return false;
+                        const completed = this.taskDateKey(task.completedAt || task.updatedAt);
+                        if (completed) return completed === selected;
+                        return wid ? this.taskMatchesTodayWidgetDate(task, wid) : this.taskScheduleDateKey(task) === selected;
+                    })
+                    .sort((a, b) => new Date(b.completedAt || b.updatedAt || 0) - new Date(a.completedAt || a.updatedAt || 0));
             },
 
             completedDayTitle(wid) {

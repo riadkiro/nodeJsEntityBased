@@ -1356,6 +1356,25 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
         const accountPriorities = await getAccountTaskPriorities(req)
         const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
         const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
+        const taskPreviewLimit = 10
+        const dayKey = value => {
+            if (!value) return ''
+            const date = new Date(value)
+            if (Number.isNaN(date.getTime())) return ''
+            return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+        }
+        const today = new Date()
+        today.setHours(12, 0, 0, 0)
+        const tomorrow = new Date(today)
+        tomorrow.setDate(tomorrow.getDate() + 1)
+        const focusDayKeys = new Set([dayKey(today), dayKey(tomorrow)])
+        const isFocusDayTask = task => {
+            if (!task) return false
+            if (task.isDayPriority) return true
+            if (focusDayKeys.has(dayKey(task.dueDate)) || focusDayKeys.has(dayKey(task.startDate))) return true
+            if (task.status === 'Terminé' && focusDayKeys.has(dayKey(task.completedAt || task.updatedAt))) return true
+            return false
+        }
 
         const result = lists.map(l => {
             const listTasks = tasks.filter(t => t.taskListId.toString() === l._id.toString())
@@ -1368,6 +1387,8 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 if (aD !== bD) return aD - bD
                 return new Date(b.createdAt) - new Date(a.createdAt)
             })
+            const previewTasks = sorted.slice(0, taskPreviewLimit)
+            const focusDayTasks = sorted.filter(isFocusDayTask)
             const listStatuses = getListStatuses(l)
             const listPriorities = accountPriorities
             const listTags = TaskListsService.normalizeTaskTagOptions(l.tags)
@@ -1377,6 +1398,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 rawLabel: l.label || '',
                 color: l.color || '#6366f1',
                 icon: l.icon || 'solar:checklist-bold-duotone',
+                order: Number(l.order) || 0,
                 contextType: l.contextType || 'record',
                 isDefault: !!l.isDefault,
                 showInMyLists: !!l.showInMyLists,
@@ -1388,7 +1410,12 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 displayOptions: TaskListsService.normalizeTaskListDisplayOptions(l.displayOptions),
                 count: listTasks.length,
                 doneCount: listTasks.filter(t => t.status === 'Terminé').length,
-                tasks: sorted.slice(0, 10).map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities }))
+                tasksLimit: taskPreviewLimit,
+                tasksLoadedCount: previewTasks.length,
+                hasMoreTasks: sorted.length > previewTasks.length,
+                remainingTasks: Math.max(0, sorted.length - previewTasks.length),
+                tasks: previewTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities })),
+                dayTasks: focusDayTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities }))
             }
         })
 
@@ -1405,7 +1432,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
  */
 router.put('/api/task-lists/:listId/view-mode', async (req, res) => {
     try {
-        const { TaskList } = await taskTenantModels(req)
+        const { TaskList, RecordTask } = await taskTenantModels(req)
         const { viewMode } = req.body
         if (!['list', 'kanban'].includes(viewMode)) {
             return res.status(400).json({ error: 'Invalid viewMode, must be list or kanban' })
@@ -1601,6 +1628,36 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
 
         const maxOrder = await TaskList.findOne({ recordId: req.params.recordId }).sort({ order: -1 }).lean()
         const isFirstList = !maxOrder
+        const existingLists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 })
+        const duplicate = existingLists.find(l => cleanTaskListLabel(l.label).toLowerCase() === cleanLabel.toLowerCase())
+        if (duplicate) {
+            if (req.body?.isDefault === true && !duplicate.isDefault) {
+                await TaskList.updateMany({ recordId: req.params.recordId, _id: { $ne: duplicate._id } }, { $set: { isDefault: false } })
+                duplicate.isDefault = true
+                await duplicate.save()
+            }
+            const duplicateTasks = await RecordTask.find({ taskListId: duplicate._id }).select('status').lean()
+            return res.json({
+                success: true,
+                list: {
+                    _id: duplicate._id.toString(),
+                    label: duplicate.label,
+                    color: duplicate.color || '#6366f1',
+                    icon: duplicate.icon || 'solar:checklist-bold-duotone',
+                    order: Number(duplicate.order) || 0,
+                    contextType: duplicate.contextType || 'record',
+                    isDefault: !!duplicate.isDefault,
+                    showInMyLists: !!duplicate.showInMyLists,
+                    myListOrder: Number(duplicate.myListOrder) || 0,
+                    statuses: getListStatuses(duplicate),
+                    priorities: Array.isArray(duplicate.priorities) && duplicate.priorities.length ? duplicate.priorities : accountPriorities,
+                    tags: TaskListsService.normalizeTaskTagOptions(duplicate.tags),
+                    displayOptions: TaskListsService.normalizeTaskListDisplayOptions(duplicate.displayOptions),
+                    count: duplicateTasks.length,
+                    doneCount: duplicateTasks.filter(t => t.status === 'Terminé').length
+                }
+            })
+        }
         const list = await TaskList.create({
             recordId: req.params.recordId,
             label: cleanLabel,
@@ -1613,6 +1670,9 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
             myListOrder: req.body?.showInMyLists === true ? ((maxOrder?.order || 0) + 1) : 0,
             priorities: accountPriorities
         })
+        if (list.isDefault) {
+            await TaskList.updateMany({ recordId: req.params.recordId, _id: { $ne: list._id } }, { $set: { isDefault: false } })
+        }
 
         res.json({
             success: true,
@@ -1621,12 +1681,15 @@ router.post('/api/record/:recordId/task-lists', async (req, res) => {
                 label: list.label,
                 color: list.color,
                 icon: list.icon || 'solar:checklist-bold-duotone',
+                order: Number(list.order) || 0,
                 contextType: list.contextType || 'record',
                 isDefault: !!list.isDefault,
                 showInMyLists: !!list.showInMyLists,
                 myListOrder: Number(list.myListOrder) || 0,
                 statuses: getListStatuses(list),
                 priorities: accountPriorities,
+                tags: [],
+                displayOptions: TaskListsService.normalizeTaskListDisplayOptions(list.displayOptions),
                 count: 0,
                 doneCount: 0
             }
@@ -1742,7 +1805,27 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
         const { TaskList, RecordTask } = await taskTenantModels(req)
         const accountPriorities = await getAccountTaskPriorities(req)
         const list = await TaskList.findById(req.params.listId).lean()
-        const tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
+        let tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
+        if (String(req.query.scope || '') === 'day') {
+            const dayKey = value => {
+                if (!value) return ''
+                const date = new Date(value)
+                if (Number.isNaN(date.getTime())) return ''
+                return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+            }
+            const today = new Date()
+            today.setHours(12, 0, 0, 0)
+            const tomorrow = new Date(today)
+            tomorrow.setDate(tomorrow.getDate() + 1)
+            const focusDayKeys = new Set([dayKey(today), dayKey(tomorrow)])
+            tasks = tasks.filter(task => {
+                if (!task) return false
+                if (task.isDayPriority) return true
+                if (focusDayKeys.has(dayKey(task.dueDate)) || focusDayKeys.has(dayKey(task.startDate))) return true
+                if (task.status === 'Terminé' && focusDayKeys.has(dayKey(task.completedAt || task.updatedAt))) return true
+                return false
+            })
+        }
         const reminderMap = await ReminderService.scheduledReminderMap({
             accountNumber: req.account_number,
             userId: req.user._id,

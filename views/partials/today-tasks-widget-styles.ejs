@@ -134,17 +134,331 @@
     display: grid;
     grid-template-columns: minmax(0, 1fr) minmax(220px, 260px);
     gap: 24px;
-    align-items: stretch;
+    align-items: start;
     padding: 14px 2px 0;
 }
 .dx-priority-body.is-completed-panel-hidden {
     grid-template-columns: minmax(0, 1fr);
+}
+.dx-record-lists-panel {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid #edf2f7;
+}
+.dx-record-lists-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 10px;
+}
+.dx-record-lists-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    color: #0f172a;
+    font-size: 13px;
+    font-weight: 850;
+}
+.dx-record-lists-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #eef2ff;
+    color: #6366f1;
+    flex: 0 0 auto;
+}
+.dx-record-lists-count {
+    min-width: 20px;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #f1f5f9;
+    color: #64748b;
+    font-size: 10px;
+    font-weight: 850;
+}
+.dx-record-list-add-btn {
+    height: 30px;
+    border: 1px solid #e0e7ff;
+    border-radius: 9px;
+    background: #fff;
+    color: #4f46e5;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 0 10px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: background .14s ease, border-color .14s ease;
+}
+.dx-record-list-add-btn:hover {
+    background: #f5f7ff;
+    border-color: #c7d2fe;
+}
+.dx-record-list-create {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+.dx-record-list-create input {
+    flex: 1;
+    min-width: 0;
+    height: 34px;
+    border: 1.5px solid #e3e8f0;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    padding: 0 10px;
+    outline: none;
+}
+.dx-record-list-create input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99,102,241,.08);
+}
+.dx-record-list-create button {
+    height: 34px;
+    border: 0;
+    border-radius: 9px;
+    background: #6366f1;
+    color: #fff;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 850;
+    padding: 0 12px;
+    cursor: pointer;
+}
+.dx-record-list-create button:disabled {
+    opacity: .55;
+    cursor: wait;
+}
+.dx-record-lists-loading,
+.dx-record-lists-empty {
+    min-height: 58px;
+    border: 1px dashed #dbe3ee;
+    border-radius: 12px;
+    background: #fbfcff;
+    color: #94a3b8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 12px;
+    font-weight: 700;
+}
+.dx-record-lists-empty {
+    flex-direction: column;
+    padding: 12px;
+}
+.dx-record-lists-empty button {
+    border: 1px solid #e0e7ff;
+    border-radius: 8px;
+    background: #fff;
+    color: #4f46e5;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 7px 10px;
+    cursor: pointer;
+}
+.dx-record-list-stack {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 10px;
+}
+.dx-record-list-card {
+    --list-color: #6366f1;
+    min-width: 0;
+    border: 1px solid #e8ecf1;
+    border-radius: 12px;
+    background: #fff;
+    padding: 11px;
+    box-shadow: 0 8px 20px rgba(15,23,42,.025);
+}
+.dx-record-list-card-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+.dx-record-list-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+    text-decoration: none;
+    color: inherit;
+}
+.dx-record-list-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: 9px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    background: color-mix(in srgb, var(--list-color) 12%, #fff);
+    color: var(--list-color);
+}
+.dx-record-list-name {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #172033;
+    font-size: 12.5px;
+    font-weight: 850;
+}
+.dx-record-list-default {
+    height: 19px;
+    border-radius: 999px;
+    background: #eef2ff;
+    color: #4f46e5;
+    display: inline-flex;
+    align-items: center;
+    padding: 0 7px;
+    font-size: 9.5px;
+    font-weight: 900;
+    flex: 0 0 auto;
+}
+.dx-record-list-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    color: #94a3b8;
+    font-size: 10.5px;
+    font-weight: 750;
+    white-space: nowrap;
+}
+.dx-record-list-kanban,
+.dx-record-list-task-menu {
+    width: 28px;
+    height: 28px;
+    border: 0;
+    border-radius: 8px;
+    background: #f8fafc;
+    color: #94a3b8;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+.dx-record-list-kanban:hover,
+.dx-record-list-task-menu:hover {
+    background: #eef2ff;
+    color: #4f46e5;
+}
+.dx-record-list-progress {
+    height: 4px;
+    border-radius: 999px;
+    background: #eef2f7;
+    overflow: hidden;
+    margin: 10px 0 7px;
+}
+.dx-record-list-progress span {
+    display: block;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--list-color);
+}
+.dx-record-list-preview {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-height: 32px;
+}
+.dx-record-list-task {
+    min-width: 0;
+    min-height: 30px;
+    display: grid;
+    grid-template-columns: 16px minmax(0, 1fr) 28px;
+    align-items: center;
+    gap: 8px;
+    border-radius: 8px;
+    padding: 3px 0 3px 2px;
+}
+.dx-record-list-task:hover {
+    background: #fbfcff;
+}
+.dx-record-list-task > span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+}
+.dx-record-list-task.is-done > span {
+    color: #94a3b8;
+    text-decoration: line-through;
+}
+.dx-record-list-task-empty {
+    color: #a8b3c5;
+    font-size: 11.5px;
+    font-weight: 700;
+    padding: 8px 2px;
+}
+.dx-record-list-task-add {
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 30px;
+    gap: 7px;
+}
+.dx-record-list-task-add input {
+    height: 32px;
+    min-width: 0;
+    border: 1.5px solid #e3e8f0;
+    border-radius: 9px;
+    background: #fff;
+    color: #172033;
+    font: inherit;
+    font-size: 12px;
+    font-weight: 650;
+    padding: 0 10px;
+    outline: none;
+}
+.dx-record-list-task-add input:focus {
+    border-color: var(--list-color);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--list-color) 12%, transparent);
+}
+.dx-record-list-task-add button {
+    width: 30px;
+    height: 32px;
+    border: 1px solid #dbe3ee;
+    border-radius: 9px;
+    background: #fff;
+    color: #4f46e5;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
 }
 .dx-shopping-list,
 .dx-completed-list {
     display: flex;
     flex-direction: column;
     gap: 0;
+}
+.dx-priority-task-list {
+    min-width: 0;
+    min-height: 178px;
 }
 .dx-shopping-row.dx-task-row {
     display: grid;
@@ -440,10 +754,39 @@
     justify-content: center;
     cursor: pointer;
 }
+.dx-day-more-row {
+    display: flex;
+    justify-content: center;
+    padding: 10px 12px;
+    border-bottom: 1px solid #edf2f7;
+    background: #fff;
+}
+.dx-day-more-btn {
+    height: 28px;
+    border: 1px solid #dbe4ff;
+    border-radius: 9px;
+    background: #fff;
+    color: #4f46e5;
+    font: inherit;
+    font-size: 11.5px;
+    font-weight: 800;
+    padding: 0 11px;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    cursor: pointer;
+}
+.dx-day-more-btn:hover {
+    background: #f5f7ff;
+    border-color: #c7d2fe;
+}
 .dx-completed-today {
     border-left: 1px solid #eef2f8;
-    padding-left: 20px;
+    padding: 0 0 12px 20px;
+    box-sizing: border-box;
     min-width: 0;
+    align-self: start;
+    min-height: 178px;
 }
 .dx-completed-today-inline {
     display: none;
@@ -478,8 +821,32 @@
     transform: rotate(180deg);
 }
 .dx-completed-list {
-    overflow: visible;
-    max-height: none;
+    overflow: auto;
+    max-height: 136px;
+    padding: 0 4px 14px 0;
+    margin-bottom: 10px;
+    scrollbar-gutter: stable;
+}
+.dx-completed-list::-webkit-scrollbar {
+    width: 5px;
+}
+.dx-completed-list::-webkit-scrollbar-track {
+    margin-bottom: 10px;
+    margin-top: 2px;
+}
+.dx-completed-list::-webkit-scrollbar-button:vertical:start:decrement {
+    display: block;
+    height: 2px;
+    background: transparent;
+}
+.dx-completed-list::-webkit-scrollbar-button:vertical:end:increment {
+    display: block;
+    height: 10px;
+    background: transparent;
+}
+.dx-completed-list::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
 }
 .dx-completed-row {
     display: grid;
@@ -686,6 +1053,26 @@
     .dx-shopping-row.dx-single-line .dx-task-record-line {
         display: none;
     }
+    .dx-record-lists-head,
+    .dx-record-list-card-head {
+        align-items: flex-start;
+    }
+    .dx-record-lists-head {
+        flex-direction: column;
+    }
+    .dx-record-list-add-btn {
+        width: 100%;
+        justify-content: center;
+    }
+    .dx-record-list-stack {
+        grid-template-columns: 1fr;
+    }
+    .dx-record-list-card-head {
+        flex-wrap: wrap;
+    }
+    .dx-record-list-main {
+        flex-basis: 100%;
+    }
 }
 .dark .dx-card-title,
 .dark .dx-task-title,
@@ -737,4 +1124,46 @@
 }
 .dark .dx-completed-row:hover {
     background: rgba(34, 197, 94, .08);
+}
+.dark .dx-record-lists-panel,
+.dark .dx-record-list-progress {
+    border-color: #253b5c;
+}
+.dark .dx-record-lists-title,
+.dark .dx-record-list-name,
+.dark .dx-record-list-task > span {
+    color: #e0e6ed;
+}
+.dark .dx-record-lists-icon,
+.dark .dx-record-lists-count,
+.dark .dx-record-list-kanban,
+.dark .dx-record-list-task-menu {
+    background: #111f35;
+    color: #9fb0cb;
+}
+.dark .dx-record-list-add-btn,
+.dark .dx-record-list-create input,
+.dark .dx-record-list-create button,
+.dark .dx-record-list-card,
+.dark .dx-record-list-task-add input,
+.dark .dx-record-list-task-add button,
+.dark .dx-record-lists-loading,
+.dark .dx-record-lists-empty {
+    background: #0b1320;
+    border-color: #253b5c;
+}
+.dark .dx-record-list-create input,
+.dark .dx-record-list-task-add input {
+    color: #e0e6ed;
+}
+.dark .dx-record-list-create button {
+    background: #6366f1;
+    border-color: #6366f1;
+    color: #fff;
+}
+.dark .dx-record-list-task:hover {
+    background: #111f35;
+}
+.dark .dx-record-list-progress {
+    background: #17233a;
 }

@@ -2,6 +2,7 @@
     const _todayTasksHref = (typeof todayTasksHref !== 'undefined' && todayTasksHref)
         ? todayTasksHref
         : ('/account/' + account_number + '/tasks');
+    const _showRecordTaskLists = (typeof showRecordTaskLists !== 'undefined') && !!showRecordTaskLists;
 %>
 <template x-if="wid === 'priority-day' || wid === 'today-tasks'">
     <div class="ov-card dx-card dx-priority-card" :style="'--ov-color:' + widgetColor(wid, '#805dca')">
@@ -48,9 +49,9 @@
             <div class="dx-shopping-list dx-priority-task-list"
                  :data-task-widget-id="wid"
                  x-init="$nextTick(() => initHomeTaskSortable($el, wid))">
-                <template x-for="(item, index) in todayWidgetVisibleTasks(wid).slice(0, 40)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
+                <template x-for="(item, index) in todayWidgetRenderedTasks(wid)" :key="(item._id || item.id) + ':' + homeTaskRenderKey(wid)">
                     <div class="dx-shopping-row dx-task-row dx-single-line"
-                         :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid), 'is-last-visible': index === todayWidgetVisibleTasks(wid).slice(0, 40).length - 1 }"
+                         :class="{ 'is-done': item.status === 'Terminé', 'is-accented': homeTaskAccentStyleEnabled(wid), 'is-last-visible': index === todayWidgetRenderedTasks(wid).length - 1 }"
                          :style="'--task-accent-color:' + homeTaskRowAccentColor(item)"
                          :data-task-id="item._id || item.id"
                          @contextmenu.prevent.stop="openHomeTaskMenu($event, wid, item)">
@@ -126,6 +127,12 @@
                 <template x-if="todayWidgetVisibleTasks(wid).length === 0">
                     <div class="ov-custom-empty" x-text="todayWidgetEmptyLabel(wid)"></div>
                 </template>
+                <div class="dx-day-more-row" x-show="todayWidgetVisibleTasks(wid).length > todayWidgetOpenLimitFor(wid)" x-cloak>
+                    <button type="button" class="dx-day-more-btn" @click.stop="toggleTodayWidgetExpanded(wid)">
+                        <iconify-icon :icon="todayWidgetExpanded(wid) ? 'solar:alt-arrow-up-linear' : 'solar:add-circle-linear'" width="13"></iconify-icon>
+                        <span x-text="todayWidgetExpanded(wid) ? 'Afficher moins' : ('Afficher plus (' + todayWidgetHiddenOpenCount(wid) + ')')"></span>
+                    </button>
+                </div>
                 <div class="dx-completed-today dx-completed-today-inline" x-show="todayWidgetCompletedPanelEnabled(wid)">
                     <details class="dx-completed-details">
                         <summary class="dx-completed-header">
@@ -185,5 +192,100 @@
                 </div>
             </div>
         </div>
+        <% if (_showRecordTaskLists) { %>
+        <div class="dx-record-lists-panel" x-show="wid === 'today-tasks'">
+            <div class="dx-record-lists-head">
+                <div class="dx-record-lists-title">
+                    <span class="dx-record-lists-icon">
+                        <iconify-icon icon="solar:list-bold-duotone" width="15"></iconify-icon>
+                    </span>
+                    <span>Listes</span>
+                    <span class="dx-record-lists-count" x-text="recordTaskListsForPanel().length"></span>
+                </div>
+                <button type="button" class="dx-record-list-add-btn" @click.stop="startRecordListCreate()">
+                    <iconify-icon icon="solar:add-circle-linear" width="14"></iconify-icon>
+                    Nouvelle liste
+                </button>
+            </div>
+
+            <form class="dx-record-list-create" x-show="recordListAdding" x-cloak @submit.prevent="createRecordTaskListFromPanel()">
+                <input type="text"
+                       x-model="recordListNameDraft"
+                       placeholder="Nom de la liste..."
+                       @keydown.escape="recordListAdding = false; recordListNameDraft = ''">
+                <button type="submit" :disabled="recordListCreating">Créer</button>
+            </form>
+
+            <div class="dx-record-lists-loading" x-show="recordTasksLoading" x-cloak>
+                <iconify-icon icon="line-md:loading-twotone-loop" width="18"></iconify-icon>
+                Chargement des listes...
+            </div>
+
+            <template x-if="!recordTasksLoading && recordTaskListsForPanel().length === 0">
+                <div class="dx-record-lists-empty">
+                    <span>Aucune liste pour ce record</span>
+                    <button type="button" @click="ensureRecordTaskList()">Créer la liste par défaut</button>
+                </div>
+            </template>
+
+            <div class="dx-record-list-stack" x-show="!recordTasksLoading && recordTaskListsForPanel().length > 0">
+                <template x-for="list in recordTaskListsForPanel()" :key="list.id || list._id">
+                    <section class="dx-record-list-card" :style="'--list-color:' + (list.color || '#6366f1')">
+                        <div class="dx-record-list-card-head">
+                            <a class="dx-record-list-main" :href="recordTaskListHref(list)">
+                                <span class="dx-record-list-icon">
+                                    <iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="15"></iconify-icon>
+                                </span>
+                                <span class="dx-record-list-name" x-text="list.label"></span>
+                                <span class="dx-record-list-default" x-show="isDefaultRecordTaskList(list)">Par défaut</span>
+                            </a>
+                            <span class="dx-record-list-meta">
+                                <span x-text="listTaskCount(list)"></span>
+                                <span>tâche<span x-show="listTaskCount(list) !== 1">s</span></span>
+                            </span>
+                            <a class="dx-record-list-kanban" :href="recordTaskListHref(list, 'kanban')" title="Vue kanban">
+                                <iconify-icon icon="solar:widget-5-bold-duotone" width="14"></iconify-icon>
+                            </a>
+                        </div>
+
+                        <div class="dx-record-list-progress" x-show="listTaskCount(list) > 0">
+                            <span :style="'width:' + recordListCompletionPct(list) + '%'"></span>
+                        </div>
+
+                        <div class="dx-record-list-preview">
+                            <template x-for="task in recordListPreviewTasks(list)" :key="task._id || task.id">
+                                <div class="dx-record-list-task" :class="{ 'is-done': task.status === 'Terminé' }">
+                                    <button type="button"
+                                            class="dx-check"
+                                            :class="task.status === 'Terminé' ? 'is-checked' : ''"
+                                            @click.stop="toggleTodayTaskItem(wid, task)"></button>
+                                    <span x-text="task.title" @click.stop="openHomeTaskModal(wid, task)"></span>
+                                    <button type="button"
+                                            class="dx-record-list-task-menu"
+                                            @click.stop="openHomeTaskMenu($event, wid, task)"
+                                            title="Options">
+                                        <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
+                                    </button>
+                                </div>
+                            </template>
+                            <template x-if="recordListPreviewTasks(list).length === 0">
+                                <div class="dx-record-list-task-empty">Aucune tâche dans cette liste</div>
+                            </template>
+                        </div>
+
+                        <form class="dx-record-list-task-add" @submit.prevent="addRecordListTask(list)">
+                            <input type="text"
+                                   :value="recordListTaskDraft(list)"
+                                   @input="setRecordListTaskDraft(list, $event.target.value)"
+                                   placeholder="Ajouter une tâche...">
+                            <button type="submit" title="Ajouter">
+                                <iconify-icon icon="tabler:plus" width="14"></iconify-icon>
+                            </button>
+                        </form>
+                    </section>
+                </template>
+            </div>
+        </div>
+        <% } %>
     </div>
 </template>

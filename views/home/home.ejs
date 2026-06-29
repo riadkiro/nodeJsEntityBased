@@ -2542,6 +2542,7 @@ document.addEventListener('alpine:init', () => {
 			        newTaskTitles: {},
 			        todayWidgetDates: {},
 			        todayWidgetModes: {},
+	        todayWidgetOpenExpanded: {},
 	        homeTaskRenderVersions: {},
 	        _taskSortables: new Map(),
 	        homeTaskMenu: null,
@@ -4582,6 +4583,10 @@ document.addEventListener('alpine:init', () => {
 	                ...(this.todayWidgetModes || {}),
 	                [wid]: mode
 	            };
+	            this.todayWidgetOpenExpanded = {
+	                ...(this.todayWidgetOpenExpanded || {}),
+	                [wid]: false
+	            };
 	            this.bumpHomeTaskRender(wid);
 	            this.$nextTick(() => this.refreshHomeTaskSortables());
 	        },
@@ -4595,6 +4600,10 @@ document.addEventListener('alpine:init', () => {
 	            this.todayWidgetModes = {
 	                ...(this.todayWidgetModes || {}),
 	                [wid]: 'date'
+	            };
+	            this.todayWidgetOpenExpanded = {
+	                ...(this.todayWidgetOpenExpanded || {}),
+	                [wid]: false
 	            };
 	            this.bumpHomeTaskRender(wid);
 	            this.$nextTick(() => this.refreshHomeTaskSortables());
@@ -4754,6 +4763,28 @@ document.addEventListener('alpine:init', () => {
 	                return all.filter(t => t.status !== 'Terminé');
 	            }
 	            return all;
+	        },
+	        todayWidgetOpenLimitFor(wid) {
+	            return Math.max(1, Number(this.widgetOption(wid, 'openLimit', 10)) || 10);
+	        },
+	        todayWidgetExpanded(wid) {
+	            return this.todayWidgetOpenExpanded?.[wid] === true;
+	        },
+	        toggleTodayWidgetExpanded(wid) {
+	            this.todayWidgetOpenExpanded = {
+	                ...(this.todayWidgetOpenExpanded || {}),
+	                [wid]: !this.todayWidgetExpanded(wid)
+	            };
+	            this.bumpHomeTaskRender(wid);
+	            this.$nextTick(() => this.refreshHomeTaskSortables());
+	        },
+	        todayWidgetHiddenOpenCount(wid) {
+	            return Math.max(0, this.todayWidgetVisibleTasks(wid).length - this.todayWidgetOpenLimitFor(wid));
+	        },
+	        todayWidgetRenderedTasks(wid) {
+	            const tasks = this.todayWidgetVisibleTasks(wid);
+	            if (this.todayWidgetExpanded(wid)) return tasks;
+	            return tasks.slice(0, this.todayWidgetOpenLimitFor(wid));
 	        },
 	        completedTodayTasks() {
 	            const todayKey = this.todayDateKey();

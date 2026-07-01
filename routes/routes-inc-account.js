@@ -477,6 +477,7 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
 
         const status = hubStatusColors[req.body?.status] ? req.body.status : 'À faire';
         const accountPriorities = await getAccountTaskPriorities(req);
+        const accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body?.tags);
         const priorityOption = priorityOptionFor(req.body?.priority, accountPriorities);
         const target = await resolveHubTaskTarget(req, req.body?.taskListId);
         if (!target) return res.status(404).json({ error: 'Liste de tâches introuvable' });
@@ -492,7 +493,7 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             statusColor: hubStatusColors[status] || '#9ca3af',
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
-            tags: TaskListsService.normalizeTaskTags(req.body?.tags, list.tags),
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, accountTags),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: !!req.body?.isDayPriority,
             startDate: req.body?.startDate || null,
@@ -514,8 +515,8 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
                 statusColor: task.statusColor,
                 priority: priorityOption.label,
                 priorityColor: priorityOption.color || '',
-                tags: TaskListsService.normalizeTaskTags(task.tags, list.tags),
-                tagOptions: TaskListsService.normalizeTaskTagOptions(list.tags),
+                tags: TaskListsService.normalizeTaskTags(task.tags, accountTags),
+                tagOptions: accountTags,
                 subtasks: TaskListsService.normalizeTaskSubtasks(task.subtasks),
                 isDayPriority: !!task.isDayPriority,
                 startDate: task.startDate || null,
@@ -635,6 +636,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
         const Entity = await _tc(req, "Entity");
         const Record = await _tc(req, "Record");
         const accountPriorities = await getAccountTaskPriorities(req);
+        const accountTags = await TaskListsService.getAccountTaskTags(req);
         await ensurePersonalTasksTarget(req);
         if (String(req.account_number) === '6804') {
             await ensurePersonalTaskList(req, {
@@ -650,13 +652,13 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
         const tenantRecordIds = tenantRecords.map(r => r._id);
         const myLists = await TaskListsService.listMyTaskLists(req);
         if (tenantRecordIds.length === 0) {
-            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
+            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities, tags: accountTags });
         }
 
         const { TaskList: TaskListModel, RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const allLists = await TaskListModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: 1 }).lean();
         if (allLists.length === 0) {
-            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities });
+            return res.json({ success: true, entities: [], myLists, totalTasks: 0, doneTasks: 0, priorities: accountPriorities, tags: accountTags });
         }
 
         const allTasks = await RecordTaskModel.find({ recordId: { $in: tenantRecordIds } }).sort({ order: 1, createdAt: -1 }).lean();
@@ -727,7 +729,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
             const listIcon = list.icon || 'solar:checklist-bold-duotone';
             const listStatuses = hubTaskOptions(list.statuses, hubDefaultStatuses);
             const listPriorities = accountPriorities;
-            const listTags = TaskListsService.normalizeTaskTagOptions(list.tags);
+            const listTags = accountTags;
             const listDisplayOptions = TaskListsService.normalizeTaskListDisplayOptions(list.displayOptions);
             const listTasks = (tasksByListId[listId] || []).slice().sort((a, b) => {
                 const ao = Number.isFinite(Number(a.order)) ? Number(a.order) : 0;
@@ -821,7 +823,7 @@ router.post("/api/tasks-hub/reorder", async (req, res) => {
                 }))
         })).sort((a, b) => b.totalTasks - a.totalTasks);
 
-        res.json({ success: true, entities: result, myLists, totalTasks, doneTasks: totalDone, priorities: accountPriorities });
+        res.json({ success: true, entities: result, myLists, totalTasks, doneTasks: totalDone, priorities: accountPriorities, tags: accountTags });
     } catch (error) {
         console.error('[TasksHub] Error:', error);
         res.status(500).json({ error: error.message });

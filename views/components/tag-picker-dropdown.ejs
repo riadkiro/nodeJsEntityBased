@@ -32,10 +32,12 @@
                 <span class="tp-option-label" x-text="opt.label"></span>
                 <div class="tp-option-actions">
                     <button type="button" class="tp-option-action-btn"
+                            title="Modifier"
                             @click.stop="startEdit(opt, $event)">
                         <iconify-icon icon="solar:pen-2-linear" width="13"></iconify-icon>
                     </button>
                     <button type="button" class="tp-option-delete"
+                            title="Supprimer"
                             :class="deleteConfirmId === opt._id ? 'tp-option-delete--confirm' : ''"
                             @click.stop="confirmDelete(opt._id)">
                         <iconify-icon :icon="deleteConfirmId === opt._id ? 'solar:trash-bin-2-bold' : 'solar:trash-bin-2-linear'" width="13"></iconify-icon>
@@ -79,10 +81,20 @@
 
     <!-- Create new -->
     <template x-if="canCreate">
-        <div class="tp-create-option" @click="createOption()">
-            <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
-            <span class="tp-create-label">Créer</span>
-            <span class="tp-create-tag" x-text="searchQuery"></span>
+        <div class="tp-create-panel">
+            <div class="tp-create-option" @click="createOption()">
+                <iconify-icon icon="tabler:plus" width="14" style="color: #6b7280;"></iconify-icon>
+                <span class="tp-create-label">Créer</span>
+                <span class="tp-create-tag" x-text="searchQuery"></span>
+            </div>
+            <div class="tp-create-colors">
+                <template x-for="(color, idx) in tagColors" :key="'create-' + idx">
+                    <div class="tp-create-color-dot"
+                         :class="newColorIdx === idx ? 'tp-create-color-dot--active' : ''"
+                         :style="'background:' + color.bg"
+                         @click.stop="selectCreateColor(idx)"></div>
+                </template>
+            </div>
         </div>
     </template>
 </div>

@@ -2340,11 +2340,20 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
+        normalizeOptionLabel(value) {
+            return String(value || '')
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f\u0610-\u061a\u0640\u064b-\u065f\u0670\u06d6-\u06ed\u200c-\u200f\u202a-\u202e]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        },
+
         normalizeTagOptions(options = []) {
             const seen = new Set();
             return (Array.isArray(options) ? options : [])
                 .map((item, index) => {
-                    const label = String(item?.label || item || '').trim();
+                    const label = String(item?.label || item?.name || item?.title || item || '').trim();
                     return {
                         label,
                         color: item?.color || this.statusColors[index % this.statusColors.length] || '#6366f1',
@@ -2352,7 +2361,7 @@ document.addEventListener('alpine:init', () => {
                     };
                 })
                 .filter(item => {
-                    const key = item.label.toLowerCase();
+                    const key = this.normalizeOptionLabel(item.label);
                     if (!item.label || seen.has(key)) return false;
                     seen.add(key);
                     return true;
@@ -2362,12 +2371,12 @@ document.addEventListener('alpine:init', () => {
 
         normalizeTaskTags(tags = [], options = []) {
             const optionByLabel = new Map(this.normalizeTagOptions(options)
-                .map(option => [option.label.toLowerCase(), option]));
+                .map(option => [this.normalizeOptionLabel(option.label), option]));
             const seen = new Set();
             return (Array.isArray(tags) ? tags : [])
                 .map((item, index) => {
-                    const label = String(item?.label || item || '').trim();
-                    const option = optionByLabel.get(label.toLowerCase());
+                    const label = String(item?.label || item?.name || item?.title || item || '').trim();
+                    const option = optionByLabel.get(this.normalizeOptionLabel(label));
                     return {
                         label,
                         color: item?.color || option?.color || '#6366f1',
@@ -2375,7 +2384,7 @@ document.addEventListener('alpine:init', () => {
                     };
                 })
                 .filter(item => {
-                    const key = item.label.toLowerCase();
+                    const key = this.normalizeOptionLabel(item.label);
                     if (!item.label || seen.has(key)) return false;
                     seen.add(key);
                     return true;

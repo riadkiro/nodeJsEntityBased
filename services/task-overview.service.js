@@ -228,6 +228,8 @@ function isDone(task) {
 function serializeTaskRow(req, task, list, record, entity, reminder = null, options = {}) {
     const statuses = normalizeOptions(list?.statuses, defaultStatuses);
     const priorities = normalizeTaskPriorityOptions(options.priorities || list?.priorities, defaultPriorities);
+    const tagSource = Array.isArray(options.accountTags) ? options.accountTags : list?.tags;
+    const tagOptions = normalizeTaskTags(tagSource, tagSource);
     const status = cleanText(task.status, STATUS_TODO);
     const priorityOption = priorityOptionFor(task.priority, priorities);
     const priority = priorityOption.label;
@@ -247,8 +249,8 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
         statusColor: task.statusColor || optionColor(statuses, status, '#9ca3af'),
         priority,
         priorityColor: priorityColorFor(priority, priorities, task.priorityColor || ''),
-        tags: normalizeTaskTags(task.tags, list?.tags),
-        tagOptions: normalizeTaskTags(list?.tags, list?.tags),
+        tags: normalizeTaskTags(task.tags, tagOptions),
+        tagOptions,
         subtasks: normalizeTaskSubtasks(task.subtasks),
         done: status === STATUS_DONE,
         isDayPriority: !!task.isDayPriority,
@@ -349,6 +351,9 @@ async function buildTaskBoard(req, options = {}) {
     const includeTasksByRecord = options.includeTasksByRecord === true;
     const recordIds = await Record.find({}).distinct('_id');
     const accountPriorities = await getAccountTaskPriorities(req);
+    const accountTags = Array.isArray(options.accountTags)
+        ? normalizeTaskTags(options.accountTags, options.accountTags)
+        : null;
     const empty = {
         success: true,
         schedule: tools.day,
@@ -360,6 +365,7 @@ async function buildTaskBoard(req, options = {}) {
         completedToday: [],
         taskLists: [],
         priorities: accountPriorities,
+        tags: accountTags || [],
         stats: { totalTasks: 0, doneTasks: 0, openTasks: 0, todayTasks: 0, overdueCount: 0, listsCount: 0 },
     };
     if (includeTasksByRecord) empty.tasksByRecord = [];
@@ -401,6 +407,8 @@ async function buildTaskBoard(req, options = {}) {
         .map(task => {
             const record = recordMap.get(task.recordId?.toString?.() || '');
             const entity = record?.entityId ? entityMap.get(record.entityId.toString()) : null;
+            const rowOptions = { priorities: accountPriorities };
+            if (accountTags !== null) rowOptions.accountTags = accountTags;
             return serializeTaskRow(
                 req,
                 task,
@@ -408,7 +416,7 @@ async function buildTaskBoard(req, options = {}) {
                 record,
                 entity,
                 reminderMap.get(task._id?.toString?.() || ''),
-                { priorities: accountPriorities }
+                rowOptions
             );
         });
 
@@ -446,6 +454,7 @@ async function buildTaskBoard(req, options = {}) {
             const tasks = (tasksByList[list._id.toString()] || []).slice().sort(compareListTasks);
             const recordId = record?._id?.toString?.() || '';
             const entitySlug = entity?.slug || '';
+            const listTags = accountTags !== null ? accountTags : normalizeTaskTags(list.tags, list.tags);
             return {
                 id: list._id.toString(),
                 _id: list._id.toString(),
@@ -455,6 +464,7 @@ async function buildTaskBoard(req, options = {}) {
                 icon: list.icon || 'solar:checklist-bold-duotone',
                 statuses: normalizeOptions(list.statuses, defaultStatuses),
                 priorities: accountPriorities,
+                tags: listTags,
                 recordId,
                 recordTitle: record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre',
                 recordIcon: record?.icon || entity?.icon || 'solar:folder-bold-duotone',
@@ -520,6 +530,7 @@ async function buildTaskBoard(req, options = {}) {
         completedToday,
         taskLists,
         priorities: accountPriorities,
+        tags: accountTags || [],
         stats: {
             totalTasks: rows.length,
             doneTasks,

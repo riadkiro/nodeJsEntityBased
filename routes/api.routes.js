@@ -1239,7 +1239,7 @@ const serializeRecordTask = (req, task, list = null, extra = {}) => {
     const taskList = list || {}
     const statuses = getListStatuses(taskList)
     const priorities = normalizeTaskPriorityOptions(extra.priorities || taskList.priorities, defaultTaskPriorities)
-    const tagOptions = TaskListsService.normalizeTaskTagOptions(taskList.tags)
+    const tagOptions = TaskListsService.normalizeTaskTagOptions(extra.accountTags || taskList.tags)
     const status = cleanTaskText(task.status, 'À faire')
     const priority = priorityLabelFor(task.priority, priorities)
     return {
@@ -1354,6 +1354,7 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
     try {
         const { TaskList, RecordTask } = await taskTenantModels(req)
         const accountPriorities = await getAccountTaskPriorities(req)
+        const accountTags = await TaskListsService.getAccountTaskTags(req)
         const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
         const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
         const taskPreviewLimit = 10
@@ -1414,8 +1415,8 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
                 tasksLoadedCount: previewTasks.length,
                 hasMoreTasks: sorted.length > previewTasks.length,
                 remainingTasks: Math.max(0, sorted.length - previewTasks.length),
-                tasks: previewTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities })),
-                dayTasks: focusDayTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities }))
+                tasks: previewTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities, accountTags })),
+                dayTasks: focusDayTasks.map(t => serializeRecordTask(req, t, l, { priorities: accountPriorities, accountTags }))
             }
         })
 
@@ -1512,6 +1513,38 @@ router.put('/api/task-lists/:listId/tags', async (req, res) => {
         res.json({ success: true, tags: cleaned })
     } catch (error) {
         console.error('[API] Update tags error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * GET /account/:account_number/api/task-tags
+ * Fetch account-wide task tags.
+ */
+router.get('/api/task-tags', async (req, res) => {
+    try {
+        const tags = await TaskListsService.getAccountTaskTags(req)
+        res.json({ success: true, tags })
+    } catch (error) {
+        console.error('[API] Task tags error:', error)
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
+ * PUT /account/:account_number/api/task-tags
+ * Replace account-wide task tags and sync existing tasks.
+ */
+router.put('/api/task-tags', async (req, res) => {
+    try {
+        const { tags, renames } = req.body
+        if (!Array.isArray(tags)) {
+            return res.status(400).json({ error: 'Tags array required' })
+        }
+        const cleaned = await TaskListsService.replaceAccountTaskTags(req, { tags, renames })
+        res.json({ success: true, tags: cleaned })
+    } catch (error) {
+        console.error('[API] Update task tags error:', error)
         res.status(500).json({ error: error.message })
     }
 })
@@ -1804,6 +1837,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
     try {
         const { TaskList, RecordTask } = await taskTenantModels(req)
         const accountPriorities = await getAccountTaskPriorities(req)
+        const accountTags = await TaskListsService.getAccountTaskTags(req)
         const list = await TaskList.findById(req.params.listId).lean()
         let tasks = await RecordTask.find({ taskListId: req.params.listId }).sort({ order: 1, createdAt: -1 }).lean()
         if (String(req.query.scope || '') === 'day') {
@@ -1836,6 +1870,7 @@ router.get('/api/task-lists/:listId/tasks', async (req, res) => {
             success: true,
             tasks: tasks.map(t => serializeRecordTask(req, t, list, {
                 priorities: accountPriorities,
+                accountTags,
                 reminder: ReminderService.serializeReminder(reminderMap.get(t._id?.toString?.() || ''))
             }))
         })
@@ -1862,6 +1897,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
 
         const listStatuses = getListStatuses(list)
         const accountPriorities = await getAccountTaskPriorities(req)
+        const accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body?.tags)
         const taskStatus = cleanTaskText(status, 'À faire')
         const taskPriorityOption = priorityOptionFor(priority, accountPriorities)
         const order = await RecordTask.countDocuments({ taskListId: req.params.listId })
@@ -1875,7 +1911,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             statusColor: optionColor(listStatuses, taskStatus, '#9ca3af'),
             priority: taskPriorityOption.label,
             priorityColor: taskPriorityOption.color || '',
-            tags: TaskListsService.normalizeTaskTags(req.body?.tags, list.tags),
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, accountTags),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: !!isDayPriority,
             startDate: startDate || null,
@@ -1891,6 +1927,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
             success: true,
             task: serializeRecordTask(req, task, list, {
                 priorities: accountPriorities,
+                accountTags,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -2142,10 +2179,12 @@ router.get('/api/record-tasks/:taskId', async (req, res) => {
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null
         const reminder = await findRecordTaskReminder(req, task)
         const accountPriorities = await getAccountTaskPriorities(req)
+        const accountTags = await TaskListsService.getAccountTaskTags(req)
         res.json({
             success: true,
             task: serializeRecordTask(req, task, list, {
                 priorities: accountPriorities,
+                accountTags,
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })
@@ -2170,6 +2209,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
         let targetList = oldTask.taskListId ? await TaskList.findById(oldTask.taskListId).lean() : null
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body)
         const accountPriorities = await getAccountTaskPriorities(req)
+        let accountTags = null
 
         allowedFields.forEach(f => {
             if (req.body[f] !== undefined) {
@@ -2219,7 +2259,8 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             updates.priorityColor = priorityOption.color || ''
         }
         if (updates.tags !== undefined) {
-            updates.tags = TaskListsService.normalizeTaskTags(updates.tags, targetList?.tags)
+            accountTags = await TaskListsService.upsertAccountTaskTags(req, updates.tags)
+            updates.tags = TaskListsService.normalizeTaskTags(updates.tags, accountTags)
         }
         if (updates.subtasks !== undefined) {
             updates.subtasks = TaskListsService.normalizeTaskSubtasks(updates.subtasks)
@@ -2274,6 +2315,7 @@ router.put('/api/record-tasks/:taskId', async (req, res) => {
             success: true,
             task: serializeRecordTask(req, task, targetList, {
                 priorities: accountPriorities,
+                accountTags: accountTags || await TaskListsService.getAccountTaskTags(req),
                 reminder: ReminderService.serializeReminder(reminder)
             })
         })

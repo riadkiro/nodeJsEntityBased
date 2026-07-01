@@ -1,6 +1,19 @@
 const tenantCollection = require("../middleware/tenant").tenantCollection;
 const mongoose = require("mongoose");
 
+function cleanOptionLabel(value) {
+    return String(value || '').trim();
+}
+
+function normalizeOptionLabel(value) {
+    return cleanOptionLabel(value)
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f\u0610-\u061a\u0640\u064b-\u065f\u0670\u06d6-\u06ed\u200c-\u200f\u202a-\u202e]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
 module.exports = {
     list: async (req, res) => {
         try {
@@ -204,9 +217,19 @@ module.exports = {
 
             const classification = await Classification.findById(classificationId);
             if (!classification) return res.status(404).json({ error: "Classification non trouvée" });
+            const cleanLabel = cleanOptionLabel(label);
+            if (!cleanLabel) return res.status(400).json({ error: "Libellé requis" });
+
+            const labelKey = normalizeOptionLabel(cleanLabel);
+            const existing = (classification.options || []).find(option =>
+                normalizeOptionLabel(option.label) === labelKey
+            );
+            if (existing) {
+                return res.json({ success: true, option: existing, existing: true });
+            }
 
             classification.options.push({
-                label,
+                label: cleanLabel,
                 color: color || '#4361ee',
                 icon: 'solar:info-circle-bold',
                 type: 'normal',
@@ -257,7 +280,18 @@ module.exports = {
             const opt = classification.options.id(optionId);
             if (!opt) return res.status(404).json({ error: "Option non trouvée" });
 
-            if (label !== undefined) opt.label = label;
+            let cleanLabel;
+            if (label !== undefined) {
+                cleanLabel = cleanOptionLabel(label);
+                if (!cleanLabel) return res.status(400).json({ error: "Libellé requis" });
+                const labelKey = normalizeOptionLabel(cleanLabel);
+                const duplicate = (classification.options || []).find(option =>
+                    option._id.toString() !== optionId &&
+                    normalizeOptionLabel(option.label) === labelKey
+                );
+                if (duplicate) return res.status(409).json({ error: "Cette option existe déjà" });
+                opt.label = cleanLabel;
+            }
             if (color !== undefined) opt.color = color;
 
             await classification.save();
@@ -266,7 +300,7 @@ module.exports = {
             if (label !== undefined || color !== undefined) {
                 const RecordModel = await tenantCollection(req, "Record");
                 const updateFields = {};
-                if (label !== undefined) updateFields['classificationValues.$.label'] = label;
+                if (label !== undefined) updateFields['classificationValues.$.label'] = cleanLabel;
                 if (color !== undefined) updateFields['classificationValues.$.color'] = color;
                 await RecordModel.updateMany(
                     { 'classificationValues.optionId': new mongoose.Types.ObjectId(optionId) },

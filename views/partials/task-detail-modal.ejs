@@ -114,9 +114,12 @@
 .tdm-option-row{height:34px;border:0;background:transparent;border-radius:8px;padding:0 7px;display:flex;align-items:center;gap:8px;color:#0e1726;font-family:inherit;font-size:12.5px;font-weight:500;cursor:pointer;text-align:left}
 .tdm-option-row:hover,.tdm-option-row.active{background:#f8fafc}
 .tdm-option-row-label{min-width:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tdm-option-action{width:24px;height:24px;border:0;border-radius:7px;background:transparent;color:#cbd5e1;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.tdm-option-action{width:24px;height:24px;border:0;border-radius:7px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer}
 .tdm-option-action:hover{background:#eef2ff;color:#4f46e5}
 .tdm-option-create{width:100%;height:34px;border:1px dashed #c7d2fe;background:#f8faff;color:#4f46e5;border-radius:9px;margin-top:7px;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer}
+.tdm-option-create-colors{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.tdm-option-create-color{width:21px;height:21px;border-radius:6px;border:2px solid transparent;background:var(--create-color,#6366f1);cursor:pointer;transition:all .1s}
+.tdm-option-create-color:hover,.tdm-option-create-color.active{border-color:#0e1726;transform:scale(1.08)}
 .tdm-option-editor{margin-top:9px;padding-top:9px;border-top:1px solid #eef2f7}
 .tdm-option-editor-title{color:#94a3b8;font-size:10.5px;font-weight:750;text-transform:uppercase;letter-spacing:.4px;margin-bottom:7px}
 .tdm-option-editor-input{width:100%;height:32px;border:1.5px solid #e8ecf1;border-radius:8px;background:#fff;color:#0e1726;font-family:inherit;font-size:12.5px;font-weight:500;padding:0 9px;outline:0}
@@ -362,14 +365,25 @@
                                                 <button type="button" class="tdm-option-row" :class="{'active': option.label === $store.taskModal.task.status}" @click="$store.taskModal.selectOption('status', option)">
                                                     <span class="tdm-pill-dot" :style="'background:' + option.color"></span>
                                                     <span class="tdm-option-row-label" x-text="option.label"></span>
-                                                    <span class="tdm-option-action" @click.stop="$store.taskModal.openOptionEditor('status', option)">
+                                                    <span class="tdm-option-action" title="Modifier ou supprimer" @click.stop="$store.taskModal.openOptionEditor('status', option)">
                                                         <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
                                                     </span>
                                                 </button>
                                             </template>
                                         </div>
                                         <template x-if="$store.taskModal.canCreateOption('status')">
-                                            <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('status')" x-text="'Créer “' + $store.taskModal.optionSearch.status.trim() + '”'"></button>
+                                            <div>
+                                                <div class="tdm-option-create-colors">
+                                                    <template x-for="color in $store.taskModal.colorPalette" :key="'status-create-' + color">
+                                                        <button type="button"
+                                                                class="tdm-option-create-color"
+                                                                :class="{'active': $store.taskModal.optionCreateColor.status === color}"
+                                                                :style="'--create-color:' + color"
+                                                                @click.stop="$store.taskModal.optionCreateColor.status = color"></button>
+                                                    </template>
+                                                </div>
+                                                <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('status')" x-text="'Créer “' + $store.taskModal.optionSearch.status.trim() + '”'"></button>
+                                            </div>
                                         </template>
                                         <template x-if="$store.taskModal.optionEditor && $store.taskModal.optionEditor.kind === 'status'">
                                             <div class="tdm-option-editor">
@@ -417,14 +431,25 @@
 	                                                    <span class="tdm-pill-dot" :style="'background:' + option.color"></span>
 	                                                    <span class="tdm-option-row-label" x-text="option.label"></span>
 	                                                    <iconify-icon class="tdm-option-check" x-show="$store.taskModal.taskHasTag(option)" icon="solar:check-circle-bold" width="14"></iconify-icon>
-	                                                    <span class="tdm-option-action" @click.stop="$store.taskModal.openOptionEditor('tag', option)">
+	                                                    <span class="tdm-option-action" title="Modifier ou supprimer" @click.stop="$store.taskModal.openOptionEditor('tag', option)">
 	                                                        <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
 	                                                    </span>
 	                                                </button>
 	                                            </template>
 	                                        </div>
 	                                        <template x-if="$store.taskModal.canCreateOption('tag')">
-	                                            <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('tag')" x-text="'Créer “' + $store.taskModal.optionSearch.tag.trim() + '”'"></button>
+	                                            <div>
+	                                                <div class="tdm-option-create-colors">
+	                                                    <template x-for="color in $store.taskModal.colorPalette" :key="'tag-create-' + color">
+	                                                        <button type="button"
+	                                                                class="tdm-option-create-color"
+	                                                                :class="{'active': $store.taskModal.optionCreateColor.tag === color}"
+	                                                                :style="'--create-color:' + color"
+	                                                                @click.stop="$store.taskModal.optionCreateColor.tag = color"></button>
+	                                                    </template>
+	                                                </div>
+	                                                <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('tag')" x-text="'Créer “' + $store.taskModal.optionSearch.tag.trim() + '”'"></button>
+	                                            </div>
 	                                        </template>
 	                                        <template x-if="$store.taskModal.optionEditor && $store.taskModal.optionEditor.kind === 'tag'">
 	                                            <div class="tdm-option-editor">
@@ -463,14 +488,25 @@
                                                 <button type="button" class="tdm-option-row" :class="{'active': option.label === $store.taskModal.task.priority}" @click="$store.taskModal.selectOption('priority', option)">
                                                     <span class="tdm-pill-dot" :style="'background:' + option.color"></span>
                                                     <span class="tdm-option-row-label" x-text="option.label"></span>
-                                                    <span class="tdm-option-action" @click.stop="$store.taskModal.openOptionEditor('priority', option)">
+                                                    <span class="tdm-option-action" title="Modifier ou supprimer" @click.stop="$store.taskModal.openOptionEditor('priority', option)">
                                                         <iconify-icon icon="solar:menu-dots-bold" width="14"></iconify-icon>
                                                     </span>
                                                 </button>
                                             </template>
                                         </div>
                                         <template x-if="$store.taskModal.canCreateOption('priority')">
-                                            <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('priority')" x-text="'Créer “' + $store.taskModal.optionSearch.priority.trim() + '”'"></button>
+                                            <div>
+                                                <div class="tdm-option-create-colors">
+                                                    <template x-for="color in $store.taskModal.colorPalette" :key="'priority-create-' + color">
+                                                        <button type="button"
+                                                                class="tdm-option-create-color"
+                                                                :class="{'active': $store.taskModal.optionCreateColor.priority === color}"
+                                                                :style="'--create-color:' + color"
+                                                                @click.stop="$store.taskModal.optionCreateColor.priority = color"></button>
+                                                    </template>
+                                                </div>
+                                                <button type="button" class="tdm-option-create" @click="$store.taskModal.createOption('priority')" x-text="'Créer “' + $store.taskModal.optionSearch.priority.trim() + '”'"></button>
+                                            </div>
                                         </template>
                                         <template x-if="$store.taskModal.optionEditor && $store.taskModal.optionEditor.kind === 'priority'">
                                             <div class="tdm-option-editor">
@@ -774,6 +810,7 @@ document.addEventListener('alpine:init', () => {
 	        listOptions: [],
 	        optionMenu: null,
 		        optionSearch: { status: '', priority: '', tag: '' },
+		        optionCreateColor: { status: '#4361ee', priority: '#8b5cf6', tag: '#6366f1' },
 		        optionEditor: null,
 	        uploadBusy: false,
 	        teamMembers: [],
@@ -943,15 +980,30 @@ document.addEventListener('alpine:init', () => {
 	            this._onDelete = null;
 	        },
 
+	        normalizeOptionLabel(value) {
+	            return String(value || '')
+	                .normalize('NFKD')
+	                .replace(/[\u0300-\u036f\u0610-\u061a\u0640\u064b-\u065f\u0670\u06d6-\u06ed\u200c-\u200f\u202a-\u202e]/g, '')
+	                .replace(/\s+/g, ' ')
+	                .trim()
+	                .toLowerCase();
+	        },
+
 	        normalizeOptions(options, fallback = []) {
 	            const source = Array.isArray(options) && options.length ? options : fallback;
+	            const seen = new Set();
 	            return source
                 .map((item, index) => ({
-                    label: String(item?.label || '').trim(),
+                    label: String(item?.label || item?.name || item?.title || item || '').trim(),
                     color: item?.color || (fallback[index]?.color || '#94a3b8'),
                     order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index
                 }))
-                .filter(item => item.label)
+                .filter(item => {
+                    const key = this.normalizeOptionLabel(item.label);
+                    if (!item.label || seen.has(key)) return false;
+                    seen.add(key);
+                    return true;
+                })
 	                .sort((a, b) => a.order - b.order);
 	        },
 
@@ -1010,7 +1062,7 @@ document.addEventListener('alpine:init', () => {
 
 	        normalizeTaskTags(tags = [], options = this.tagOptions) {
 	            const optionByLabel = new Map((Array.isArray(options) ? options : [])
-	                .map((option, index) => [String(option?.label || option || '').trim().toLowerCase(), {
+	                .map((option, index) => [this.normalizeOptionLabel(option?.label || option), {
 	                    label: String(option?.label || option || '').trim(),
 	                    color: option?.color || this.colorPalette[index % this.colorPalette.length] || '#6366f1',
 	                    order: Number.isFinite(Number(option?.order)) ? Number(option.order) : index
@@ -1019,7 +1071,7 @@ document.addEventListener('alpine:init', () => {
 	            return (Array.isArray(tags) ? tags : [])
 	                .map((tag, index) => {
 	                    const label = String(tag?.label || tag || '').trim();
-	                    const option = optionByLabel.get(label.toLowerCase());
+	                    const option = optionByLabel.get(this.normalizeOptionLabel(label));
 	                    return {
 	                        label,
 	                        color: tag?.color || option?.color || '#6366f1',
@@ -1027,7 +1079,7 @@ document.addEventListener('alpine:init', () => {
 	                    };
 	                })
 	                .filter(tag => {
-	                    const key = tag.label.toLowerCase();
+	                    const key = this.normalizeOptionLabel(tag.label);
 	                    if (!tag.label || seen.has(key)) return false;
 	                    seen.add(key);
 	                    return true;
@@ -1040,8 +1092,8 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 	        taskHasTag(option) {
-	            const key = String(option?.label || '').trim().toLowerCase();
-	            return !!key && this.selectedTags().some(tag => tag.label.toLowerCase() === key);
+	            const key = this.normalizeOptionLabel(option?.label);
+	            return !!key && this.selectedTags().some(tag => this.normalizeOptionLabel(tag.label) === key);
 	        },
 
 	        normalizeSubtasks(subtasks = []) {
@@ -1111,8 +1163,8 @@ document.addEventListener('alpine:init', () => {
 	        },
 
 	        optionMeta(kind) {
-	            if (kind === 'tag') {
-	                return { optionsKey: 'tagOptions', searchKey: 'tag', field: 'tags', endpoint: 'tags', payload: 'tags', fallbackColor: '#6366f1', multi: true };
+            if (kind === 'tag') {
+	                return { optionsKey: 'tagOptions', searchKey: 'tag', field: 'tags', endpoint: 'task-tags', payload: 'tags', fallbackColor: '#6366f1', multi: true };
 	            }
 	            return kind === 'priority'
 	                ? { optionsKey: 'priorityOptions', searchKey: 'priority', field: 'priority', colorField: 'priorityColor', endpoint: 'priorities', payload: 'priorities', fallbackColor: '#cbd5e1' }
@@ -1121,7 +1173,8 @@ document.addEventListener('alpine:init', () => {
 
         optionColor(kind, label) {
             const meta = this.optionMeta(kind);
-            const found = (this[meta.optionsKey] || []).find(option => option.label === (label || ''));
+            const key = this.normalizeOptionLabel(label);
+            const found = (this[meta.optionsKey] || []).find(option => this.normalizeOptionLabel(option.label) === key);
             return found?.color || this.task?.[meta.colorField] || meta.fallbackColor;
         },
 
@@ -1231,28 +1284,29 @@ document.addEventListener('alpine:init', () => {
 
 	        filteredOptions(kind) {
             const meta = this.optionMeta(kind);
-            const q = String(this.optionSearch[kind] || '').trim().toLowerCase();
+            const q = this.normalizeOptionLabel(this.optionSearch[kind]);
             const options = this[meta.optionsKey] || [];
             if (!q) return options;
-            return options.filter(option => option.label.toLowerCase().includes(q));
+            return options.filter(option => this.normalizeOptionLabel(option.label).includes(q));
         },
 
         canCreateOption(kind) {
             const label = String(this.optionSearch[kind] || '').trim();
             if (!label) return false;
             const meta = this.optionMeta(kind);
-            return !(this[meta.optionsKey] || []).some(option => option.label.toLowerCase() === label.toLowerCase());
+            const key = this.normalizeOptionLabel(label);
+            return !(this[meta.optionsKey] || []).some(option => this.normalizeOptionLabel(option.label) === key);
         },
 
 	        async selectOption(kind, option) {
 	            const meta = this.optionMeta(kind);
 	            if (!this.task || !option?.label) return;
 	            if (kind === 'tag') {
-	                const key = String(option.label || '').trim().toLowerCase();
+	                const key = this.normalizeOptionLabel(option.label);
 	                const current = this.selectedTags();
-	                const hasTag = current.some(tag => tag.label.toLowerCase() === key);
+	                const hasTag = current.some(tag => this.normalizeOptionLabel(tag.label) === key);
 	                const next = hasTag
-	                    ? current.filter(tag => tag.label.toLowerCase() !== key)
+	                    ? current.filter(tag => this.normalizeOptionLabel(tag.label) !== key)
 	                    : [...current, { label: option.label, color: option.color || meta.fallbackColor, order: current.length }];
 	                this.task.tags = this.normalizeTaskTags(next, this.tagOptions);
 	                await this.updateField('tags', this.task.tags, { silent: true });
@@ -1273,14 +1327,17 @@ document.addEventListener('alpine:init', () => {
 	            const label = String(this.optionSearch[kind] || '').trim();
 	            if (!label) return;
 	            const meta = this.optionMeta(kind);
+	            const createColor = this.optionCreateColor[kind] || meta.fallbackColor;
 		            const next = this.normalizeOptions([
 		                ...(this[meta.optionsKey] || []),
-		                { label, color: kind === 'priority' ? '#8b5cf6' : (kind === 'tag' ? '#6366f1' : '#4361ee'), order: (this[meta.optionsKey] || []).length }
+		                { label, color: createColor, order: (this[meta.optionsKey] || []).length }
 		            ], this.defaults[meta.payload]);
 	            try {
 	                const saved = await this.saveOptions(kind, next);
-	                const created = saved.find(option => option.label === label) || next[next.length - 1];
+	                const labelKey = this.normalizeOptionLabel(label);
+	                const created = saved.find(option => this.normalizeOptionLabel(option.label) === labelKey) || next[next.length - 1];
 	                await this.selectOption(kind, created);
+	                this.optionSearch[kind] = '';
 	            } catch (e) {}
 	        },
 
@@ -1302,11 +1359,13 @@ document.addEventListener('alpine:init', () => {
                 if (window.showMessage) window.showMessage('Nom requis', 'warning');
                 return;
             }
+            const originalKey = this.normalizeOptionLabel(editor.originalLabel);
+            const labelKey = this.normalizeOptionLabel(label);
             const options = (this[meta.optionsKey] || []).map((option, index) => {
-                if (option.label !== editor.originalLabel) return { ...option, order: index };
+                if (this.normalizeOptionLabel(option.label) !== originalKey) return { ...option, order: index };
                 return { label, color: editor.color || meta.fallbackColor, order: index };
             });
-            const duplicate = options.some((option, index) => option.label.toLowerCase() === label.toLowerCase() && (this[meta.optionsKey] || [])[index]?.label !== editor.originalLabel);
+            const duplicate = options.some((option, index) => this.normalizeOptionLabel(option.label) === labelKey && this.normalizeOptionLabel((this[meta.optionsKey] || [])[index]?.label) !== originalKey);
             if (duplicate) {
                 if (window.showMessage) window.showMessage('Cette option existe déjà', 'warning');
                 return;
@@ -1314,15 +1373,15 @@ document.addEventListener('alpine:init', () => {
 	            let saved = [];
 	            try {
 	                saved = await this.saveOptions(editor.kind, options, {
-	                    renames: editor.originalLabel !== label ? [{ from: editor.originalLabel, to: label }] : []
+	                    renames: originalKey !== labelKey ? [{ from: editor.originalLabel, to: label }] : []
 	                });
 	            } catch (e) {
 	                return;
 	            }
 	            if (editor.kind === 'tag') {
-	                const updated = saved.find(option => option.label === label) || { label, color: editor.color };
+	                const updated = saved.find(option => this.normalizeOptionLabel(option.label) === labelKey) || { label, color: editor.color };
 	                const nextTags = this.selectedTags().map(tag => (
-	                    tag.label === editor.originalLabel
+	                    this.normalizeOptionLabel(tag.label) === originalKey
 	                        ? { label: updated.label, color: updated.color || meta.fallbackColor, order: tag.order }
 	                        : tag
 	                ));
@@ -1332,8 +1391,8 @@ document.addEventListener('alpine:init', () => {
 	                    this._onUpdate(this.task._id, 'tags', this.task.tags, this.task);
 	                    this._onUpdate(this.task._id, 'tagOptions', saved, this.task);
 	                }
-	            } else if (this.task?.[meta.field] === editor.originalLabel || this.task?.[meta.field] === label) {
-	                const updated = saved.find(option => option.label === label) || { label, color: editor.color };
+	            } else if (this.normalizeOptionLabel(this.task?.[meta.field]) === originalKey || this.normalizeOptionLabel(this.task?.[meta.field]) === labelKey) {
+	                const updated = saved.find(option => this.normalizeOptionLabel(option.label) === labelKey) || { label, color: editor.color };
 	                this.task[meta.field] = updated.label;
                 this.task[meta.colorField] = updated.color || meta.fallbackColor;
                 await this.updateField(meta.field, updated.label);
@@ -1345,8 +1404,9 @@ document.addEventListener('alpine:init', () => {
             if (!this.optionEditor) return;
             const editor = this.optionEditor;
             const meta = this.optionMeta(editor.kind);
-            const options = (this[meta.optionsKey] || []).filter(option => option.label !== editor.originalLabel);
-            if (!options.length) {
+            const originalKey = this.normalizeOptionLabel(editor.originalLabel);
+            const options = (this[meta.optionsKey] || []).filter(option => this.normalizeOptionLabel(option.label) !== originalKey);
+            if (!options.length && editor.kind !== 'tag') {
                 if (window.showMessage) window.showMessage('Gardez au moins une option', 'warning');
                 return;
             }
@@ -1357,13 +1417,13 @@ document.addEventListener('alpine:init', () => {
 	                return;
 	            }
 	            if (editor.kind === 'tag') {
-	                this.task.tags = this.selectedTags().filter(tag => tag.label !== editor.originalLabel);
+	                this.task.tags = this.selectedTags().filter(tag => this.normalizeOptionLabel(tag.label) !== originalKey);
 	                this.task.tagOptions = saved;
 	                if (this._onUpdate) {
 	                    this._onUpdate(this.task._id, 'tags', this.task.tags, this.task);
 	                    this._onUpdate(this.task._id, 'tagOptions', saved, this.task);
 	                }
-	            } else if (this.task?.[meta.field] === editor.originalLabel) {
+	            } else if (this.normalizeOptionLabel(this.task?.[meta.field]) === originalKey) {
 	                await this.selectOption(editor.kind, saved[0]);
 	            }
             this.optionEditor = null;
@@ -1374,11 +1434,13 @@ document.addEventListener('alpine:init', () => {
 	            const cleaned = this.normalizeOptions(options, this.defaults[meta.payload]);
 		            const previous = this[meta.optionsKey] || [];
 		            this[meta.optionsKey] = cleaned;
-		            if (kind !== 'priority' && !this.task?.taskListId) return cleaned;
+		            if (kind === 'status' && !this.task?.taskListId) return cleaned;
 		            try {
-	                const endpoint = kind === 'priority'
-	                    ? API + '/api/task-priorities'
-	                    : API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint;
+                const endpoint = kind === 'priority'
+                    ? API + '/api/task-priorities'
+                    : kind === 'tag'
+                        ? API + '/api/task-tags'
+                        : API + '/api/task-lists/' + this.task.taskListId + '/' + meta.endpoint;
                 const res = await fetch(endpoint, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },

@@ -488,13 +488,16 @@ async function serializeSingleTask(req, task) {
         targetId: task._id,
     });
     const accountPriorities = await getAccountTaskPriorities(req);
+    const accountTags = await TaskListsService.getAccountTaskTags(req);
     return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder, {
         priorities: accountPriorities,
+        accountTags,
     });
 }
 
 async function taskBoard(req) {
-    return TaskOverview.buildTaskBoard(req);
+    const accountTags = await TaskListsService.getAccountTaskTags(req);
+    return TaskOverview.buildTaskBoard(req, { accountTags });
 }
 
 router.post('/auth/login', async (req, res) => {
@@ -638,6 +641,30 @@ router.get('/accounts/:accountNumber/tasks/priorities', async (req, res) => {
     }
 });
 
+router.get('/accounts/:accountNumber/tasks/tags', async (req, res) => {
+    try {
+        res.json({ success: true, tags: await TaskListsService.getAccountTaskTags(req) });
+    } catch (error) {
+        console.error('[MobileAPI] Task tags error:', error);
+        sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
+router.put('/accounts/:accountNumber/tasks/tags', async (req, res) => {
+    try {
+        const tags = Array.isArray(req.body?.tags) ? req.body.tags : null;
+        if (!tags) return sendError(res, 400, 'Tags array required', 'VALIDATION_ERROR');
+        const cleaned = await TaskListsService.replaceAccountTaskTags(req, {
+            tags,
+            renames: Array.isArray(req.body?.renames) ? req.body.renames : [],
+        });
+        res.json({ success: true, tags: cleaned });
+    } catch (error) {
+        console.error('[MobileAPI] Update task tags error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.get('/accounts/:accountNumber/task-lists', async (req, res) => {
     try {
         res.json({ success: true, lists: await personalTaskLists(req) });
@@ -742,6 +769,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const priorities = await getAccountTaskPriorities(req);
         const priorityOption = priorityOptionFor(req.body?.priority, priorities);
         const statuses = normalizeOptions(target.list.statuses, defaultStatuses);
+        const accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body?.tags);
 
         const schedule = cleanText(req.body?.schedule || req.query?.day, 'today').toLowerCase();
         const startDate = req.body?.startDate
@@ -762,7 +790,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             statusColor: optionColor(statuses, status, '#9ca3af'),
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
-            tags: TaskListsService.normalizeTaskTags(req.body?.tags, target.list.tags),
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, accountTags),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: req.body?.isDayPriority !== undefined ? !!req.body.isDayPriority : schedule !== 'tomorrow',
             startDate,
@@ -849,6 +877,7 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
         const priorities = await getAccountTaskPriorities(req);
+        let accountTags = null;
 
         if (req.body?.title !== undefined) {
             const title = cleanText(req.body.title, '');
@@ -862,7 +891,8 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
             updates.priorityColor = priorityOption.color || '';
         }
         if (req.body?.tags !== undefined) {
-            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, list?.tags);
+            accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body.tags);
+            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, accountTags);
         }
         if (req.body?.subtasks !== undefined) {
             updates.subtasks = TaskListsService.normalizeTaskSubtasks(req.body.subtasks);

@@ -233,7 +233,7 @@
     display: flex;
     align-items: center;
     gap: 2px;
-    opacity: 0;
+    opacity: 1;
     transition: opacity 0.15s ease;
 }
 .tp-option:hover .tp-option-actions {
@@ -320,6 +320,41 @@
     border-top: 1px solid #f3f4f6;
     cursor: pointer;
     transition: background 0.1s ease;
+}
+.tp-create-panel {
+    border-top: 1px solid #f3f4f6;
+    padding: 6px 10px 8px;
+}
+.dark .tp-create-panel {
+    border-top-color: #1e293b;
+}
+.tp-create-panel .tp-create-option {
+    border-top: 0;
+    padding: 0 0 6px;
+}
+.tp-create-colors {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+}
+.tp-create-color-dot {
+    width: 19px;
+    height: 19px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.15s ease, transform 0.1s ease;
+}
+.tp-create-color-dot:hover {
+    transform: scale(1.12);
+}
+.tp-create-color-dot--active {
+    border-color: #1f2937 !important;
+    box-shadow: 0 0 0 1px #fff inset;
+}
+.dark .tp-create-color-dot--active {
+    border-color: #fff !important;
+    box-shadow: 0 0 0 1px #0e1726 inset;
 }
 .tp-create-option:hover {
     background: #f3f4f6;
@@ -561,6 +596,7 @@
         editingOption: null, // {_id, label, color} — currently editing
         editLabel: '',
         editColorIdx: -1,
+        newColorIdx: 0,
         _editPopoverPos: null, // { top, left } for fixed positioning
         deleteConfirmId: null,
 
@@ -575,11 +611,11 @@
         init() {
             // Parse initial options
             this.options = (config.options || []).map(o => ({
-                _id: o._id,
-                label: o.label,
+                _id: String(o._id || o.id || ''),
+                label: String(o.label || o.name || o.title || o.value || '').trim(),
                 color: o.color, // Preserve original vibrant color for header display
                 ...this.resolveColor(o.color)
-            }));
+            })).filter(o => o._id && o.label);
             this.selectedIds = [...(config.selectedIds || [])].map(String);
 
             // Initial computation
@@ -630,19 +666,28 @@
         },
 
         // ── Recompute all derived values ──
+        normalizeLabel(value) {
+            return String(value || '')
+                .normalize('NFKD')
+                .replace(/[\u0300-\u036f\u0610-\u061a\u0640\u064b-\u065f\u0670\u06d6-\u06ed\u200c-\u200f\u202a-\u202e]/g, '')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+        },
+
         _recompute() {
             this.selectedOptions = this.selectedIds
-                .map(id => this.options.find(o => o._id === id))
+                .map(id => this.options.find(o => String(o._id) === String(id)))
                 .filter(Boolean);
 
-            const q = this.searchQuery.toLowerCase().trim();
+            const q = this.normalizeLabel(this.searchQuery);
             this.filteredOptions = q
-                ? this.options.filter(o => o.label.toLowerCase().includes(q))
+                ? this.options.filter(o => this.normalizeLabel(o.label).includes(q))
                 : this.options.slice();
 
             const sq = this.searchQuery.trim();
             this.canCreate = sq.length > 0 &&
-                !this.options.some(o => o.label.toLowerCase() === sq.toLowerCase());
+                !this.options.some(o => this.normalizeLabel(o.label) === this.normalizeLabel(sq));
         },
 
         // ── Color resolution ──
@@ -676,22 +721,23 @@
 
         toggleOption(optId) {
             window.__destroyAppContextMenu?.();
-            const idx = this.selectedIds.indexOf(optId);
+            const id = String(optId || '');
+            const idx = this.selectedIds.indexOf(id);
             if (idx >= 0) {
                 this.selectedIds.splice(idx, 1);
             } else {
                 if (!this.allowMultiple) {
-                    this.selectedIds = [optId];
+                    this.selectedIds = [id];
                     this.isOpen = false; // Auto-close on single select
                 } else {
-                    this.selectedIds.push(optId);
+                    this.selectedIds.push(id);
                 }
             }
             if (this.saveOnSelection) this.saveToRecord();
         },
 
         removeTag(optId) {
-            const idx = this.selectedIds.indexOf(optId);
+            const idx = this.selectedIds.indexOf(String(optId || ''));
             if (idx >= 0) {
                 this.selectedIds.splice(idx, 1);
                 if (this.saveOnSelection) this.saveToRecord();
@@ -699,7 +745,7 @@
         },
 
         isSelected(optId) {
-            return this.selectedIds.includes(optId);
+            return this.selectedIds.includes(String(optId || ''));
         },
 
         // ── Create new option ──
@@ -714,26 +760,31 @@
                     credentials: 'include',
                     body: JSON.stringify({
                         classificationId: this.classificationId,
-                        label
+                        label,
+                        color: TAG_COLORS[this.newColorIdx]?.bg || '#4361ee'
                     })
                 });
                 const data = await res.json();
                 if (data.success && data.option) {
                     const newOpt = {
-                        _id: data.option._id,
-                        label: data.option.label,
+                        _id: String(data.option._id || data.option.id || ''),
+                        label: String(data.option.label || label).trim(),
+                        color: data.option.color,
                         ...this.resolveColor(data.option.color)
                     };
-                    this.options.push(newOpt);
+                    if (!this.options.some(o => String(o._id) === newOpt._id || this.normalizeLabel(o.label) === this.normalizeLabel(newOpt.label))) {
+                        this.options.push(newOpt);
+                    }
                     
                     if (!this.allowMultiple) {
                         this.selectedIds = [newOpt._id];
                         this.isOpen = false;
                     } else {
-                        this.selectedIds.push(newOpt._id);
+                        if (!this.selectedIds.includes(newOpt._id)) this.selectedIds.push(newOpt._id);
                     }
                     
                     this.searchQuery = '';
+                    this.newColorIdx = 0;
                     if (this.saveOnSelection) this.saveToRecord();
                 }
             } catch (err) {
@@ -741,10 +792,14 @@
             }
         },
 
+        selectCreateColor(idx) {
+            this.newColorIdx = idx;
+        },
+
         // ── Edit option ──
         startEdit(opt, event) {
             if (event) event.stopPropagation();
-            this.editingOption = { ...opt };
+            this.editingOption = { ...opt, _id: String(opt._id || '') };
             this.editLabel = opt.label;
             const idx = TAG_COLORS.findIndex(c => c.bg === opt.bg);
             this.editColorIdx = idx >= 0 ? idx : -1;
@@ -786,13 +841,15 @@
                 });
 
                 // Update local
-                const opt = this.options.find(o => o._id === optId);
+                const opt = this.options.find(o => String(o._id) === String(optId));
                 if (opt) {
                     opt.label = newLabel;
+                    opt.color = newColor;
                     const resolved = this.resolveColor(newColor);
                     opt.bg = resolved.bg;
                     opt.text = resolved.text;
                 }
+                this._recompute();
                 this.editingOption = null;
             } catch (err) {
                 console.error('[TagPicker] Update error:', err);
@@ -800,14 +857,15 @@
         },
 
         confirmDelete(optId) {
-            if (this.deleteConfirmId === optId) {
-                this.deleteOption(optId);
+            const id = String(optId || '');
+            if (this.deleteConfirmId === id) {
+                this.deleteOption(id);
                 this.deleteConfirmId = null;
             } else {
-                this.deleteConfirmId = optId;
+                this.deleteConfirmId = id;
                 // Reset after 3 seconds if not confirmed
                 setTimeout(() => {
-                    if (this.deleteConfirmId === optId) this.deleteConfirmId = null;
+                    if (this.deleteConfirmId === id) this.deleteConfirmId = null;
                 }, 3000);
             }
         },
@@ -817,30 +875,36 @@
                 event.preventDefault();
                 event.stopPropagation();
             }
-            const opt = this.options.find(o => o._id === optId);
+            const id = String(optId || '');
+            const opt = this.options.find(o => String(o._id) === id);
             if (!opt) return;
 
             const items = [];
-            if (this.isSelected(optId)) {
+            if (this.isSelected(id)) {
                 items.push({
                     icon: 'solar:close-circle-linear',
                     label: 'Retirer de cette fiche',
-                    action: () => this.removeTag(optId)
+                    action: () => this.removeTag(id)
                 });
             }
+            items.push({
+                icon: 'solar:pen-2-linear',
+                label: 'Modifier',
+                action: () => this.startEdit(opt, event)
+            });
             items.push({
                 icon: 'solar:trash-bin-trash-bold-duotone',
                 iconColor: '#ef4444',
                 label: 'Supprimer le choix',
                 danger: true,
-                action: () => this.deleteOption(optId)
+                action: () => this.deleteOption(id)
             });
 
             window.__showAppContextMenu?.(event?.clientX || 0, event?.clientY || 0, items);
         },
 
         async deleteOption(optId) {
-            const idToDelete = optId || (this.editingOption ? this.editingOption._id : null);
+            const idToDelete = String(optId || (this.editingOption ? this.editingOption._id : '') || '');
             if (!idToDelete) return;
 
             try {
@@ -855,9 +919,9 @@
                 });
 
                 // Remove from local
-                this.options = this.options.filter(o => o._id !== idToDelete);
-                this.selectedIds = this.selectedIds.filter(id => id !== idToDelete);
-                if (this.editingOption && this.editingOption._id === idToDelete) {
+                this.options = this.options.filter(o => String(o._id) !== idToDelete);
+                this.selectedIds = this.selectedIds.filter(id => String(id) !== idToDelete);
+                if (this.editingOption && String(this.editingOption._id) === idToDelete) {
                     this.editingOption = null;
                 }
                 window.__destroyAppContextMenu?.();
@@ -877,10 +941,11 @@
                 this.editingOption.text = TAG_COLORS[idx].text;
 
                 // Update local immediately
-                const opt = this.options.find(o => o._id === optId);
+                const opt = this.options.find(o => String(o._id) === String(optId));
                 if (opt) {
                     opt.bg = TAG_COLORS[idx].bg;
                     opt.text = TAG_COLORS[idx].text;
+                    opt.color = newColor;
                 }
 
                 // Save to server

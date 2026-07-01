@@ -26,6 +26,15 @@ function cleanText(value, fallback = '') {
     return text;
 }
 
+function normalizeOptionLabel(value) {
+    return cleanText(value, '')
+        .normalize('NFKD')
+        .replace(/[\u0300-\u036f\u0610-\u061a\u0640\u064b-\u065f\u0670\u06d6-\u06ed\u200c-\u200f\u202a-\u202e]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+}
+
 function cleanTaskListLabel(value, fallback = DEFAULT_ACCOUNT_TASK_LIST_LABEL) {
     const label = cleanText(value, fallback);
     const lower = label.toLowerCase();
@@ -58,7 +67,7 @@ function normalizeTaskTagOptions(options = []) {
             order: Number.isFinite(Number(item?.order)) ? Number(item.order) : index,
         }))
         .filter(item => {
-            const key = item.label.toLowerCase();
+            const key = normalizeOptionLabel(item.label);
             if (!item.label || seen.has(key)) return false;
             seen.add(key);
             return true;
@@ -68,25 +77,109 @@ function normalizeTaskTagOptions(options = []) {
 
 function normalizeTaskTags(tags = [], options = []) {
     const tagOptions = normalizeTaskTagOptions(options);
-    const optionByLabel = new Map(tagOptions.map(item => [item.label.toLowerCase(), item]));
+    const optionByLabel = new Map(tagOptions.map(item => [normalizeOptionLabel(item.label), item]));
     const seen = new Set();
     return (Array.isArray(tags) ? tags : [])
         .map((item, index) => {
             const label = cleanText(item?.label || item, '');
-            const option = optionByLabel.get(label.toLowerCase());
+            const option = optionByLabel.get(normalizeOptionLabel(label));
             return {
                 label,
-                color: cleanTaskListColor(item?.color || option?.color, '#6366f1'),
+                color: cleanTaskListColor(option?.color || item?.color, '#6366f1'),
                 order: Number.isFinite(Number(item?.order)) ? Number(item.order) : (option?.order ?? index),
             };
         })
         .filter(item => {
-            const key = item.label.toLowerCase();
+            const key = normalizeOptionLabel(item.label);
             if (!item.label || seen.has(key)) return false;
             seen.add(key);
             return true;
         })
         .sort((a, b) => a.order - b.order);
+}
+
+function mergeTaskTagOptions(...groups) {
+    return normalizeTaskTagOptions(groups.flatMap(group => Array.isArray(group) ? group : []));
+}
+
+async function seedAccountTaskTags(req, existingTags = []) {
+    const { TaskTag, TaskList, RecordTask } = await taskTenantModels(req);
+    const [lists, tasks] = await Promise.all([
+        TaskList.find({}).select('tags').lean(),
+        RecordTask.find({ tags: { $exists: true, $ne: [] } }).select('tags').lean(),
+    ]);
+    const discovered = mergeTaskTagOptions(
+        existingTags,
+        ...lists.map(list => list.tags || []),
+        ...tasks.map(task => task.tags || []),
+    );
+    if (!discovered.length) return existingTags;
+
+    const existingKeys = new Set(existingTags.map(tag => normalizeOptionLabel(tag.label)));
+    const missing = discovered.filter(tag => !existingKeys.has(normalizeOptionLabel(tag.label)));
+    if (!missing.length) return discovered;
+
+    for (const tag of missing) {
+        const labelKey = normalizeOptionLabel(tag.label);
+        await TaskTag.updateOne(
+            { labelKey },
+            {
+                $setOnInsert: {
+                    label: tag.label,
+                    labelKey,
+                    color: cleanTaskListColor(tag.color, '#6366f1'),
+                    order: Number.isFinite(Number(tag.order)) ? Number(tag.order) : discovered.length,
+                    createdBy: req.user?._id,
+                },
+            },
+            { upsert: true },
+        );
+    }
+    const docs = await TaskTag.find({}).sort({ order: 1, label: 1 }).lean();
+    const seeded = normalizeTaskTagOptions(docs);
+    await mirrorAccountTagsToLists(req, seeded);
+    return seeded;
+}
+
+async function getAccountTaskTags(req, options = {}) {
+    const { TaskTag } = await taskTenantModels(req);
+    const docs = await TaskTag.find({}).sort({ order: 1, label: 1 }).lean();
+    const tags = normalizeTaskTagOptions(docs);
+    if (options.seed === false) return tags;
+    return seedAccountTaskTags(req, tags);
+}
+
+async function upsertAccountTaskTags(req, tags = []) {
+    const { TaskTag } = await taskTenantModels(req);
+    const current = await getAccountTaskTags(req);
+    const currentByKey = new Map(current.map(tag => [normalizeOptionLabel(tag.label), tag]));
+    const normalizedInput = normalizeTaskTagOptions(tags);
+    let nextOrder = current.length;
+    let changed = false;
+
+    for (const tag of normalizedInput) {
+        const labelKey = normalizeOptionLabel(tag.label);
+        if (!labelKey || currentByKey.has(labelKey)) continue;
+        const doc = {
+            label: tag.label,
+            labelKey,
+            color: cleanTaskListColor(tag.color, '#6366f1'),
+            order: nextOrder++,
+            createdBy: req.user?._id,
+        };
+        await TaskTag.updateOne({ labelKey }, { $setOnInsert: doc }, { upsert: true });
+        currentByKey.set(labelKey, doc);
+        changed = true;
+    }
+
+    const nextTags = normalizeTaskTagOptions([...currentByKey.values()]);
+    if (changed) await mirrorAccountTagsToLists(req, nextTags);
+    return nextTags;
+}
+
+async function mirrorAccountTagsToLists(req, tags = []) {
+    const { TaskList } = await taskTenantModels(req);
+    await TaskList.updateMany({}, { $set: { tags: normalizeTaskTagOptions(tags) } });
 }
 
 function normalizeTaskSubtasks(subtasks = []) {
@@ -362,31 +455,31 @@ function normalizeTagRenamePairs(renames = []) {
             from: cleanText(item?.from, ''),
             to: cleanText(item?.to, ''),
         }))
-        .filter(item => item.from && item.to && item.from.toLowerCase() !== item.to.toLowerCase());
+        .filter(item => item.from && item.to && normalizeOptionLabel(item.from) !== normalizeOptionLabel(item.to));
 }
 
-async function syncTaskTagsWithOptions(RecordTask, listId, previousOptions = [], nextOptions = [], renames = []) {
+async function syncTaskTagsForQuery(RecordTask, query = {}, previousOptions = [], nextOptions = [], renames = []) {
     const nextTags = normalizeTaskTagOptions(nextOptions);
     const previousTags = normalizeTaskTagOptions(previousOptions);
-    const renameByLabel = new Map(normalizeTagRenamePairs(renames).map(pair => [pair.from.toLowerCase(), pair.to]));
-    const nextByLabel = new Map(nextTags.map(tag => [tag.label.toLowerCase(), tag]));
-    const previousByLabel = new Map(previousTags.map(tag => [tag.label.toLowerCase(), tag]));
+    const renameByLabel = new Map(normalizeTagRenamePairs(renames).map(pair => [normalizeOptionLabel(pair.from), pair.to]));
+    const nextByLabel = new Map(nextTags.map(tag => [normalizeOptionLabel(tag.label), tag]));
+    const previousByLabel = new Map(previousTags.map(tag => [normalizeOptionLabel(tag.label), tag]));
     const allowed = new Set(nextByLabel.keys());
-    const tasks = await RecordTask.find({ taskListId: listId }).select('_id tags');
+    const tasks = await RecordTask.find(query).select('_id tags');
 
     for (const task of tasks) {
         const current = normalizeTaskTags(task.tags, previousTags);
         const synced = [];
         const seen = new Set();
         for (const tag of current) {
-            const renamed = renameByLabel.get(tag.label.toLowerCase()) || tag.label;
-            const key = renamed.toLowerCase();
+            const renamed = renameByLabel.get(normalizeOptionLabel(tag.label)) || tag.label;
+            const key = normalizeOptionLabel(renamed);
             const option = nextByLabel.get(key);
             if (!allowed.has(key) || !option || seen.has(key)) continue;
             seen.add(key);
             synced.push({
                 label: option.label,
-                color: option.color || tag.color || previousByLabel.get(tag.label.toLowerCase())?.color || '#6366f1',
+                color: option.color || tag.color || previousByLabel.get(normalizeOptionLabel(tag.label))?.color || '#6366f1',
                 order: option.order ?? synced.length,
             });
         }
@@ -397,21 +490,50 @@ async function syncTaskTagsWithOptions(RecordTask, listId, previousOptions = [],
     }
 }
 
+async function syncTaskTagsWithOptions(RecordTask, listId, previousOptions = [], nextOptions = [], renames = []) {
+    return syncTaskTagsForQuery(RecordTask, { taskListId: listId }, previousOptions, nextOptions, renames);
+}
+
+async function replaceAccountTaskTags(req, input = {}) {
+    const { TaskTag, RecordTask } = await taskTenantModels(req);
+    const previousTags = await getAccountTaskTags(req);
+    const nextTags = normalizeTaskTagOptions(input.tags || []);
+    const nextKeys = new Set(nextTags.map(tag => normalizeOptionLabel(tag.label)));
+
+    for (const tag of nextTags) {
+        const labelKey = normalizeOptionLabel(tag.label);
+        await TaskTag.findOneAndUpdate(
+            { labelKey },
+            {
+                $set: {
+                    label: tag.label,
+                    labelKey,
+                    color: cleanTaskListColor(tag.color, '#6366f1'),
+                    order: Number.isFinite(Number(tag.order)) ? Number(tag.order) : nextTags.length,
+                },
+                $setOnInsert: { createdBy: req.user?._id },
+            },
+            { upsert: true, new: true },
+        );
+    }
+
+    await TaskTag.deleteMany({
+        labelKey: { $nin: [...nextKeys] },
+    });
+    await syncTaskTagsForQuery(RecordTask, {}, previousTags, nextTags, input.renames || []);
+    await mirrorAccountTagsToLists(req, nextTags);
+    return nextTags;
+}
+
 async function updateTaskListTags(req, listId, input = {}) {
     const id = String(listId || '');
     if (!mongoose.Types.ObjectId.isValid(id)) return null;
 
-    const { TaskList, RecordTask } = await taskTenantModels(req);
+    const { TaskList } = await taskTenantModels(req);
     const list = await TaskList.findById(id);
     if (!list) return null;
 
-    const previousTags = normalizeTaskTagOptions(list.tags);
-    const nextTags = normalizeTaskTagOptions(input.tags);
-    list.tags = nextTags;
-    await list.save();
-    await syncTaskTagsWithOptions(RecordTask, list._id, previousTags, nextTags, input.renames || []);
-
-    return nextTags;
+    return replaceAccountTaskTags(req, input);
 }
 
 async function listMyTaskLists(req) {
@@ -499,8 +621,12 @@ module.exports = {
     cleanTaskListColor,
     cleanTaskListIcon,
     cleanTaskListViewMode,
+    normalizeOptionLabel,
     normalizeTaskTagOptions,
     normalizeTaskTags,
+    getAccountTaskTags,
+    upsertAccountTaskTags,
+    replaceAccountTaskTags,
     normalizeTaskSubtasks,
     normalizeTaskListDisplayOptions,
     updateTaskListTags,

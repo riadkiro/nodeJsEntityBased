@@ -603,6 +603,12 @@ router.get('/me', mobileAuth, async (req, res) => {
 
 router.use('/accounts/:accountNumber', mobileAuth, mobileAccount);
 
+router.use(
+    '/accounts/:accountNumber/task-sharing',
+    require('./api/api-task-sharing.router.js'),
+);
+router.use('/accounts/:accountNumber/team', require('./api/api-team.router.js'));
+
 router.get('/accounts/:accountNumber/reminders', async (req, res) => {
     try {
         const reminders = await ReminderService.listReminders({

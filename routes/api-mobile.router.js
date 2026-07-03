@@ -13,6 +13,7 @@ const {
     taskTenantModels,
     GlobalTaskList,
     GlobalRecordTask,
+    GlobalTaskComment,
 } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
 const TaskListsService = require('../services/task-lists.service');
@@ -62,7 +63,9 @@ async function sharedTenantTaskModels(accountNumber) {
         || connection.model('TaskList', GlobalTaskList.schema);
     const RecordTask = connection.models.RecordTask
         || connection.model('RecordTask', GlobalRecordTask.schema);
-    return { TaskList, RecordTask };
+    const TaskComment = connection.models.TaskComment
+        || connection.model('TaskComment', GlobalTaskComment.schema);
+    return { TaskList, RecordTask, TaskComment };
 }
 
 router.use((req, res, next) => {
@@ -545,20 +548,36 @@ async function sharedTaskLists(req) {
             if (!tasksByListId.has(taskListId)) tasksByListId.set(taskListId, []);
             tasksByListId.get(taskListId).push(task);
         }
+        const listShares = listIds.length
+            ? await TaskListShare.find({
+                ownerAccountNumber: accountNumber,
+                listId: { $in: listIds },
+                status: 'active',
+            }).lean()
+            : [];
+        const listSharesById = groupSharesByListId(listShares);
+        const memberUsersById = await userMapForShareMembers(listShares, ownerIds);
 
         for (const share of accountShares) {
             const list = listById.get(String(share.listId || ''));
             if (!list) continue;
             const owner = ownerById.get(String(share.ownerUserId || '')) || {};
             const ownerName = cleanText(owner.name, owner.email || 'Partage');
+            const members = memberSummaryFromShares(
+                listSharesById.get(String(share.listId || '')) || [share],
+                memberUsersById,
+                { includeOwner: true, ownerUserId: share.ownerUserId },
+            );
             results.push({
                 ...serializeMobileTaskList(list, tasksByListId.get(list._id.toString()) || []),
                 isShared: true,
                 shareId: share._id?.toString?.() || String(share._id || ''),
                 ownerAccountNumber: accountNumber,
                 role: share.role || 'editor',
-                members: [ownerName],
-                memberAvatars: owner.avatar ? [owner.avatar] : [],
+                members: members.members.length ? members.members : [ownerName],
+                memberAvatars: members.memberAvatars.length
+                    ? members.memberAvatars
+                    : (owner.avatar ? [owner.avatar] : []),
             });
         }
     }
@@ -566,8 +585,108 @@ async function sharedTaskLists(req) {
     return results;
 }
 
+function shareObjectId(value) {
+    return value?.toString?.() || String(value || '');
+}
+
+function groupSharesByListId(shares = []) {
+    const grouped = new Map();
+    for (const share of shares) {
+        const listId = String(share.listId || '').trim();
+        if (!listId) continue;
+        if (!grouped.has(listId)) grouped.set(listId, []);
+        grouped.get(listId).push(share);
+    }
+    return grouped;
+}
+
+async function userMapForShareMembers(shares = [], extraUserIds = []) {
+    const userIds = [
+        ...extraUserIds,
+        ...shares.map(share => shareObjectId(share.targetUserId)),
+    ].map(id => String(id || '').trim()).filter(Boolean);
+    const uniqueIds = [...new Set(userIds)];
+    const users = uniqueIds.length
+        ? await User.find({ _id: { $in: uniqueIds } }).select('_id name email avatar').lean()
+        : [];
+    return new Map(users.map(user => [user._id.toString(), user]));
+}
+
+function pushUniqueText(target, value) {
+    const text = cleanText(value, '');
+    if (text && !target.includes(text)) target.push(text);
+}
+
+function shareTargetName(share, user = {}) {
+    return cleanText(
+        user.name,
+        user.email || share.targetName || share.targetEmail || share.targetPhone || 'Membre',
+    );
+}
+
+function memberSummaryFromShares(shares = [], userById = new Map(), options = {}) {
+    const members = [];
+    const memberAvatars = [];
+
+    if (options.includeOwner && options.ownerUserId) {
+        const owner = userById.get(shareObjectId(options.ownerUserId)) || {};
+        pushUniqueText(members, cleanText(owner.name, owner.email || 'Proprietaire'));
+        pushUniqueText(memberAvatars, owner.avatar);
+    }
+
+    for (const share of shares) {
+        const user = userById.get(shareObjectId(share.targetUserId)) || {};
+        pushUniqueText(members, shareTargetName(share, user));
+        pushUniqueText(memberAvatars, user.avatar);
+    }
+
+    return {
+        members: members.slice(0, 8),
+        memberAvatars: memberAvatars.slice(0, 8),
+    };
+}
+
+async function decorateOwnedTaskListsWithShares(req, lists = []) {
+    const listIds = lists
+        .map(list => String(list.id || list._id || list.listId || '').trim())
+        .filter(Boolean);
+    if (!listIds.length) {
+        return lists.map(list => ({ ...list, role: list.role || 'owner' }));
+    }
+
+    const shares = await TaskListShare.find({
+        ownerAccountNumber: req.account_number,
+        listId: { $in: listIds },
+        status: 'active',
+    }).lean();
+    if (!shares.length) {
+        return lists.map(list => ({ ...list, role: list.role || 'owner' }));
+    }
+
+    const sharesByListId = groupSharesByListId(shares);
+    const usersById = await userMapForShareMembers(shares);
+
+    return lists.map(list => {
+        const listId = String(list.id || list._id || list.listId || '').trim();
+        const listShares = sharesByListId.get(listId) || [];
+        if (!listShares.length) return { ...list, role: list.role || 'owner' };
+        const members = memberSummaryFromShares(listShares, usersById);
+        return {
+            ...list,
+            isShared: true,
+            role: 'owner',
+            ownerAccountNumber: req.account_number,
+            members: members.members,
+            memberAvatars: members.memberAvatars,
+        };
+    });
+}
+
 async function personalTaskLists(req) {
-    const ownLists = await TaskListsService.listMyTaskLists(req);
+    const ownLists = await decorateOwnedTaskListsWithShares(
+        req,
+        await TaskListsService.listMyTaskLists(req),
+    );
     const receivedLists = await sharedTaskLists(req);
     const seen = new Set(ownLists.map(list => String(list.id || list._id || '')));
     return [
@@ -885,6 +1004,37 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
     }
 });
 
+router.delete('/accounts/:accountNumber/task-lists/:listId', async (req, res) => {
+    try {
+        if (!mongoose.Types.ObjectId.isValid(String(req.params.listId || ''))) {
+            return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        }
+
+        const { TaskList, RecordTask, TaskComment } = await taskTenantModels(req);
+        const list = await TaskList.findById(req.params.listId);
+        if (!list) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (list.isDefault) {
+            return sendError(res, 403, 'Cette liste ne peut pas etre supprimee', 'TASK_LIST_PROTECTED');
+        }
+
+        const tasks = await RecordTask.find({ taskListId: list._id }).select('_id').lean();
+        const taskIds = tasks.map(task => task._id);
+        await Promise.all(tasks.map(task => cancelTaskReminder(req, task)));
+        if (taskIds.length) await TaskComment.deleteMany({ taskId: { $in: taskIds } });
+        await RecordTask.deleteMany({ taskListId: list._id });
+        await TaskListShare.deleteMany({
+            ownerAccountNumber: req.account_number,
+            listId: String(list._id),
+        });
+        await list.deleteOne();
+
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Delete task list error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.get('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res) => {
     try {
         const access = await loadMobileTaskListAccess(req, req.params.listId);
@@ -893,15 +1043,39 @@ router.get('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res)
         const tasks = await access.RecordTask.find({ taskListId: access.list._id })
             .sort({ order: 1, createdAt: 1 })
             .lean();
+        let list = serializeMobileTaskList(access.list, tasks);
+        if (access.shared) {
+            const shares = await TaskListShare.find({
+                ownerAccountNumber: access.accountNumber,
+                listId: String(access.list._id || req.params.listId),
+                status: 'active',
+            }).lean();
+            const usersById = await userMapForShareMembers(shares, [shareObjectId(access.share?.ownerUserId)]);
+            const members = memberSummaryFromShares(shares, usersById, {
+                includeOwner: true,
+                ownerUserId: access.share?.ownerUserId,
+            });
+            list = {
+                ...list,
+                isShared: true,
+                shareId: shareObjectId(access.share?._id),
+                role: access.share?.role || 'editor',
+                ownerAccountNumber: access.accountNumber,
+                members: members.members,
+                memberAvatars: members.memberAvatars,
+            };
+        } else {
+            [list] = await decorateOwnedTaskListsWithShares(req, [{
+                ...list,
+                isShared: false,
+                role: 'owner',
+                ownerAccountNumber: req.account_number,
+            }]);
+        }
 
         res.json({
             success: true,
-            list: {
-                ...serializeMobileTaskList(access.list, tasks),
-                isShared: !!access.shared,
-                role: access.share?.role || 'owner',
-                ownerAccountNumber: access.shared ? access.accountNumber : req.account_number,
-            },
+            list,
             tasks: tasks.map(task => serializeListTask(req, access, task)),
         });
     } catch (error) {
@@ -973,6 +1147,33 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks/:taskId/toggle', 
         res.json({ success: true, task: serializeListTask(req, access, task) });
     } catch (error) {
         console.error('[MobileAPI] Toggle list task error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.delete('/accounts/:accountNumber/task-lists/:listId/tasks/:taskId', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const task = await access.RecordTask.findOne({
+            _id: req.params.taskId,
+            taskListId: access.list._id,
+        });
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        await cancelTaskReminder({
+            account_number: access.accountNumber || req.account_number,
+            user: req.user,
+        }, task);
+        if (access.TaskComment) {
+            await access.TaskComment.deleteMany({ taskId: task._id });
+        }
+        await task.deleteOne();
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Delete list task error:', error);
         sendCaughtError(res, error);
     }
 });

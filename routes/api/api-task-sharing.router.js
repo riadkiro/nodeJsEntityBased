@@ -382,8 +382,22 @@ router.post('/lists/:listId/shares', async (req, res) => {
 
 router.delete('/shares/:shareId', async (req, res) => {
     try {
+        const email = normalizeEmail(req.user?.email);
+        const phone = normalizePhone(req.user?.phone);
+        const recipientClauses = [
+            ...(req.user?._id ? [{ targetUserId: req.user._id }] : []),
+            ...(email ? [{ targetEmail: email }] : []),
+            ...(phone ? [{ targetPhone: phone }] : []),
+        ];
         const share = await TaskListShare.findOneAndUpdate(
-            { _id: req.params.shareId, ownerAccountNumber: req.account_number },
+            {
+                _id: req.params.shareId,
+                status: { $ne: 'revoked' },
+                $or: [
+                    { ownerAccountNumber: req.account_number },
+                    ...recipientClauses,
+                ],
+            },
             { $set: { status: 'revoked', revokedAt: new Date() } },
             { new: true },
         );

@@ -521,7 +521,7 @@ async function sharedTaskLists(req) {
     for (const share of shares) {
         const accountNumber = String(share.ownerAccountNumber || '').trim();
         const listId = String(share.listId || '').trim();
-        if (!accountNumber || !listId || accountNumber === String(req.account_number)) continue;
+        if (!accountNumber || !listId) continue;
         if (!sharesByAccount.has(accountNumber)) sharesByAccount.set(accountNumber, []);
         sharesByAccount.get(accountNumber).push(share);
     }

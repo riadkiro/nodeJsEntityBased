@@ -615,6 +615,57 @@ async function serializeSingleTask(req, task) {
     });
 }
 
+async function loadMobileTaskListAccess(req, listId) {
+    if (!/^[a-f\d]{24}$/i.test(String(listId || ''))) return null;
+
+    const tenantModels = await taskTenantModels(req);
+    const ownList = await tenantModels.TaskList.findById(listId).lean();
+    if (ownList) {
+        return {
+            ...tenantModels,
+            list: ownList,
+            shared: false,
+            canEdit: true,
+            accountNumber: req.account_number,
+        };
+    }
+
+    const share = await TaskListShare.findOne({
+        ...currentUserShareQuery(req),
+        listId: String(listId),
+    }).lean();
+    if (!share) return null;
+
+    const sharedModels = await sharedTenantTaskModels(share.ownerAccountNumber);
+    if (!sharedModels) return null;
+    const sharedList = await sharedModels.TaskList.findById(listId).lean();
+    if (!sharedList) return null;
+
+    return {
+        ...sharedModels,
+        list: sharedList,
+        share,
+        shared: true,
+        canEdit: ['editor', 'admin'].includes(share.role),
+        accountNumber: String(share.ownerAccountNumber || ''),
+    };
+}
+
+function serializeListTask(req, access, task) {
+    return TaskOverview.serializeTaskRow(
+        { account_number: access.accountNumber || req.account_number },
+        task.toObject ? task.toObject() : task,
+        access.list,
+        null,
+        null,
+        null,
+        {
+            priorities: access.list?.priorities,
+            accountTags: access.list?.tags,
+        },
+    );
+}
+
 async function taskBoard(req) {
     const accountTags = await TaskListsService.getAccountTaskTags(req);
     return TaskOverview.buildTaskBoard(req, { accountTags });
@@ -830,6 +881,98 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
         res.status(201).json({ success: true, list: serializeMobileTaskList(list, tasks) });
     } catch (error) {
         console.error('[MobileAPI] Create task list error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.get('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+
+        const tasks = await access.RecordTask.find({ taskListId: access.list._id })
+            .sort({ order: 1, createdAt: 1 })
+            .lean();
+
+        res.json({
+            success: true,
+            list: {
+                ...serializeMobileTaskList(access.list, tasks),
+                isShared: !!access.shared,
+                role: access.share?.role || 'owner',
+                ownerAccountNumber: access.shared ? access.accountNumber : req.account_number,
+            },
+            tasks: tasks.map(task => serializeListTask(req, access, task)),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] List tasks error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const title = cleanText(req.body?.title, '');
+        if (!title) return sendError(res, 400, 'Title required', 'VALIDATION_ERROR');
+
+        const statuses = normalizeOptions(access.list.statuses, defaultStatuses);
+        const priorities = normalizeOptions(access.list.priorities, await getAccountTaskPriorities(req));
+        const priorityOption = priorityOptionFor(req.body?.priority, priorities);
+        const status = normalizeStatus(req.body?.status);
+        const order = await access.RecordTask.countDocuments({ taskListId: access.list._id });
+
+        const task = await access.RecordTask.create({
+            taskListId: access.list._id,
+            recordId: access.list.recordId,
+            title,
+            description: cleanText(req.body?.description, ''),
+            status,
+            statusColor: optionColor(statuses, status, '#9ca3af'),
+            priority: priorityOption.label,
+            priorityColor: priorityOption.color || '',
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, access.list.tags || []),
+            subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
+            isDayPriority: false,
+            startDate: req.body?.startDate || null,
+            dueDate: req.body?.dueDate || null,
+            assignedTo: cleanText(req.body?.assignedTo, ''),
+            order,
+            completedAt: status === STATUS_DONE ? new Date() : null,
+        });
+
+        res.status(201).json({ success: true, task: serializeListTask(req, access, task) });
+    } catch (error) {
+        console.error('[MobileAPI] Create list task error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.post('/accounts/:accountNumber/task-lists/:listId/tasks/:taskId/toggle', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const task = await access.RecordTask.findOne({
+            _id: req.params.taskId,
+            taskListId: access.list._id,
+        });
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        const statuses = normalizeOptions(access.list.statuses, defaultStatuses);
+        const done = req.body?.done !== undefined ? !!req.body.done : task.status !== STATUS_DONE;
+        task.status = done ? STATUS_DONE : STATUS_TODO;
+        task.statusColor = optionColor(statuses, task.status, '#9ca3af');
+        task.completedAt = done ? new Date() : null;
+        await task.save();
+
+        res.json({ success: true, task: serializeListTask(req, access, task) });
+    } catch (error) {
+        console.error('[MobileAPI] Toggle list task error:', error);
         sendCaughtError(res, error);
     }
 });

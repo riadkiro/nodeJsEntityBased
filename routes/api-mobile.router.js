@@ -458,6 +458,105 @@ function cleanTaskListIcon(value, fallback = 'list') {
     return TaskListsService.cleanTaskListIcon(value, fallback);
 }
 
+function mergeTaskListTagOptions(existingTags = [], inputTags = []) {
+    const existing = TaskListsService.normalizeTaskTagOptions(existingTags);
+    const next = [...existing];
+    const existingKeys = new Set(
+        existing.map(tag => TaskListsService.normalizeOptionLabel(tag.label)),
+    );
+
+    for (const tag of TaskListsService.normalizeTaskTagOptions(inputTags)) {
+        const key = TaskListsService.normalizeOptionLabel(tag.label);
+        if (!key || existingKeys.has(key)) continue;
+        existingKeys.add(key);
+        next.push({
+            ...tag,
+            order: next.length,
+        });
+    }
+
+    return TaskListsService.normalizeTaskTagOptions(next);
+}
+
+async function upsertTaskListTagOptions(access, inputTags = []) {
+    const nextTags = mergeTaskListTagOptions(access.list?.tags || [], inputTags);
+    const previous = JSON.stringify(TaskListsService.normalizeTaskTagOptions(access.list?.tags || []));
+    const next = JSON.stringify(nextTags);
+    if (previous !== next) {
+        await access.TaskList.findByIdAndUpdate(
+            access.list._id,
+            { $set: { tags: nextTags } },
+            { new: true },
+        );
+        access.list = {
+            ...(access.list || {}),
+            tags: nextTags,
+        };
+    }
+    return nextTags;
+}
+
+function normalizeTagRenamePairs(renames = []) {
+    return (Array.isArray(renames) ? renames : [])
+        .map(item => ({
+            from: cleanText(item?.from, ''),
+            to: cleanText(item?.to, ''),
+        }))
+        .filter(item => item.from && item.to);
+}
+
+function syncTaskTagsWithListOptions(currentTags = [], previousOptions = [], nextOptions = [], renames = []) {
+    const nextByKey = new Map(
+        TaskListsService.normalizeTaskTagOptions(nextOptions)
+            .map(tag => [TaskListsService.normalizeOptionLabel(tag.label), tag]),
+    );
+    const renameByKey = new Map(
+        normalizeTagRenamePairs(renames)
+            .map(pair => [TaskListsService.normalizeOptionLabel(pair.from), pair.to]),
+    );
+    const synced = [];
+    const seen = new Set();
+
+    for (const tag of TaskListsService.normalizeTaskTags(currentTags, previousOptions)) {
+        const renamed = renameByKey.get(TaskListsService.normalizeOptionLabel(tag.label)) || tag.label;
+        const key = TaskListsService.normalizeOptionLabel(renamed);
+        const next = nextByKey.get(key);
+        if (!next || seen.has(key)) continue;
+        seen.add(key);
+        synced.push({
+            label: next.label,
+            color: next.color || tag.color || '#6366f1',
+            order: next.order ?? synced.length,
+        });
+    }
+
+    return synced;
+}
+
+async function replaceTaskListTagOptions(access, inputTags = [], renames = []) {
+    const previousTags = TaskListsService.normalizeTaskTagOptions(access.list?.tags || []);
+    const nextTags = TaskListsService.normalizeTaskTagOptions(inputTags);
+    await access.TaskList.findByIdAndUpdate(
+        access.list._id,
+        { $set: { tags: nextTags } },
+        { new: true },
+    );
+
+    const tasks = await access.RecordTask.find({ taskListId: access.list._id }).select('_id tags');
+    for (const task of tasks) {
+        const synced = syncTaskTagsWithListOptions(task.tags, previousTags, nextTags, renames);
+        if (JSON.stringify(task.tags || []) === JSON.stringify(synced)) continue;
+        task.tags = synced;
+        await task.save();
+    }
+
+    access.list = {
+        ...(access.list || {}),
+        tags: nextTags,
+    };
+    return nextTags;
+}
+
 function taskListTaskStats(tasks = []) {
     const totalTasks = tasks.length;
     const doneTasks = tasks.filter(task => task.status === STATUS_DONE || task.done === true).length;
@@ -727,10 +826,10 @@ async function serializeSingleTask(req, task) {
         targetId: task._id,
     });
     const accountPriorities = await getAccountTaskPriorities(req);
-    const accountTags = await TaskListsService.getAccountTaskTags(req);
+    const taskListTags = TaskListsService.normalizeTaskTagOptions(list?.tags || []);
     return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder, {
         priorities: accountPriorities,
-        accountTags,
+        accountTags: taskListTags,
     });
 }
 
@@ -786,8 +885,7 @@ function serializeListTask(req, access, task) {
 }
 
 async function taskBoard(req) {
-    const accountTags = await TaskListsService.getAccountTaskTags(req);
-    return TaskOverview.buildTaskBoard(req, { accountTags });
+    return TaskOverview.buildTaskBoard(req);
 }
 
 router.post('/auth/login', async (req, res) => {
@@ -1035,6 +1133,26 @@ router.delete('/accounts/:accountNumber/task-lists/:listId', async (req, res) =>
     }
 });
 
+router.put('/accounts/:accountNumber/task-lists/:listId/tags', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const tags = Array.isArray(req.body?.tags) ? req.body.tags : null;
+        if (!tags) return sendError(res, 400, 'Tags array required', 'VALIDATION_ERROR');
+        const cleaned = await replaceTaskListTagOptions(
+            access,
+            tags,
+            Array.isArray(req.body?.renames) ? req.body.renames : [],
+        );
+        res.json({ success: true, tags: cleaned });
+    } catch (error) {
+        console.error('[MobileAPI] Update task list tags error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.get('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res) => {
     try {
         const access = await loadMobileTaskListAccess(req, req.params.listId);
@@ -1098,6 +1216,7 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
         const priorityOption = priorityOptionFor(req.body?.priority, priorities);
         const status = normalizeStatus(req.body?.status);
         const order = await access.RecordTask.countDocuments({ taskListId: access.list._id });
+        const tagOptions = await upsertTaskListTagOptions(access, req.body?.tags);
 
         const task = await access.RecordTask.create({
             taskListId: access.list._id,
@@ -1108,7 +1227,7 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
             statusColor: optionColor(statuses, status, '#9ca3af'),
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
-            tags: TaskListsService.normalizeTaskTags(req.body?.tags, access.list.tags || []),
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, tagOptions),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: false,
             startDate: req.body?.startDate || null,
@@ -1121,6 +1240,89 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
         res.status(201).json({ success: true, task: serializeListTask(req, access, task) });
     } catch (error) {
         console.error('[MobileAPI] Create list task error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.patch('/accounts/:accountNumber/task-lists/:listId/tasks/:taskId', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const task = await access.RecordTask.findOne({
+            _id: req.params.taskId,
+            taskListId: access.list._id,
+        });
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        const updates = {};
+        const statuses = normalizeOptions(access.list.statuses, defaultStatuses);
+        const priorities = normalizeOptions(access.list.priorities, await getAccountTaskPriorities(req));
+
+        if (req.body?.title !== undefined) {
+            const title = cleanText(req.body.title, '');
+            if (!title) return sendError(res, 400, 'Title required', 'VALIDATION_ERROR');
+            updates.title = title;
+        }
+        if (req.body?.description !== undefined) updates.description = cleanText(req.body.description, '');
+        if (req.body?.priority !== undefined) {
+            const priorityOption = priorityOptionFor(req.body.priority, priorities);
+            updates.priority = priorityOption.label;
+            updates.priorityColor = priorityOption.color || '';
+        }
+        if (req.body?.tags !== undefined) {
+            const tagOptions = await upsertTaskListTagOptions(access, req.body.tags);
+            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, tagOptions);
+        }
+        if (req.body?.subtasks !== undefined) {
+            updates.subtasks = TaskListsService.normalizeTaskSubtasks(req.body.subtasks);
+        }
+        if (req.body?.status !== undefined) {
+            updates.status = normalizeStatus(req.body.status);
+            updates.statusColor = optionColor(statuses, updates.status, '#9ca3af');
+            if (req.body.completedAt === undefined) {
+                updates.completedAt = updates.status === STATUS_DONE ? new Date() : null;
+            } else if (updates.status !== STATUS_DONE) {
+                updates.completedAt = null;
+            }
+        }
+        if (req.body?.done !== undefined) {
+            updates.status = req.body.done ? STATUS_DONE : STATUS_TODO;
+            updates.statusColor = optionColor(statuses, updates.status, '#9ca3af');
+            if (req.body.completedAt === undefined) {
+                updates.completedAt = req.body.done ? new Date() : null;
+            } else if (!req.body.done) {
+                updates.completedAt = null;
+            }
+        }
+        if (req.body?.isDayPriority !== undefined) updates.isDayPriority = !!req.body.isDayPriority;
+        if (req.body?.startDate !== undefined) updates.startDate = req.body.startDate || null;
+        if (req.body?.dueDate !== undefined) updates.dueDate = req.body.dueDate || null;
+        if (req.body?.completedAt !== undefined) {
+            if (!req.body.completedAt) {
+                updates.completedAt = null;
+            } else {
+                const completedAt = new Date(req.body.completedAt);
+                if (Number.isNaN(completedAt.getTime())) return sendError(res, 400, 'Date de fin invalide', 'VALIDATION_ERROR');
+                updates.completedAt = completedAt;
+            }
+        }
+        if (updates.completedAt !== undefined) {
+            const nextStatus = updates.status || task.status;
+            if (nextStatus !== STATUS_DONE) updates.completedAt = null;
+        }
+        if (req.body?.assignedTo !== undefined) updates.assignedTo = cleanText(req.body.assignedTo, '');
+
+        if (!Object.keys(updates).length) {
+            return sendError(res, 400, 'No valid fields to update', 'VALIDATION_ERROR');
+        }
+
+        Object.assign(task, updates);
+        await task.save();
+        res.json({ success: true, task: serializeListTask(req, access, task) });
+    } catch (error) {
+        console.error('[MobileAPI] Update list task error:', error);
         sendCaughtError(res, error);
     }
 });
@@ -1233,13 +1435,18 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
 
         const target = await ensurePersonalTaskList(req);
-        const { RecordTask } = await taskTenantModels(req);
+        const tenantModels = await taskTenantModels(req);
+        const { RecordTask } = tenantModels;
         const order = await RecordTask.countDocuments({ taskListId: target.list._id });
         const status = normalizeStatus(req.body?.status);
         const priorities = await getAccountTaskPriorities(req);
         const priorityOption = priorityOptionFor(req.body?.priority, priorities);
         const statuses = normalizeOptions(target.list.statuses, defaultStatuses);
-        const accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body?.tags);
+        const tagAccess = {
+            ...tenantModels,
+            list: target.list,
+        };
+        const tagOptions = await upsertTaskListTagOptions(tagAccess, req.body?.tags);
 
         const schedule = cleanText(req.body?.schedule || req.query?.day, 'today').toLowerCase();
         const startDate = req.body?.startDate
@@ -1260,7 +1467,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
             statusColor: optionColor(statuses, status, '#9ca3af'),
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
-            tags: TaskListsService.normalizeTaskTags(req.body?.tags, accountTags),
+            tags: TaskListsService.normalizeTaskTags(req.body?.tags, tagOptions),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
             isDayPriority: req.body?.isDayPriority !== undefined ? !!req.body.isDayPriority : schedule !== 'tomorrow',
             startDate,
@@ -1343,11 +1550,11 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
 
         const updates = {};
         const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
-        const { TaskList } = await taskTenantModels(req);
+        const tenantModels = await taskTenantModels(req);
+        const { TaskList } = tenantModels;
         const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
         const statuses = normalizeOptions(list?.statuses, defaultStatuses);
         const priorities = await getAccountTaskPriorities(req);
-        let accountTags = null;
 
         if (req.body?.title !== undefined) {
             const title = cleanText(req.body.title, '');
@@ -1361,8 +1568,10 @@ router.patch('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
             updates.priorityColor = priorityOption.color || '';
         }
         if (req.body?.tags !== undefined) {
-            accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body.tags);
-            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, accountTags);
+            const tagOptions = list
+                ? await upsertTaskListTagOptions({ ...tenantModels, list }, req.body.tags)
+                : TaskListsService.normalizeTaskTagOptions(req.body.tags);
+            updates.tags = TaskListsService.normalizeTaskTags(req.body.tags, tagOptions);
         }
         if (req.body?.subtasks !== undefined) {
             updates.subtasks = TaskListsService.normalizeTaskSubtasks(req.body.subtasks);

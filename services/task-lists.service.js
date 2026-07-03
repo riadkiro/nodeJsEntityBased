@@ -136,9 +136,7 @@ async function seedAccountTaskTags(req, existingTags = []) {
         );
     }
     const docs = await TaskTag.find({}).sort({ order: 1, label: 1 }).lean();
-    const seeded = normalizeTaskTagOptions(docs);
-    await mirrorAccountTagsToLists(req, seeded);
-    return seeded;
+    return normalizeTaskTagOptions(docs);
 }
 
 async function getAccountTaskTags(req, options = {}) {
@@ -173,7 +171,6 @@ async function upsertAccountTaskTags(req, tags = []) {
     }
 
     const nextTags = normalizeTaskTagOptions([...currentByKey.values()]);
-    if (changed) await mirrorAccountTagsToLists(req, nextTags);
     return nextTags;
 }
 
@@ -521,7 +518,6 @@ async function replaceAccountTaskTags(req, input = {}) {
         labelKey: { $nin: [...nextKeys] },
     });
     await syncTaskTagsForQuery(RecordTask, {}, previousTags, nextTags, input.renames || []);
-    await mirrorAccountTagsToLists(req, nextTags);
     return nextTags;
 }
 

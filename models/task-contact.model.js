@@ -20,5 +20,6 @@ TaskContactSchema.index({ requesterUserId: 1, targetEmail: 1 });
 TaskContactSchema.index({ requesterUserId: 1, targetPhone: 1 });
 TaskContactSchema.index({ targetUserId: 1, status: 1 });
 TaskContactSchema.index({ targetEmail: 1, status: 1 });
+TaskContactSchema.index({ targetPhone: 1, status: 1 });
 
 module.exports = mongoose.model('TaskContact', TaskContactSchema);

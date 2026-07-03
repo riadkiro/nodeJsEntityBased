@@ -3,6 +3,16 @@ const bcrypt = require("bcrypt");
 
 const UserSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
+  phone: {
+    type: String,
+    unique: true,
+    sparse: true,
+    trim: true,
+    set: (value) => {
+      const cleaned = String(value || '').trim().replace(/[^\d+]/g, '');
+      return cleaned || undefined;
+    },
+  },
   password: { type: String },
   name: { type: String },
   avatar: { type: String },

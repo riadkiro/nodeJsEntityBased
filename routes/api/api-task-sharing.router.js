@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const Account = require('../../models/account.model');
 const User = require('../../models/user.model');
 const TaskContact = require('../../models/task-contact.model');
+const ContactMessage = require('../../models/contact-message.model');
 const TaskListShare = require('../../models/task-list-share.model');
 const { taskTenantModels } = require('../../services/task-tenant-models.service');
 
@@ -29,9 +30,11 @@ function stringId(value) {
 function contactMatchesUser(req, contact) {
     const userId = stringId(req.user?._id);
     const email = normalizeEmail(req.user?.email);
+    const phone = normalizePhone(req.user?.phone);
     return stringId(contact.requesterUserId) === userId
         || stringId(contact.targetUserId) === userId
-        || (email && normalizeEmail(contact.targetEmail) === email);
+        || (email && normalizeEmail(contact.targetEmail) === email)
+        || (phone && normalizePhone(contact.targetPhone) === phone);
 }
 
 function otherContactSide(req, contact) {
@@ -88,6 +91,21 @@ function serializeShare(share) {
     };
 }
 
+function serializeMessage(req, message) {
+    const senderUserId = stringId(message.senderUserId);
+    return {
+        _id: stringId(message._id),
+        id: stringId(message._id),
+        contactId: stringId(message.contactId),
+        senderUserId,
+        senderName: message.senderName || '',
+        text: message.text || '',
+        isMine: senderUserId === stringId(req.user?._id),
+        createdAt: message.createdAt,
+        updatedAt: message.updatedAt,
+    };
+}
+
 async function loadList(req, listId) {
     if (!/^[a-f\d]{24}$/i.test(String(listId || ''))) return null;
     const { TaskList } = await taskTenantModels(req);
@@ -97,12 +115,14 @@ async function loadList(req, listId) {
 router.get('/contacts', async (req, res) => {
     try {
         const email = normalizeEmail(req.user?.email);
+        const phone = normalizePhone(req.user?.phone);
         const userId = req.user?._id;
         const contacts = await TaskContact.find({
             $or: [
                 { requesterUserId: userId },
                 { targetUserId: userId },
                 ...(email ? [{ targetEmail: email }] : []),
+                ...(phone ? [{ targetPhone: phone }] : []),
             ],
         }).sort({ updatedAt: -1 }).lean();
 
@@ -125,18 +145,40 @@ router.post('/contacts', async (req, res) => {
             return res.status(400).json({ success: false, error: 'Impossible de vous ajouter vous-même' });
         }
 
-        const targetUser = targetEmail
-            ? await User.findOne({ email: targetEmail }).select('_id name email').lean()
+        if (targetPhone && targetPhone === normalizePhone(req.user?.phone)) {
+            return res.status(400).json({ success: false, error: 'Impossible de vous ajouter vous-meme' });
+        }
+
+        const targetUser = targetEmail || targetPhone
+            ? await User.findOne({
+                $or: [
+                    ...(targetEmail ? [{ email: targetEmail }] : []),
+                    ...(targetPhone ? [{ phone: targetPhone }] : []),
+                ],
+            }).select('_id name email phone').lean()
             : null;
 
-        const existing = await TaskContact.findOne({
-            requesterUserId: req.user._id,
-            $or: [
-                ...(targetEmail ? [{ targetEmail }] : []),
-                ...(targetPhone ? [{ targetPhone }] : []),
-            ],
-            status: { $in: ['pending', 'accepted'] },
-        });
+        const requesterEmail = normalizeEmail(req.user?.email);
+        const existingOr = [
+            ...(targetUser ? [
+                { requesterUserId: req.user._id, targetUserId: targetUser._id },
+                { requesterUserId: targetUser._id, targetUserId: req.user._id },
+            ] : []),
+            ...(targetEmail ? [
+                { requesterUserId: req.user._id, targetEmail },
+                { requesterEmail: targetEmail, targetEmail: requesterEmail },
+            ] : []),
+            ...(targetPhone ? [
+                { requesterUserId: req.user._id, targetPhone },
+            ] : []),
+        ];
+
+        const existing = existingOr.length
+            ? await TaskContact.findOne({
+                $or: existingOr,
+                status: { $in: ['pending', 'accepted'] },
+            })
+            : null;
         if (existing) {
             return res.json({ success: true, contact: serializeContact(req, existing), existed: true });
         }
@@ -144,10 +186,10 @@ router.post('/contacts', async (req, res) => {
         const contact = await TaskContact.create({
             requesterUserId: req.user._id,
             requesterAccountNumber: req.account_number,
-            requesterEmail: normalizeEmail(req.user.email),
+            requesterEmail,
             requesterName: cleanText(req.user.name, req.user.email),
             targetUserId: targetUser?._id || null,
-            targetEmail,
+            targetEmail: targetUser?.email || targetEmail,
             targetPhone,
             targetName: targetName || targetUser?.name || targetEmail || targetPhone,
             status: 'pending',
@@ -166,8 +208,10 @@ router.post('/contacts/:contactId/accept', async (req, res) => {
         const contact = await TaskContact.findById(req.params.contactId);
         if (!contact) return res.status(404).json({ success: false, error: 'Contact introuvable' });
         const email = normalizeEmail(req.user?.email);
+        const phone = normalizePhone(req.user?.phone);
         const canAccept = stringId(contact.targetUserId) === stringId(req.user?._id)
-            || (email && normalizeEmail(contact.targetEmail) === email);
+            || (email && normalizeEmail(contact.targetEmail) === email)
+            || (phone && normalizePhone(contact.targetPhone) === phone);
         if (!canAccept) return res.status(403).json({ success: false, error: 'Demande non autorisée' });
 
         contact.targetUserId = req.user._id;
@@ -194,6 +238,59 @@ router.post('/contacts/:contactId/decline', async (req, res) => {
     } catch (error) {
         console.error('[TaskSharing] decline contact error:', error);
         res.status(500).json({ success: false, error: error.message || 'Refus impossible' });
+    }
+});
+
+router.get('/contacts/:contactId/messages', async (req, res) => {
+    try {
+        const contact = await TaskContact.findById(req.params.contactId).lean();
+        if (!contact) return res.status(404).json({ success: false, error: 'Contact introuvable' });
+        if (contact.status !== 'accepted' || !contactMatchesUser(req, contact)) {
+            return res.status(403).json({ success: false, error: 'Contact accepte requis' });
+        }
+
+        const limit = Math.min(Math.max(Number(req.query?.limit) || 80, 1), 150);
+        const messages = await ContactMessage.find({ contactId: contact._id })
+            .sort({ createdAt: -1 })
+            .limit(limit)
+            .lean();
+
+        res.json({
+            success: true,
+            messages: messages.reverse().map(message => serializeMessage(req, message)),
+        });
+    } catch (error) {
+        console.error('[TaskSharing] contact messages error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Messages indisponibles' });
+    }
+});
+
+router.post('/contacts/:contactId/messages', async (req, res) => {
+    try {
+        const contact = await TaskContact.findById(req.params.contactId);
+        if (!contact) return res.status(404).json({ success: false, error: 'Contact introuvable' });
+        if (contact.status !== 'accepted' || !contactMatchesUser(req, contact)) {
+            return res.status(403).json({ success: false, error: 'Contact accepte requis' });
+        }
+
+        const text = cleanText(req.body?.text);
+        if (!text) return res.status(400).json({ success: false, error: 'Message requis' });
+        if (text.length > 2000) {
+            return res.status(400).json({ success: false, error: 'Message trop long' });
+        }
+
+        const message = await ContactMessage.create({
+            contactId: contact._id,
+            senderUserId: req.user._id,
+            senderName: cleanText(req.user.name, req.user.email),
+            text,
+            readBy: [req.user._id],
+        });
+
+        res.status(201).json({ success: true, message: serializeMessage(req, message) });
+    } catch (error) {
+        console.error('[TaskSharing] send contact message error:', error);
+        res.status(500).json({ success: false, error: error.message || 'Message impossible' });
     }
 });
 

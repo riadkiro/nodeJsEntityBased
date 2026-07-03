@@ -1,12 +1,19 @@
 const express = require('express');
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 
+const dbConfig = require('../config/db');
 const User = require('../models/user.model');
 const Account = require('../models/account.model');
+const TaskListShare = require('../models/task-list-share.model');
 const mailer = require('../services/mailer');
 const ReminderService = require('../services/reminders/reminder.service');
 const { connectToTenantDb, tenantCollection } = require('../middleware/tenant');
-const { taskTenantModels } = require('../services/task-tenant-models.service');
+const {
+    taskTenantModels,
+    GlobalTaskList,
+    GlobalRecordTask,
+} = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
 const TaskListsService = require('../services/task-lists.service');
 const {
@@ -27,6 +34,36 @@ const EMAIL_VERIFICATION_TTL_MS = EMAIL_VERIFICATION_TTL_HOURS * 60 * 60 * 1000;
 const PASSWORD_RESET_TTL_MINUTES = 60;
 const PASSWORD_RESET_TTL_MS = PASSWORD_RESET_TTL_MINUTES * 60 * 1000;
 const PASSWORD_RESET_SENT_MESSAGE = "Si un compte existe avec cet email, un lien de reinitialisation vient d'etre envoye.";
+const sharedTenantConnections = new Map();
+
+async function sharedTenantConnection(accountNumber) {
+    const key = String(accountNumber || '').trim();
+    if (!key) return null;
+    if (sharedTenantConnections.has(key)) return sharedTenantConnections.get(key);
+
+    const connectionPromise = new Promise((resolve, reject) => {
+        const connection = mongoose.createConnection(dbConfig.tenantDbUri(key), {
+            useNewUrlParser: true,
+            useUnifiedTopology: true,
+            maxPoolSize: 10,
+        });
+        connection.once('open', () => resolve(connection));
+        connection.once('error', reject);
+    });
+
+    sharedTenantConnections.set(key, connectionPromise);
+    return connectionPromise;
+}
+
+async function sharedTenantTaskModels(accountNumber) {
+    const connection = await sharedTenantConnection(accountNumber);
+    if (!connection) return null;
+    const TaskList = connection.models.TaskList
+        || connection.model('TaskList', GlobalTaskList.schema);
+    const RecordTask = connection.models.RecordTask
+        || connection.model('RecordTask', GlobalRecordTask.schema);
+    return { TaskList, RecordTask };
+}
 
 router.use((req, res, next) => {
     const origin = req.get('origin') || '';
@@ -61,6 +98,10 @@ function sendCaughtError(res, error, fallback = 'Erreur serveur') {
 
 function normalizeEmail(email) {
     return String(email || '').trim().toLowerCase();
+}
+
+function normalizePhone(value) {
+    return String(value || '').trim().replace(/[^\d+]/g, '');
 }
 
 function hashToken(token) {
@@ -165,6 +206,7 @@ function userPayload(user) {
         id: user._id.toString(),
         name: user.name || '',
         email: user.email || '',
+        phone: user.phone || '',
         avatar: user.avatar || '',
         status: user.status || 'active',
         emailVerified: !!user.emailVerified,
@@ -448,17 +490,95 @@ function serializeMobileTaskList(list, tasks = []) {
     };
 }
 
-async function personalTaskLists(req) {
-    await ensurePersonalTaskList(req);
-    if (String(req.account_number) === '6804') {
-        await TaskListsService.createAccountTaskList(req, {
-            label: TaskListsService.SHOPPING_TASK_LIST_LABEL,
-            color: '#10b981',
-            icon: 'solar:cart-large-bold-duotone',
-            showInMyLists: true,
-        });
+function currentUserShareQuery(req) {
+    const email = normalizeEmail(req.user?.email);
+    const phone = normalizePhone(req.user?.phone);
+    const clauses = [
+        { targetUserId: req.user._id },
+        ...(email ? [{ targetEmail: email }] : []),
+        ...(phone ? [{ targetPhone: phone }] : []),
+    ];
+    return {
+        status: 'active',
+        targetType: { $in: ['contact', 'user'] },
+        $or: clauses,
+    };
+}
+
+async function sharedTaskLists(req) {
+    const shares = await TaskListShare.find(currentUserShareQuery(req))
+        .sort({ createdAt: -1 })
+        .lean();
+    if (!shares.length) return [];
+
+    const ownerIds = [...new Set(shares.map(share => String(share.ownerUserId || '')).filter(Boolean))];
+    const owners = ownerIds.length
+        ? await User.find({ _id: { $in: ownerIds } }).select('_id name email avatar').lean()
+        : [];
+    const ownerById = new Map(owners.map(owner => [owner._id.toString(), owner]));
+
+    const sharesByAccount = new Map();
+    for (const share of shares) {
+        const accountNumber = String(share.ownerAccountNumber || '').trim();
+        const listId = String(share.listId || '').trim();
+        if (!accountNumber || !listId || accountNumber === String(req.account_number)) continue;
+        if (!sharesByAccount.has(accountNumber)) sharesByAccount.set(accountNumber, []);
+        sharesByAccount.get(accountNumber).push(share);
     }
-    return TaskListsService.listMyTaskLists(req);
+
+    const results = [];
+    for (const [accountNumber, accountShares] of sharesByAccount.entries()) {
+        const models = await sharedTenantTaskModels(accountNumber);
+        if (!models) continue;
+
+        const listIds = [...new Set(accountShares.map(share => String(share.listId || '')).filter(Boolean))];
+        const lists = await models.TaskList.find({ _id: { $in: listIds } }).lean();
+        const listById = new Map(lists.map(list => [list._id.toString(), list]));
+        const tasks = listIds.length
+            ? await models.RecordTask.find({ taskListId: { $in: listIds } })
+                .select('taskListId status done assignedTo')
+                .lean()
+            : [];
+        const tasksByListId = new Map();
+        for (const task of tasks) {
+            const taskListId = task.taskListId?.toString?.() || '';
+            if (!tasksByListId.has(taskListId)) tasksByListId.set(taskListId, []);
+            tasksByListId.get(taskListId).push(task);
+        }
+
+        for (const share of accountShares) {
+            const list = listById.get(String(share.listId || ''));
+            if (!list) continue;
+            const owner = ownerById.get(String(share.ownerUserId || '')) || {};
+            const ownerName = cleanText(owner.name, owner.email || 'Partage');
+            results.push({
+                ...serializeMobileTaskList(list, tasksByListId.get(list._id.toString()) || []),
+                isShared: true,
+                shareId: share._id?.toString?.() || String(share._id || ''),
+                ownerAccountNumber: accountNumber,
+                role: share.role || 'editor',
+                members: [ownerName],
+                memberAvatars: owner.avatar ? [owner.avatar] : [],
+            });
+        }
+    }
+
+    return results;
+}
+
+async function personalTaskLists(req) {
+    const ownLists = await TaskListsService.listMyTaskLists(req);
+    const receivedLists = await sharedTaskLists(req);
+    const seen = new Set(ownLists.map(list => String(list.id || list._id || '')));
+    return [
+        ...ownLists,
+        ...receivedLists.filter(list => {
+            const id = String(list.id || list._id || '');
+            if (!id || seen.has(id)) return false;
+            seen.add(id);
+            return true;
+        }),
+    ];
 }
 
 async function tenantRecordIds(req) {

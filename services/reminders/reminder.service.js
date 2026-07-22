@@ -262,6 +262,94 @@ async function findReminderForTarget({
     }).sort({ scheduledAt: 1, createdAt: -1 });
 }
 
+async function listRemindersForTarget({
+    accountNumber,
+    userId,
+    targetType,
+    targetId,
+}) {
+    return Reminder.find({
+        accountNumber: cleanText(accountNumber, ''),
+        userId: toObjectId(userId, 'userId'),
+        targetType: normalizeTargetType(targetType),
+        targetId: toObjectId(targetId),
+        status: 'scheduled',
+    }).sort({ scheduledAt: 1, createdAt: -1 });
+}
+
+async function findReminderByIdForTarget({
+    accountNumber,
+    userId,
+    targetType,
+    targetId,
+    reminderId,
+}) {
+    return Reminder.findOne({
+        _id: toObjectId(reminderId, 'reminderId'),
+        accountNumber: cleanText(accountNumber, ''),
+        userId: toObjectId(userId, 'userId'),
+        targetType: normalizeTargetType(targetType),
+        targetId: toObjectId(targetId),
+        status: 'scheduled',
+    });
+}
+
+async function cancelReminderByIdForTarget({
+    accountNumber,
+    userId,
+    targetType,
+    targetId,
+    reminderId,
+}) {
+    const ownerId = toObjectId(userId, 'userId');
+    return Reminder.findOneAndUpdate(
+        {
+            _id: toObjectId(reminderId, 'reminderId'),
+            accountNumber: cleanText(accountNumber, ''),
+            userId: ownerId,
+            targetType: normalizeTargetType(targetType),
+            targetId: toObjectId(targetId),
+            status: 'scheduled',
+        },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancelledBy: ownerId,
+                updatedBy: ownerId,
+            },
+        },
+        { new: true },
+    );
+}
+
+async function cancelRemindersForTarget({
+    accountNumber,
+    userId,
+    targetType,
+    targetId,
+}) {
+    const ownerId = toObjectId(userId, 'userId');
+    const result = await Reminder.updateMany(
+        {
+            accountNumber: cleanText(accountNumber, ''),
+            userId: ownerId,
+            targetType: normalizeTargetType(targetType),
+            targetId: toObjectId(targetId),
+            status: 'scheduled',
+        },
+        {
+            $set: {
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancelledBy: ownerId,
+                updatedBy: ownerId,
+            },
+        },
+    );
+    return result.modifiedCount || result.nModified || 0;
+}
+
 async function listReminders({
     accountNumber,
     userId,
@@ -310,6 +398,37 @@ async function scheduledReminderMap({
     return map;
 }
 
+async function scheduledRemindersMap({
+    accountNumber,
+    userId,
+    targetType,
+    targetIds,
+}) {
+    const ids = [...new Set((targetIds || []).map(id => String(id || '').trim()).filter(Boolean))]
+        .filter(id => /^[a-f\d]{24}$/i.test(id))
+        .map(id => new mongoose.Types.ObjectId(id));
+
+    if (!ids.length) return new Map();
+
+    const reminders = await Reminder.find({
+        accountNumber: cleanText(accountNumber, ''),
+        userId: toObjectId(userId, 'userId'),
+        targetType: normalizeTargetType(targetType),
+        targetId: { $in: ids },
+        status: 'scheduled',
+    }).sort({ scheduledAt: 1, createdAt: -1 }).lean();
+
+    const map = new Map();
+    reminders.forEach((reminder) => {
+        const key = reminder.targetId?.toString?.() || '';
+        if (!key) return;
+        const values = map.get(key) || [];
+        values.push(reminder);
+        map.set(key, values);
+    });
+    return map;
+}
+
 function serializeReminder(reminder) {
     if (!reminder) return null;
     const row = reminder.toObject ? reminder.toObject() : reminder;
@@ -342,8 +461,13 @@ module.exports = {
     reminderPayloadFromBody,
     upsertReminder,
     cancelReminderForTarget,
+    cancelReminderByIdForTarget,
+    cancelRemindersForTarget,
     findReminderForTarget,
+    findReminderByIdForTarget,
+    listRemindersForTarget,
     listReminders,
     scheduledReminderMap,
+    scheduledRemindersMap,
     serializeReminder,
 };

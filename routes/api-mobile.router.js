@@ -347,7 +347,7 @@ async function upsertTaskReminder(req, task, reminderInput) {
         targetId: task._id,
         slotKey: reminderInput.slotKey || 'default',
         title: reminderInput.title || task.title,
-        message: reminderInput.message || taskReminderMessage(task, reminderInput.scheduledAt, reminderInput.timeZone),
+        message: reminderInput.message || '',
         scheduledAt: reminderInput.scheduledAt,
         timeZone: reminderInput.timeZone,
         channel: reminderInput.channel || 'local',
@@ -360,12 +360,20 @@ async function upsertTaskReminder(req, task, reminderInput) {
 }
 
 async function cancelTaskReminder(req, task, slotKey = 'default') {
-    return ReminderService.cancelReminderForTarget({
+    if (slotKey && slotKey !== 'default') {
+        return ReminderService.cancelReminderForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetId: task._id,
+            slotKey,
+        });
+    }
+    return ReminderService.cancelRemindersForTarget({
         accountNumber: req.account_number,
         userId: req.user._id,
         targetType: 'task',
         targetId: task._id,
-        slotKey,
     });
 }
 
@@ -819,7 +827,7 @@ async function serializeSingleTask(req, task) {
     const list = task.taskListId ? await TaskList.findById(task.taskListId).lean() : null;
     const record = task.recordId ? await Record.findById(task.recordId).select('title computedTitle referenceTitle entityId icon color').lean() : null;
     const entity = record?.entityId ? await Entity.findById(record.entityId).select('name slug icon color').lean() : null;
-    const reminder = await ReminderService.findReminderForTarget({
+    const reminders = await ReminderService.listRemindersForTarget({
         accountNumber: req.account_number,
         userId: req.user._id,
         targetType: 'task',
@@ -827,7 +835,7 @@ async function serializeSingleTask(req, task) {
     });
     const accountPriorities = await getAccountTaskPriorities(req);
     const taskListTags = TaskListsService.normalizeTaskTagOptions(list?.tags || []);
-    return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminder, {
+    return TaskOverview.serializeTaskRow(req, task.toObject ? task.toObject() : task, list, record, entity, reminders, {
         priorities: accountPriorities,
         accountTags: taskListTags,
     });
@@ -1407,6 +1415,84 @@ router.post('/accounts/:accountNumber/tasks/:taskId/reminder', async (req, res) 
         });
     } catch (error) {
         console.error('[MobileAPI] Upsert task reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.post('/accounts/:accountNumber/tasks/:taskId/reminders', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput || reminderInput.enabled === false) {
+            return sendError(res, 400, 'Date de rappel requise', 'VALIDATION_ERROR');
+        }
+        if (!req.body?.slotKey || reminderInput.slotKey === 'default') {
+            reminderInput.slotKey = `mobile-${Date.now().toString(36)}`;
+        }
+
+        const reminder = await upsertTaskReminder(req, task, reminderInput);
+        res.status(201).json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Create task reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.patch('/accounts/:accountNumber/tasks/:taskId/reminders/:reminderId', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const current = await ReminderService.findReminderByIdForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetId: task._id,
+            reminderId: req.params.reminderId,
+        });
+        if (!current) return sendError(res, 404, 'Rappel introuvable', 'REMINDER_NOT_FOUND');
+
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput || reminderInput.enabled === false) {
+            return sendError(res, 400, 'Date de rappel requise', 'VALIDATION_ERROR');
+        }
+        reminderInput.slotKey = current.slotKey;
+        const reminder = await upsertTaskReminder(req, task, reminderInput);
+        res.json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Update task reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.delete('/accounts/:accountNumber/tasks/:taskId/reminders/:reminderId', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const reminder = await ReminderService.cancelReminderByIdForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'task',
+            targetId: task._id,
+            reminderId: req.params.reminderId,
+        });
+        if (!reminder) return sendError(res, 404, 'Rappel introuvable', 'REMINDER_NOT_FOUND');
+        res.json({
+            success: true,
+            reminder: null,
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Delete task reminder error:', error);
         sendCaughtError(res, error);
     }
 });

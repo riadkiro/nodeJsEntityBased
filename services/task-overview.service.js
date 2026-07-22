@@ -239,6 +239,9 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
     const entitySlug = entity?.slug || '';
     const taskId = task._id?.toString?.() || String(task._id || '');
     const recordColor = record?.color || entity?.color || '#4361ee';
+    const reminders = (Array.isArray(reminder) ? reminder : reminder ? [reminder] : [])
+        .map(ReminderService.serializeReminder)
+        .filter(Boolean);
 
     return {
         id: taskId,
@@ -284,7 +287,8 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
         entitySlug,
         entityIcon: entity?.icon || 'solar:folder-bold-duotone',
         entityColor: entity?.color || '#4361ee',
-        reminder: ReminderService.serializeReminder(reminder),
+        reminder: reminders[0] || null,
+        reminders,
         link: recordId && entitySlug
             ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks?openTask=${taskId}`
             : `/account/${req.account_number}/tasks`,
@@ -395,7 +399,7 @@ async function buildTaskBoard(req, options = {}) {
         : [];
     const entityMap = new Map(entities.map(entity => [entity._id.toString(), entity]));
     const listMap = new Map(allLists.map(list => [list._id.toString(), list]));
-    const reminderMap = await ReminderService.scheduledReminderMap({
+    const reminderMap = await ReminderService.scheduledRemindersMap({
         accountNumber: req.account_number,
         userId: req.user?._id,
         targetType: 'task',

@@ -29,12 +29,54 @@ const TaskCommentSchema = new mongoose.Schema({
     userId: { type: String, default: '' },
     userName: { type: String, default: '' },
     userAvatar: { type: String, default: '' },
+    authorType: {
+        type: String,
+        enum: ['user', 'ai', 'system'],
+        default: function () {
+            return this.type === 'activity' ? 'system' : 'user';
+        }
+    },
+    audience: {
+        type: String,
+        enum: ['team', 'ai'],
+        default: 'team'
+    },
 
     // Activity metadata (for type=activity)
     metadata: {
         field: { type: String, default: '' },       // e.g. 'status', 'priority'
         oldValue: { type: String, default: '' },
         newValue: { type: String, default: '' },
+    },
+
+    // Summary of the linked Record AI Agent run.
+    agent: {
+        status: {
+            type: String,
+            enum: ['', 'completed', 'error'],
+            default: ''
+        },
+        action: {
+            type: String,
+            enum: ['', 'none', 'create_subtasks'],
+            default: ''
+        },
+        createdSubtasks: [{
+            title: { type: String, default: '' },
+            subtaskId: { type: String, default: '' }
+        }],
+        model: { type: String, default: '' },
+        errorCode: { type: String, default: '' },
+        recordAgentConversationId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'RecordAgentConversation',
+            default: null
+        },
+        recordAgentRunId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'RecordAgentRun',
+            default: null
+        }
     },
 
     // Chat integration

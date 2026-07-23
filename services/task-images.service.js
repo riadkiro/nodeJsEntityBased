@@ -5,6 +5,8 @@ const multer = require('multer');
 
 const MAX_IMAGE_SIZE = 15 * 1024 * 1024;
 const MAX_IMAGES_PER_UPLOAD = 10;
+const MAX_VISION_IMAGE_SIZE = 8 * 1024 * 1024;
+const MAX_VISION_TOTAL_SIZE = 16 * 1024 * 1024;
 const allowedExtensions = new Set([
     '.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif',
 ]);
@@ -153,6 +155,57 @@ function isImageAttachment(attachment) {
     return mimeType.startsWith('image/') || allowedExtensions.has(extension);
 }
 
+function visionContent(accountNumber, attachments = [], options = {}) {
+    const maxImages = Math.min(10, Math.max(1, Number(options.maxImages || 4)));
+    const maxImageBytes = Math.min(
+        MAX_IMAGE_SIZE,
+        Math.max(1024, Number(options.maxImageBytes || MAX_VISION_IMAGE_SIZE)),
+    );
+    const maxTotalBytes = Math.max(
+        maxImageBytes,
+        Number(options.maxTotalBytes || MAX_VISION_TOTAL_SIZE),
+    );
+    const result = [];
+    let totalBytes = 0;
+
+    for (const attachment of attachments || []) {
+        if (result.length >= maxImages || totalBytes >= maxTotalBytes) break;
+        if (!isImageAttachment(attachment)) continue;
+        const mimeType = visionMimeType(attachment.mimeType, attachment.originalName || attachment.filename);
+        if (!mimeType) continue;
+        const target = resolvePath(accountNumber, attachment.filename);
+        if (!target || !fs.existsSync(target)) continue;
+
+        try {
+            const stats = fs.statSync(target);
+            if (!stats.isFile() || stats.size <= 0 || stats.size > maxImageBytes) continue;
+            if (totalBytes + stats.size > maxTotalBytes) continue;
+            const buffer = fs.readFileSync(target);
+            result.push({
+                type: 'input_image',
+                image_url: `data:${mimeType};base64,${buffer.toString('base64')}`,
+                detail: options.detail === 'low' ? 'low' : 'high',
+            });
+            totalBytes += buffer.length;
+        } catch (_) {}
+    }
+
+    return result;
+}
+
+function visionMimeType(rawMime, filename) {
+    const mimeType = String(rawMime || '').toLowerCase();
+    if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType)) {
+        return mimeType;
+    }
+    const extension = path.extname(String(filename || '')).toLowerCase();
+    if (['.jpg', '.jpeg'].includes(extension)) return 'image/jpeg';
+    if (extension === '.png') return 'image/png';
+    if (extension === '.webp') return 'image/webp';
+    if (extension === '.gif') return 'image/gif';
+    return '';
+}
+
 module.exports = {
     uploadImages,
     attachmentFromFile,
@@ -160,4 +213,5 @@ module.exports = {
     removeFile,
     resolvePath,
     isImageAttachment,
+    visionContent,
 };

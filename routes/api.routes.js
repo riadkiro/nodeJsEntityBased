@@ -17,6 +17,7 @@ const { buildRecordFilterQuery, applyUniqueViewFilters, getUniqueViewFilters } =
 const { ensureEventsEntity } = require('../services/events-entity.service')
 const { taskTenantModels } = require('../services/task-tenant-models.service')
 const TaskListsService = require('../services/task-lists.service')
+const TaskAgentService = require('../services/record-ai-task-bridge.service')
 const {
     defaultTaskPriorities,
     getAccountTaskPriorities,
@@ -1062,6 +1063,9 @@ const taskAttachmentPayload = (req, attachment = {}) => ({
 const serializeTaskComment = (req, comment = {}) => {
     const currentUserId = req.user?._id?.toString?.() || ''
     const userId = comment.userId?.toString?.() || String(comment.userId || '')
+    const authorType = comment.authorType
+        || (userId === 'dexio-ai' ? 'ai' : (comment.type === 'activity' ? 'system' : 'user'))
+    const agent = comment.agent?.toObject ? comment.agent.toObject() : (comment.agent || {})
     return {
         _id: comment._id?.toString?.() || String(comment._id || ''),
         taskId: comment.taskId?.toString?.() || String(comment.taskId || ''),
@@ -1070,10 +1074,27 @@ const serializeTaskComment = (req, comment = {}) => {
         userId,
         userName: comment.userName,
         userAvatar: comment.userAvatar,
+        authorType,
+        audience: comment.audience || 'team',
+        isAi: authorType === 'ai',
         metadata: comment.metadata || {},
+        agent: {
+            status: agent.status || '',
+            action: agent.action || '',
+            createdSubtasks: (agent.createdSubtasks || []).map(item => ({
+                title: item.title || '',
+                subtaskId: item.subtaskId || ''
+            })),
+            model: agent.model || '',
+            errorCode: agent.errorCode || '',
+            recordAgentConversationId: agent.recordAgentConversationId?.toString?.()
+                || String(agent.recordAgentConversationId || ''),
+            recordAgentRunId: agent.recordAgentRunId?.toString?.()
+                || String(agent.recordAgentRunId || '')
+        },
         attachments: (comment.attachments || []).map(att => taskAttachmentPayload(req, att)),
         publishedToChat: comment.publishedToChat || false,
-        isMine: !!currentUserId && userId === currentUserId,
+        isMine: authorType === 'user' && !!currentUserId && userId === currentUserId,
         createdAt: comment.createdAt
     }
 }
@@ -2424,8 +2445,10 @@ router.post('/api/record-tasks/:taskId/comments', (req, res, next) => {
         const cleanText = cleanTaskText(text, '')
         const files = Array.isArray(req.files) ? req.files : []
         if (!cleanText && files.length === 0) return res.status(400).json({ error: 'Comment text or attachment required' })
+        const askAi = req.body?.askAi === true
+            || ['1', 'true', 'yes'].includes(String(req.body?.askAi || '').toLowerCase())
 
-        const task = await RecordTask.findById(req.params.taskId).lean()
+        const task = await RecordTask.findById(req.params.taskId)
         if (!task) {
             files.forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))
             return res.status(404).json({ error: 'Task not found' })
@@ -2458,8 +2481,42 @@ router.post('/api/record-tasks/:taskId/comments', (req, res, next) => {
             userId,
             userName,
             userAvatar,
+            authorType: 'user',
+            audience: askAi ? 'ai' : 'team',
             publishedToChat: !!publishToChat
         })
+
+        let agentComment = null
+        let responseTask = task
+        let agentError = null
+        if (askAi && cleanText) {
+            const recentComments = await TaskComment.find({ taskId: task._id })
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean()
+            try {
+                const agentResult = await TaskAgentService.runTaskAgent({
+                    req,
+                    task,
+                    TaskComment,
+                    userMessage: cleanText,
+                    recentComments: recentComments.reverse()
+                })
+                agentComment = agentResult.assistantComment
+                responseTask = agentResult.task || task
+            } catch (error) {
+                console.error('[API] Task agent error:', error)
+                agentError = {
+                    code: error.code || 'TASK_AGENT_ERROR',
+                    message: error.message || "L'IA n'a pas pu traiter cette demande."
+                }
+                agentComment = await TaskAgentService.createTaskAgentErrorComment({
+                    task,
+                    TaskComment,
+                    error
+                })
+            }
+        }
 
         // If publishToChat is true, also send to the record's chat conversation
         if (publishToChat && cleanText) {
@@ -2538,7 +2595,13 @@ router.post('/api/record-tasks/:taskId/comments', (req, res, next) => {
 
         res.json({
             success: true,
-            comment: serializeTaskComment(req, comment)
+            comment: serializeTaskComment(req, comment),
+            agentComment: agentComment ? serializeTaskComment(req, agentComment) : null,
+            task: {
+                _id: responseTask._id?.toString?.() || String(responseTask._id || ''),
+                subtasks: TaskListsService.normalizeTaskSubtasks(responseTask.subtasks)
+            },
+            ...(agentError ? { agentError } : {})
         })
     } catch (error) {
         ;(req.files || []).forEach(file => removeTaskAttachmentFile(req, taskAttachmentRelativePath(req, file.path)))

@@ -7,6 +7,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const { taskTenantModels } = require('../../services/task-tenant-models.service');
+const TaskImagesService = require('../../services/task-images.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -4572,6 +4573,7 @@ function agentToolLabel(tool) {
     if (tool === 'update_fiche') return 'Mettre à jour la fiche';
     if (tool === 'create_task') return 'Créer une tâche';
     if (tool === 'update_task') return 'Modifier une tâche';
+    if (tool === 'create_subtasks') return 'Créer des sous-tâches';
     if (tool === 'create_event') return 'Créer un événement';
     if (tool === 'update_event') return 'Modifier un événement';
     return tool;
@@ -5529,6 +5531,58 @@ function agentNormalizeActions(parsed = {}, record = {}, fieldCatalog = [], tool
             return;
         }
 
+        if (tool === 'create_subtasks') {
+            const input = agentObjectInput(raw.input || raw);
+            const task = agentResolveTaskRef(input, toolLookup);
+            if (!task?.id) return;
+            const sourceItems = input.subtasks || input.items || input.titles || [];
+            const subtasks = (Array.isArray(sourceItems) ? sourceItems : [sourceItems])
+                .map(item => agentSafeString(
+                    typeof item === 'object' ? (item?.title || item?.label || item?.text || '') : item,
+                    240
+                ))
+                .filter(Boolean)
+                .slice(0, 20);
+            const existing = new Set((task.subtasks || []).map(item =>
+                agentNormalizeLabel(typeof item === 'object' ? item?.title : item)
+            ));
+            const uniqueSubtasks = [];
+            for (const title of subtasks) {
+                const key = agentNormalizeLabel(title);
+                if (!key || existing.has(key)) continue;
+                existing.add(key);
+                uniqueSubtasks.push(title);
+            }
+            if (!uniqueSubtasks.length) return;
+            actions.push({
+                id,
+                tool,
+                title: raw.title || agentToolLabel(tool),
+                description: agentSafeString(
+                    raw.description || `Ajouter ${uniqueSubtasks.length} sous-tâche${uniqueSubtasks.length > 1 ? 's' : ''} à "${task.title || task.id}"`,
+                    500
+                ),
+                status: 'proposed',
+                input: {
+                    taskId: cleanId(task.id),
+                    subtasks: uniqueSubtasks
+                },
+                preview: {
+                    title: task.title || 'Tâche',
+                    excerpt: uniqueSubtasks.join(' · '),
+                    meta: `${uniqueSubtasks.length} nouvelle${uniqueSubtasks.length > 1 ? 's' : ''} sous-tâche${uniqueSubtasks.length > 1 ? 's' : ''}`
+                },
+                diff: uniqueSubtasks.map(title => ({
+                    fieldId: `task:${task.id}:subtasks`,
+                    label: 'Sous-tâche',
+                    before: '',
+                    after: title,
+                    reason: agentSafeString(input.reason || raw.description || '', 400)
+                }))
+            });
+            return;
+        }
+
         if (tool === 'create_event') {
             const input = agentObjectInput(raw.input || raw);
             const fields = agentNormalizeEventInput(input, toolCatalog, { requireTitle: true });
@@ -6157,7 +6211,7 @@ async function agentBuildToolCatalog(req, record, entity) {
         : [];
     const { TaskList, RecordTask } = await taskTenantModels(req);
     const tasks = await RecordTask.find({ recordId: record._id })
-        .select('title description status priority dueDate taskListId updatedAt')
+        .select('title description status priority dueDate taskListId subtasks attachments updatedAt')
         .sort({ updatedAt: -1 })
         .limit(60)
         .lean();
@@ -6212,6 +6266,15 @@ async function agentBuildToolCatalog(req, record, entity) {
             priority: task.priority || '',
             dueDate: task.dueDate || '',
             listTitle: taskListMap.get(cleanId(task.taskListId)) || '',
+            subtasks: (task.subtasks || []).map(item => ({
+                id: cleanId(item._id),
+                title: item.title || '',
+                done: Boolean(item.done)
+            })),
+            attachmentCount: (task.attachments || []).length,
+            imageCount: (task.attachments || []).filter(item =>
+                TaskImagesService.isImageAttachment(item)
+            ).length,
             updatedAt: task.updatedAt
         })),
         documents: documents.map(document => ({
@@ -6253,6 +6316,7 @@ async function agentBuildToolCatalog(req, record, entity) {
             'update_fiche',
             'create_task',
             'update_task',
+            'create_subtasks',
             'create_event',
             'update_event'
         ]
@@ -6297,6 +6361,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "- update_fiche: { fields: [{ fieldId?, label, value, type?, subtype?, options?, reason, confidence }] }. Si un champ pertinent existe dans le catalogue, utilise son fieldId, même si needsEntityLink=true. Si aucun champ ne correspond, propose un nouveau champ avec label et type. Types autorisés pour les nouveaux champs: text, number, date, boolean, select, multiselect. Pour une adresse IP, utilise type text et subtype ip. Pour boolean, tu peux demander un affichage switch avec type boolean. Pour select/multiselect, fournis options quand elles sont connues. Pour relation, value peut être un id exact ou un nom de fiche à rechercher.",
         "- create_task: { title, description, dueDate, priority, listTitle? }. Utilise listTitle quand l'utilisateur demande une liste/projet précis.",
         "- update_task: { taskId, fields }. fields peut contenir title, description, status, priority, dueDate. Utilise taskId depuis le catalogue.",
+        "- create_subtasks: { taskId, subtasks: [\"Sous-tâche courte\"] }. Ajoute des sous-tâches directement exécutables à une tâche existante. Utilise taskId depuis le catalogue, limite-toi à 20 éléments et évite les doublons.",
         "- create_event: { title, date, endDate?, duration?, type?, lieu?, notes?, status? }. Crée un événement Agenda lié à la fiche.",
         "- update_event: { eventId, fields }. fields peut contenir title, date, endDate, duration, type, lieu, notes, status. Utilise eventId depuis le catalogue.",
         "Pour enrichir la fiche, préfère réutiliser un champ existant du catalogue par label proche avant de créer un nouveau champ. Ne crée un champ que si aucun fieldId pertinent n'existe.",
@@ -6314,7 +6379,7 @@ function buildAgentInstructions(record, entity, fieldCatalog = [], toolCatalog =
         "Pour les actions create_task, garde title <= 90 caractères, description <= 180 caractères, input.description <= 700 caractères.",
         "Ne duplique pas un même préfixe dans tous les titres de tâches; mets le nom du projet dans input.description si nécessaire.",
         "Format strict:",
-        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","type":"text","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Important","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Urgent","dueDate":"YYYY-MM-DD"}}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
+        '{"summary":"...","plan":{"title":"...","steps":[{"type":"analysis","title":"...","detail":"..."}]},"actions":[{"tool":"create_note","title":"...","description":"...","input":{"title":"...","contentMarkdown":"..."}},{"tool":"update_note","title":"...","description":"...","input":{"noteId":"...","title":"...","contentMarkdown":"...","mode":"replace"}},{"tool":"create_doc","title":"...","description":"...","input":{"name":"...","contentPages":["<h2>Page 1</h2><p>...</p>","<h2>Page 2</h2><p>...</p>"],"pageCount":2,"format":"A4","orientation":"portrait","folder":"Documents IA"}},{"tool":"update_doc","title":"...","description":"...","input":{"documentId":"...","replacements":[{"search":"Ancienne valeur","replace":"Nouvelle valeur","label":"Champ"}],"mode":"replace"}},{"tool":"generate_doc","title":"...","description":"...","input":{"templateId":"...","variables":{"fieldKey":"value","company.name":"Actirama"},"lineItems":[{"description":"Création web","quantity":1,"unitPrice":1600,"taxRate":20,"amountMode":"ht"}],"outputName":"..."}},{"tool":"update_fiche","title":"...","description":"...","input":{"fields":[{"fieldId":"...","label":"...","value":"...","type":"text","reason":"...","confidence":0.8}]}},{"tool":"create_task","title":"...","description":"...","input":{"title":"...","description":"...","dueDate":"YYYY-MM-DD","priority":"Important","listTitle":"Projet"}},{"tool":"update_task","title":"...","description":"...","input":{"taskId":"...","fields":{"status":"En cours","priority":"Urgent","dueDate":"YYYY-MM-DD"}}},{"tool":"create_subtasks","title":"...","description":"...","input":{"taskId":"...","subtasks":["Sous-tâche 1","Sous-tâche 2"]}},{"tool":"create_event","title":"...","description":"...","input":{"title":"...","date":"YYYY-MM-DDTHH:mm:ssZ","duration":30,"type":"reunion","lieu":"...","notes":"..."}},{"tool":"update_event","title":"...","description":"...","input":{"eventId":"...","fields":{"status":"Confirmé","date":"YYYY-MM-DDTHH:mm:ssZ"}}}]}',
         "",
         "Champs fiche autorisés:",
         JSON.stringify(fieldList.slice(0, 120)),
@@ -6361,6 +6426,93 @@ function buildAgentInput(goal, selectedContext, contextMeta = {}) {
         '',
         "Prépare un plan agentique et des actions en mode review."
     ].join('\n');
+}
+
+function buildTaskScopedAgentInput(baseInput, task, taskContext = null, responseRuntime = {}) {
+    if (!task || !taskContext) return baseInput;
+    const subtasks = (task.subtasks || [])
+        .slice(0, 80)
+        .map(item => `- [${item.done ? 'x' : ' '}] ${agentSafeString(item.title, 240)}`)
+        .join('\n');
+    const chatHistoryText = agentSafeString(taskContext.chatHistoryText || '', 12000);
+    const images = Array.isArray(taskContext.imageContent)
+        ? taskContext.imageContent.slice(0, 4)
+        : [];
+    const canReadImages = responseRuntime.engine === 'openai' && images.length > 0;
+    const scopedText = [
+        baseInput,
+        '',
+        'Contexte ciblé ajouté par le chat de tâche:',
+        '<tache_courante>',
+        `taskId exact: ${task.id}`,
+        `Titre: ${task.title || 'Sans titre'}`,
+        `Description: ${task.description || 'Aucune'}`,
+        `Statut: ${task.status || 'Non défini'}`,
+        `Priorité: ${task.priority || 'Aucune'}`,
+        `Échéance: ${task.dueDate || 'Aucune'}`,
+        `Photos jointes: ${task.imageCount || images.length || 0}`,
+        'Sous-tâches existantes:',
+        subtasks || 'Aucune',
+        chatHistoryText ? 'Conversation récente de la tâche:' : '',
+        chatHistoryText,
+        '</tache_courante>',
+        '',
+        taskContext.autoDetected
+            ? "Cette tâche et ses photos ont été sélectionnées automatiquement depuis le mode Agent IA de la fiche."
+            : "Cette demande vient du bouton « Demander à l'IA » de cette tâche.",
+        `Pour toute action create_subtasks, utilise exclusivement taskId="${task.id}".`,
+        "Si l'utilisateur demande de créer, ajouter, décomposer ou générer des sous-tâches, propose create_subtasks.",
+        "Ne recrée jamais une sous-tâche déjà présente.",
+        images.length && !canReadImages
+            ? "Le moteur IA actuellement sélectionné ne peut pas lire les images jointes. Indique-le clairement et n'invente aucun contenu visuel."
+            : '',
+        canReadImages
+            ? "Analyse uniquement les images jointes ci-dessous et signale clairement toute zone illisible."
+            : ''
+    ].filter(Boolean).join('\n');
+
+    if (!canReadImages) return scopedText;
+    return [{
+        role: 'user',
+        content: [
+            { type: 'input_text', text: scopedText },
+            ...images
+        ]
+    }];
+}
+
+async function agentAutoTaskImageContext(req, toolCatalog = {}, goal = '') {
+    const normalizedGoal = agentNormalizeLabel(goal);
+    if (!/(photo|image|capture|scan|piece jointe|fichier joint)/.test(normalizedGoal)) return null;
+
+    const candidates = (toolCatalog.tasks || []).filter(task => Number(task.imageCount || 0) > 0);
+    if (!candidates.length) return null;
+    const goalWords = new Set(normalizedGoal.split(' ').filter(word => word.length >= 3));
+    const scored = candidates.map(task => {
+        const normalizedTitle = agentNormalizeLabel(task.title);
+        const titleWords = normalizedTitle.split(' ').filter(word => word.length >= 3);
+        let score = normalizedTitle && normalizedGoal.includes(normalizedTitle) ? 100 : 0;
+        score += titleWords.filter(word => goalWords.has(word)).length * 8;
+        return { task, score };
+    }).sort((a, b) => b.score - a.score);
+    if (scored[0].score === 0 && candidates.length > 1) return null;
+
+    const selected = scored[0].task;
+    const { RecordTask } = await taskTenantModels(req);
+    const task = await RecordTask.findById(selected.id).select('recordId attachments').lean();
+    if (!task) return null;
+    const imageContent = TaskImagesService.visionContent(
+        req.account_number,
+        task.attachments || [],
+        { maxImages: 4, detail: 'high' }
+    );
+    if (!imageContent.length) return null;
+    return {
+        taskId: selected.id,
+        imageContent,
+        chatHistoryText: '',
+        autoDetected: true
+    };
 }
 
 function agentLooksRawJsonPayload(value = '') {
@@ -8337,6 +8489,58 @@ async function applyAgentAction(req, record, entity, action) {
         };
     }
 
+    if (action.tool === 'create_subtasks') {
+        const canEdit = await canEditRecordModule(req, record._id, 'tasks');
+        if (!canEdit) throw new Error('Accès en lecture seule aux tâches');
+
+        const { RecordTask } = await taskTenantModels(req);
+        const task = await RecordTask.findOne({ _id: action.input?.taskId, recordId: record._id });
+        if (!task) throw new Error('Tâche introuvable');
+
+        const beforeSubtasks = agentCloneWithoutMongoIds(
+            (task.subtasks || []).map(item =>
+                typeof item.toObject === 'function' ? item.toObject({ depopulate: true }) : item
+            )
+        );
+        const seen = new Set((task.subtasks || []).map(item => agentNormalizeLabel(item.title)));
+        const createdSubtasks = [];
+        const requestedSubtasks = Array.isArray(action.input?.subtasks) ? action.input.subtasks : [];
+
+        for (const rawTitle of requestedSubtasks.slice(0, 20)) {
+            const title = agentSafeString(rawTitle, 240);
+            const key = agentNormalizeLabel(title);
+            if (!title || !key || seen.has(key)) continue;
+            seen.add(key);
+            task.subtasks.push({
+                title,
+                done: false,
+                order: task.subtasks.length,
+                completedAt: null,
+                createdAt: new Date()
+            });
+            const created = task.subtasks[task.subtasks.length - 1];
+            createdSubtasks.push({
+                title,
+                subtaskId: cleanId(created?._id)
+            });
+        }
+
+        if (!createdSubtasks.length) throw new Error('Aucune nouvelle sous-tâche à créer');
+        task.markModified('subtasks');
+        await task.save();
+
+        return {
+            before: { taskId: cleanId(task._id), subtasks: beforeSubtasks },
+            after: { taskId: cleanId(task._id), createdSubtasks },
+            result: { taskId: cleanId(task._id), createdSubtasks },
+            inverse: {
+                tool: 'restore_task_subtasks',
+                taskId: cleanId(task._id),
+                subtasks: beforeSubtasks
+            }
+        };
+    }
+
     if (action.tool === 'create_event') {
         const canEdit = await canEditRecordModule(req, record._id, 'agenda');
         if (!canEdit) throw new Error("Accès en lecture seule à l'agenda");
@@ -8521,6 +8725,15 @@ async function undoAgentLog(req, record, entity, log) {
         return;
     }
 
+    if (inverse.tool === 'restore_task_subtasks' && inverse.taskId) {
+        const { RecordTask } = await taskTenantModels(req);
+        await RecordTask.updateOne(
+            { _id: inverse.taskId, recordId: record._id },
+            { $set: { subtasks: Array.isArray(inverse.subtasks) ? inverse.subtasks : [] } }
+        );
+        return;
+    }
+
     if (inverse.tool === 'delete_event' && inverse.eventId) {
         const Record = await tenantCollection(req, 'Record');
         const eventsEntity = await ensureEventsEntity(req);
@@ -8697,15 +8910,25 @@ router.get('/:recordId/agent/runs', async (req, res) => {
     }
 });
 
-router.post('/:recordId/agent/runs', async (req, res) => {
+async function executeRecordAgentRun(req, {
+    recordId,
+    goal: goalInput,
+    conversationId = '',
+    contextSelections = {},
+    taskContext = null
+} = {}) {
     let run = null;
     try {
-        const goal = agentSafeString(req.body.goal || req.body.message || '', 4000);
-        if (!goal) return res.status(400).json({ success: false, error: 'Demande agent requise' });
+        const goal = agentSafeString(goalInput || '', 4000);
+        if (!goal) {
+            const error = new Error('Demande agent requise');
+            error.statusCode = 400;
+            throw error;
+        }
 
-        const { record, entity } = await loadRecordBundle(req, req.params.recordId);
+        const { record, entity } = await loadRecordBundle(req, recordId);
         const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
-        let agentConversation = await ensureAgentConversation(req, record, entity, req.body.conversationId, goal);
+        let agentConversation = await ensureAgentConversation(req, record, entity, conversationId, goal);
         const priorRuns = await RecordAgentRun.find({
             conversationId: agentConversation._id,
             recordId: record._id,
@@ -8716,7 +8939,7 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             .limit(8)
             .lean();
         const priorRunsChronological = [...priorRuns].reverse();
-        const requestedSelection = normalizeSelection(req.body.contextSelections || {});
+        const requestedSelection = normalizeSelection(contextSelections || {});
         let contextDecision = agentContextDecision(goal, requestedSelection);
         const requestedCount = selectionItemCount(requestedSelection);
         let autoSelection = null;
@@ -8755,6 +8978,9 @@ router.post('/:recordId/agent/runs', async (req, res) => {
             ...(selectedContext.stats || {}),
             strategy: contextDecision.mode,
             reason: contextDecision.reason,
+            source: taskContext?.taskId ? 'task_chat' : 'record_agent',
+            focusTaskId: taskContext?.taskId ? cleanId(taskContext.taskId) : '',
+            taskImageCount: Array.isArray(taskContext?.imageContent) ? taskContext.imageContent.length : 0,
             requestedContextItems: requestedCount,
             usedContextItems: contextItems.length,
             inventoryContextItems: availableContextItems.length,
@@ -8768,6 +8994,55 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         };
         const fieldCatalog = await agentBuildFieldCatalog(req, entity);
         const toolCatalog = await agentBuildToolCatalog(req, record, entity);
+        const resolvedTaskContext = taskContext
+            || await agentAutoTaskImageContext(req, toolCatalog, goal);
+        let scopedTask = resolvedTaskContext?.taskId
+            ? (toolCatalog.tasks || []).find(task => cleanId(task.id) === cleanId(resolvedTaskContext.taskId))
+            : null;
+        if (resolvedTaskContext?.taskId && !scopedTask) {
+            const { TaskList, RecordTask } = await taskTenantModels(req);
+            const focusedTask = await RecordTask.findOne({
+                _id: resolvedTaskContext.taskId,
+                recordId: record._id
+            }).lean();
+            if (focusedTask) {
+                const focusedList = await TaskList.findById(focusedTask.taskListId).select('label').lean();
+                scopedTask = {
+                    id: cleanId(focusedTask._id),
+                    title: focusedTask.title || 'Tâche',
+                    description: focusedTask.description || '',
+                    status: focusedTask.status || '',
+                    priority: focusedTask.priority || '',
+                    dueDate: focusedTask.dueDate || '',
+                    listTitle: focusedList?.label || '',
+                    subtasks: (focusedTask.subtasks || []).map(item => ({
+                        id: cleanId(item._id),
+                        title: item.title || '',
+                        done: Boolean(item.done)
+                    })),
+                    attachmentCount: (focusedTask.attachments || []).length,
+                    imageCount: (focusedTask.attachments || []).filter(item =>
+                        TaskImagesService.isImageAttachment(item)
+                    ).length,
+                    updatedAt: focusedTask.updatedAt
+                };
+                toolCatalog.tasks = [scopedTask, ...(toolCatalog.tasks || [])];
+            }
+        }
+        if (resolvedTaskContext?.taskId && !scopedTask) {
+            const error = new Error('Tâche introuvable dans cette fiche');
+            error.statusCode = 404;
+            throw error;
+        }
+        contextStats.source = taskContext?.taskId
+            ? 'task_chat'
+            : (resolvedTaskContext?.autoDetected ? 'record_agent_task_image' : 'record_agent');
+        contextStats.focusTaskId = resolvedTaskContext?.taskId
+            ? cleanId(resolvedTaskContext.taskId)
+            : '';
+        contextStats.taskImageCount = Array.isArray(resolvedTaskContext?.imageContent)
+            ? resolvedTaskContext.imageContent.length
+            : 0;
 
         run = await RecordAgentRun.create({
             recordId: record._id,
@@ -8791,15 +9066,23 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         const usedFastPath = !!parsed;
 
         if (!parsed) {
+            const baseAgentInput = buildAgentInput(goal, selectedContext, {
+                ...contextDecision,
+                inventoryText: contextInventoryText,
+                historyText: agentHistoryTextFromRuns(priorRunsChronological)
+            });
+            const responseRuntime = resolveResponseRuntime(engineSettings);
+            const taskScopedInput = buildTaskScopedAgentInput(
+                baseAgentInput,
+                scopedTask,
+                resolvedTaskContext,
+                responseRuntime
+            );
             aiResult = await callRecordAI(req, {
                 conversationId: agentConversation._id,
                 recordId: record._id,
                 instructions: buildAgentInstructions(record, entity, fieldCatalog, toolCatalog),
-                input: buildAgentInput(goal, selectedContext, {
-                    ...contextDecision,
-                    inventoryText: contextInventoryText,
-                    historyText: agentHistoryTextFromRuns(priorRunsChronological)
-                }),
+                input: taskScopedInput,
                 previousResponseId: null,
                 engineSettings,
                 historyMessages: [],
@@ -8831,6 +9114,12 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         }
 
         let actions = agentNormalizeActions(parsed, record, fieldCatalog, toolCatalog, { goal, selectedContext });
+        if (scopedTask) {
+            actions = actions.filter(action =>
+                action.tool !== 'create_subtasks'
+                || cleanId(action.input?.taskId) === cleanId(scopedTask.id)
+            );
+        }
         actions = agentEnsureTemplateGenerationActions(actions, goal, parsed, toolCatalog);
         if (!actions.length && agentGoalWantsDocumentOutput(goal) && selectedContext.text?.trim()) {
             parsed = agentFallbackDocumentParsed(goal, selectedContext);
@@ -8840,8 +9129,11 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         run.plan = agentNormalizePlan(parsed);
         run.proposedActions = actions;
         run.aiRaw = aiResult?.content || (usedFastPath ? JSON.stringify(parsed) : '');
-        run.status = actions.length ? 'review' : 'error';
-        run.error = actions.length ? '' : "L'agent n'a proposé aucune action exploitable.";
+        const completedTaskAnswer = Boolean(scopedTask && parsed.summary && !actions.length);
+        run.status = actions.length ? 'review' : (completedTaskAnswer ? 'applied' : 'error');
+        run.error = actions.length || completedTaskAnswer
+            ? ''
+            : "L'agent n'a proposé aucune action exploitable.";
         contextStats.pipeline = agentBuildRunnerPipeline({
             contextDecision,
             selectedContext,
@@ -8879,15 +9171,38 @@ router.post('/:recordId/agent/runs', async (req, res) => {
         await run.save();
         agentConversation = await updateAgentConversationFromRun(req, agentConversation, run);
 
-        res.json({ success: true, run: agentRunPayload(req, run), conversation: agentConversationPayload(agentConversation) });
+        return { run, conversation: agentConversation, record, entity, scopedTask };
     } catch (error) {
-        console.error('[RecordAgent] create run error:', error);
         if (run) {
             run.status = 'error';
             run.error = error.message;
             await run.save().catch(() => {});
         }
-        res.status(error.statusCode || 500).json({ success: false, error: error.message, run: run ? agentRunPayload(req, run) : null });
+        error.agentRun = run || null;
+        throw error;
+    }
+}
+
+router.post('/:recordId/agent/runs', async (req, res) => {
+    try {
+        const result = await executeRecordAgentRun(req, {
+            recordId: req.params.recordId,
+            goal: req.body.goal || req.body.message || '',
+            conversationId: req.body.conversationId,
+            contextSelections: req.body.contextSelections || {}
+        });
+        res.json({
+            success: true,
+            run: agentRunPayload(req, result.run),
+            conversation: agentConversationPayload(result.conversation)
+        });
+    } catch (error) {
+        console.error('[RecordAgent] create run error:', error);
+        res.status(error.statusCode || 500).json({
+            success: false,
+            error: error.message,
+            run: error.agentRun ? agentRunPayload(req, error.agentRun) : null
+        });
     }
 });
 
@@ -8901,15 +9216,21 @@ router.get('/:recordId/agent/runs/:runId', async (req, res) => {
     }
 });
 
-router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
-    try {
-        const { record, entity, run } = await requireAgentRun(req, req.params.recordId, req.params.runId);
+async function executeRecordAgentApply(req, {
+    recordId,
+    runId,
+    actionIds = null,
+    rejectUnselected = true
+} = {}) {
+        const { record, entity, run } = await requireAgentRun(req, recordId, runId);
         if (!['review', 'partial'].includes(run.status)) {
-            return res.status(400).json({ success: false, error: 'Ce run ne peut pas être appliqué dans son état actuel' });
+            const error = new Error('Ce run ne peut pas être appliqué dans son état actuel');
+            error.statusCode = 400;
+            throw error;
         }
 
-        const requestedIds = Array.isArray(req.body.actionIds) ? new Set(req.body.actionIds.map(cleanId)) : null;
-        if (requestedIds) {
+        const requestedIds = Array.isArray(actionIds) ? new Set(actionIds.map(cleanId)) : null;
+        if (requestedIds && rejectUnselected) {
             (run.proposedActions || []).forEach(action => {
                 if (!requestedIds.has(action.id) && ['proposed', 'failed'].includes(action.status)) {
                     action.status = 'rejected';
@@ -8922,7 +9243,11 @@ router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
             return ['proposed', 'failed'].includes(action.status);
         });
 
-        if (!actions.length) return res.status(400).json({ success: false, error: 'Aucune action à appliquer' });
+        if (!actions.length) {
+            const error = new Error('Aucune action à appliquer');
+            error.statusCode = 400;
+            throw error;
+        }
 
         run.status = 'applying';
         await run.save();
@@ -8982,7 +9307,22 @@ router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
             if (conversation) conversation = await updateAgentConversationFromRun(req, conversation, run);
         }
 
-        res.json({ success: true, run: agentRunPayload(req, run), conversation: agentConversationPayload(conversation) });
+        return { run, conversation, record, entity };
+}
+
+router.post('/:recordId/agent/runs/:runId/apply', async (req, res) => {
+    try {
+        const result = await executeRecordAgentApply(req, {
+            recordId: req.params.recordId,
+            runId: req.params.runId,
+            actionIds: req.body.actionIds,
+            rejectUnselected: true
+        });
+        res.json({
+            success: true,
+            run: agentRunPayload(req, result.run),
+            conversation: agentConversationPayload(result.conversation)
+        });
     } catch (error) {
         console.error('[RecordAgent] apply run error:', error);
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
@@ -9032,5 +9372,8 @@ router.post('/:recordId/agent/runs/:runId/undo', async (req, res) => {
         res.status(error.statusCode || 500).json({ success: false, error: error.message });
     }
 });
+
+router.executeRecordAgentRun = executeRecordAgentRun;
+router.executeRecordAgentApply = executeRecordAgentApply;
 
 module.exports = router;

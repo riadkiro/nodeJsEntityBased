@@ -871,6 +871,7 @@ function agentToolIcon(tool) {
     if (tool === 'update_fiche') return 'solar:card-bold-duotone'
     if (tool === 'create_task') return 'solar:checklist-minimalistic-bold-duotone'
     if (tool === 'update_task') return 'solar:checklist-minimalistic-bold-duotone'
+    if (tool === 'create_subtasks') return 'solar:list-check-bold-duotone'
     if (tool === 'create_event') return 'solar:calendar-add-bold-duotone'
     if (tool === 'update_event') return 'solar:calendar-mark-bold-duotone'
     return 'solar:magic-stick-3-bold-duotone'
@@ -885,6 +886,7 @@ function agentToolColor(tool) {
     if (tool === 'update_fiche') return '#4361ee'
     if (tool === 'create_task') return '#10b981'
     if (tool === 'update_task') return '#14b8a6'
+    if (tool === 'create_subtasks') return '#0f9f87'
     if (tool === 'create_event') return '#f59e0b'
     if (tool === 'update_event') return '#d97706'
     return '#4f46e5'
@@ -917,7 +919,7 @@ function AgentActionCard({ action = {}, selectable = false, selected = true, onT
     const diff = Array.isArray(action.diff) ? action.diff : []
     const failed = action.status === 'failed'
     const previewText = agentReadableText(action.preview?.excerpt || action.input?.contentMarkdown || '')
-    const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_event', 'update_event']
+    const genericPreviewTools = ['update_note', 'create_doc', 'update_doc', 'generate_doc', 'use_template', 'update_task', 'create_subtasks', 'create_event', 'update_event']
     const resultUrl = agentActionResultUrl(action, noteBaseUrl)
     const taskMeta = [
         action.preview?.meta,
@@ -1019,6 +1021,7 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
     const canUndo = ['applied', 'partial'].includes(run.status) && actions.some(action => action.status === 'applied')
     const steps = Array.isArray(run.plan?.steps) ? run.plan.steps : []
     const sourceCount = Array.isArray(run.contextItems) ? run.contextItems.length : 0
+    const fromTaskChat = run.contextStats?.source === 'task_chat'
     const doneActions = actions.filter(action => ['applied', 'failed', 'undone'].includes(action.status))
     const isDrafting = run.status === 'drafting'
 
@@ -1027,7 +1030,11 @@ function AgentRunCard({ run = {}, onApply, onUndo, busy = false, onOpenContext, 
             <div className="rai-agent-msg user">
                 <div className="rai-agent-msg-bubble">
                     <p>{run.goal || 'Run agent'}</p>
-                    <span>{formatTime(run.createdAt)}{sourceCount > 0 ? ` · ${sourceCount} source${sourceCount > 1 ? 's' : ''}` : ''}</span>
+                    <span>
+                        {formatTime(run.createdAt)}
+                        {fromTaskChat ? ' · Chat de tâche' : ''}
+                        {sourceCount > 0 ? ` · ${sourceCount} source${sourceCount > 1 ? 's' : ''}` : ''}
+                    </span>
                 </div>
             </div>
 

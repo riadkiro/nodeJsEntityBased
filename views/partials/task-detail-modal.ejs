@@ -173,11 +173,14 @@
 	.tdm-conv-entry.is-message{padding:0;border:0;background:transparent;max-width:82%}
 	.tdm-conv-entry.is-mine{align-self:flex-end}
 	.tdm-conv-entry.is-other{align-self:flex-start}
+	.tdm-conv-entry.is-ai{align-self:flex-start}
 	.tdm-conv-activity{align-self:center;text-align:center;background:#f8fafc;border-color:#eef2f7;color:#94a3b8}
 	.tdm-chat-bubble{min-width:120px;border:1px solid #e8ecf1;background:#fff;border-radius:14px;padding:8px 10px;box-shadow:0 8px 18px rgba(15,23,42,.035)}
 	.tdm-conv-entry.is-mine .tdm-chat-bubble{background:#eef2ff;border-color:#dfe5ff}
+	.tdm-conv-entry.is-ai .tdm-chat-bubble{background:linear-gradient(145deg,#f5f3ff,#eef2ff);border-color:#ddd6fe}
 	.tdm-conv-entry.is-mine .tdm-conv-date{text-align:right}
 	.tdm-conv-user{color:#64748b;font-size:10.5px;font-weight:700;line-height:1.3}
+	.tdm-ai-badge{display:inline-flex;align-items:center;margin-left:5px;padding:1px 5px;border-radius:999px;background:#7c3aed;color:#fff;font-size:8.5px;font-weight:800;letter-spacing:.25px}
 	.tdm-conv-text{color:#334155;font-size:12.5px;font-weight:500;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 	.tdm-conv-date{color:#bfc9d4;font-size:9.5px;font-weight:600;margin-top:3px}
 	.tdm-activity-val{display:inline-flex;align-items:center;gap:4px;border-radius:5px;padding:1px 6px;font-size:9.5px;font-weight:700}
@@ -203,7 +206,7 @@
 	.tdm-chat-icon-btn:disabled{opacity:.55;cursor:not-allowed}
 	.tdm-chat-send{background:#4361ee;color:#fff}
 	.tdm-chat-send:hover{background:#3651d4;color:#fff}
-	.tdm-chat-options{display:flex;justify-content:flex-end;margin-top:6px}
+	.tdm-chat-options{display:flex;justify-content:flex-end;align-items:center;gap:14px;margin-top:6px}
 	.tdm-chat-toggle{border:0;background:transparent;color:#94a3b8;font-family:inherit;font-size:10.5px;font-weight:650;display:inline-flex;align-items:center;gap:6px;cursor:pointer;padding:0}
 	.tdm-chat-toggle.active{color:#64748b}
 	.tdm-chat-toggle-switch{width:28px;height:16px;border-radius:999px;background:#e0e6ed;position:relative;transition:background .15s;flex:0 0 auto}
@@ -736,7 +739,8 @@
 	                                             'tdm-conv-activity': comment.type === 'activity',
 	                                             'is-message': comment.type !== 'activity',
 	                                             'is-mine': comment.type !== 'activity' && comment.isMine,
-	                                             'is-other': comment.type !== 'activity' && !comment.isMine
+	                                             'is-other': comment.type !== 'activity' && !comment.isMine,
+	                                             'is-ai': comment.type !== 'activity' && comment.isAi
 	                                         }">
 	                                        <template x-if="comment.type === 'activity'">
 	                                            <div>
@@ -751,7 +755,10 @@
 	                                        <template x-if="comment.type !== 'activity'">
 	                                            <div class="tdm-chat-bubble">
 	                                                <template x-if="!comment.isMine">
-	                                                    <div class="tdm-conv-user" x-text="comment.userName || 'Système'"></div>
+	                                                    <div class="tdm-conv-user">
+	                                                        <span x-text="comment.userName || 'Système'"></span>
+	                                                        <span class="tdm-ai-badge" x-show="comment.isAi">IA</span>
+	                                                    </div>
 	                                                </template>
 	                                                <template x-if="comment.text">
 	                                                    <div class="tdm-conv-text" x-text="comment.text"></div>
@@ -800,12 +807,20 @@
 	                                        <button class="tdm-chat-icon-btn" type="button" title="Ajouter un fichier" @click="$refs.taskChatFileInput.click()" :disabled="$store.taskModal.chatSending">
 	                                            <iconify-icon icon="solar:paperclip-rounded-linear" width="16"></iconify-icon>
 	                                        </button>
-	                                        <textarea class="tdm-msg-input" x-ref="taskChatText" rows="1" placeholder="Écrire un message..." @paste="$store.taskModal.handleChatPaste($event)" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $store.taskModal.submitCommentFrom($event.target); }"></textarea>
+	                                        <textarea class="tdm-msg-input" x-ref="taskChatText" rows="1" :placeholder="$store.taskModal.askAi ? 'Demander à l’IA…' : 'Écrire à l’équipe…'" @paste="$store.taskModal.handleChatPaste($event)" @keydown.enter="if (!$event.shiftKey) { $event.preventDefault(); $store.taskModal.submitCommentFrom($event.target); }"></textarea>
 	                                        <button class="tdm-chat-icon-btn tdm-chat-send" type="button" title="Envoyer" @click="$store.taskModal.submitCommentFrom($refs.taskChatText)" :disabled="$store.taskModal.chatSending">
 	                                            <iconify-icon icon="solar:plain-2-bold" width="15"></iconify-icon>
 	                                        </button>
 	                                    </div>
 	                                    <div class="tdm-chat-options">
+	                                        <button type="button"
+	                                                class="tdm-chat-toggle"
+	                                                :class="{ active: $store.taskModal.askAi }"
+	                                                title="L’IA peut analyser les photos et créer des sous-tâches"
+	                                                @click="$store.taskModal.askAi = !$store.taskModal.askAi">
+	                                            <span class="tdm-chat-toggle-switch"></span>
+	                                            <span>Demander à l’IA</span>
+	                                        </button>
 	                                        <button type="button"
 	                                                class="tdm-chat-toggle"
 	                                                :class="{ active: $store.taskModal.publishToChat }"
@@ -855,6 +870,7 @@ document.addEventListener('alpine:init', () => {
 			        chatFiles: [],
 			        chatSending: false,
 			        publishToChat: false,
+			        askAi: false,
 			        descriptionStatus: '',
 		        descriptionEditorInstance: null,
 		        _descriptionSaveTimer: null,
@@ -892,6 +908,7 @@ document.addEventListener('alpine:init', () => {
 			            this.clearChatFiles();
 			            this.chatSending = false;
 			            this.publishToChat = taskObj?.publishToChatDefault !== undefined ? !!taskObj.publishToChatDefault : !!taskObj?.publishToChat;
+			            this.askAi = false;
 			            this.descriptionStatus = '';
 		            this.reminderDraft = { date: '', time: '', dirty: false };
 		            this.reminderSaving = false;
@@ -995,6 +1012,7 @@ document.addEventListener('alpine:init', () => {
 			            this.uploadBusy = false;
 			            this.chatSending = false;
 			            this.publishToChat = false;
+			            this.askAi = false;
 			            this.descriptionStatus = '';
 			            this.reminderDraft = { date: '', time: '', dirty: false };
 			            this.reminderSaving = false;
@@ -1901,18 +1919,32 @@ document.addEventListener('alpine:init', () => {
 		                    payload = new FormData();
 		                    payload.append('text', cleanText);
 		                    if (this.publishToChat) payload.append('publishToChat', '1');
+		                    if (this.askAi) payload.append('askAi', '1');
 		                    files.forEach(file => payload.append('files', file, file.name || 'image-collee.png'));
 		                    options.body = payload;
 		                } else {
 		                    options.headers = { 'Content-Type': 'application/json' };
-		                    options.body = JSON.stringify({ text: cleanText, publishToChat: this.publishToChat });
+		                    options.body = JSON.stringify({
+		                        text: cleanText,
+		                        publishToChat: this.publishToChat,
+		                        askAi: this.askAi
+		                    });
 		                }
 	                const res = await fetch(API + '/api/record-tasks/' + this.task._id + '/comments', options);
 		                const data = await res.json().catch(() => ({}));
 		                if (!res.ok || data.success === false) throw new Error(data.error || 'Message impossible');
 		                if (data.comment) {
 		                    this.clearChatFiles();
-		                    this.task._comments = this.sortConversation([...(this.task._comments || []), data.comment]);
+		                    const comments = [
+		                        ...(this.task._comments || []),
+		                        data.comment,
+		                        ...(data.agentComment ? [data.agentComment] : [])
+		                    ];
+		                    this.task = {
+		                        ...this.task,
+		                        ...(data.task || {}),
+		                        _comments: this.sortConversation(comments)
+		                    };
 		                    this.scrollConversationToRecent({ smooth: true });
 		                    return true;
 		                }

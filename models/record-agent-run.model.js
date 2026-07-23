@@ -26,6 +26,7 @@ const RecordAgentActionSchema = new mongoose.Schema({
             'update_fiche',
             'create_task',
             'update_task',
+            'create_subtasks',
             'create_event',
             'update_event'
         ],

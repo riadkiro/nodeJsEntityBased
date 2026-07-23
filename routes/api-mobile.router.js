@@ -18,6 +18,7 @@ const {
 const TaskOverview = require('../services/task-overview.service');
 const TaskListsService = require('../services/task-lists.service');
 const TaskImagesService = require('../services/task-images.service');
+const TaskAgentService = require('../services/record-ai-task-bridge.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -842,6 +843,45 @@ async function serializeSingleTask(req, task) {
     });
 }
 
+function serializeTaskMessage(req, comment = {}) {
+    const currentUserId = req.user?._id?.toString?.() || '';
+    const userId = comment.userId?.toString?.() || String(comment.userId || '');
+    const authorType = comment.authorType
+        || (userId === 'dexio-ai' ? 'ai' : (comment.type === 'activity' ? 'system' : 'user'));
+    const agent = comment.agent?.toObject
+        ? comment.agent.toObject()
+        : (comment.agent || {});
+    return {
+        id: comment._id?.toString?.() || String(comment._id || ''),
+        taskId: comment.taskId?.toString?.() || String(comment.taskId || ''),
+        type: comment.type || 'comment',
+        text: comment.text || '',
+        userId,
+        userName: comment.userName || (authorType === 'ai' ? 'Dexio IA' : 'Membre'),
+        userAvatar: comment.userAvatar || '',
+        authorType,
+        audience: comment.audience || 'team',
+        isMine: authorType === 'user' && !!currentUserId && userId === currentUserId,
+        isAi: authorType === 'ai',
+        metadata: comment.metadata || {},
+        agent: {
+            status: agent.status || '',
+            action: agent.action || '',
+            createdSubtasks: (agent.createdSubtasks || []).map(item => ({
+                title: item.title || '',
+                subtaskId: item.subtaskId || '',
+            })),
+            model: agent.model || '',
+            errorCode: agent.errorCode || '',
+            recordAgentConversationId: agent.recordAgentConversationId?.toString?.()
+                || String(agent.recordAgentConversationId || ''),
+            recordAgentRunId: agent.recordAgentRunId?.toString?.()
+                || String(agent.recordAgentRunId || ''),
+        },
+        createdAt: comment.createdAt || null,
+    };
+}
+
 async function loadMobileTaskListAccess(req, listId) {
     if (!/^[a-f\d]{24}$/i.test(String(listId || ''))) return null;
 
@@ -1408,6 +1448,91 @@ router.get('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
     } catch (error) {
         console.error('[MobileAPI] Task detail error:', error);
         sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
+router.get('/accounts/:accountNumber/tasks/:taskId/messages', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const { TaskComment } = await taskTenantModels(req);
+        const comments = await TaskComment.find({ taskId: task._id })
+            .sort({ createdAt: 1 })
+            .limit(250)
+            .lean();
+        res.json({
+            success: true,
+            messages: comments.map(comment => serializeTaskMessage(req, comment)),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Read task messages error:', error);
+        sendCaughtError(res, error, 'Lecture de la conversation impossible');
+    }
+});
+
+router.post('/accounts/:accountNumber/tasks/:taskId/messages', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const text = cleanText(req.body?.text, '').slice(0, 5000);
+        if (!text) return sendError(res, 400, 'Message requis', 'VALIDATION_ERROR');
+        const askAi = req.body?.askAi === true
+            || ['1', 'true', 'yes'].includes(String(req.body?.askAi || '').toLowerCase());
+        const { TaskComment } = await taskTenantModels(req);
+        const userComment = await TaskComment.create({
+            taskId: task._id,
+            recordId: task.recordId,
+            type: 'comment',
+            text,
+            userId: req.user?._id?.toString?.() || '',
+            userName: req.user?.name || req.user?.email || 'Membre',
+            userAvatar: req.user?.avatar || '',
+            authorType: 'user',
+            audience: askAi ? 'ai' : 'team',
+        });
+        const responseMessages = [serializeTaskMessage(req, userComment)];
+        let responseTask = task;
+        let agentError = null;
+
+        if (askAi) {
+            const recentComments = await TaskComment.find({ taskId: task._id })
+                .sort({ createdAt: -1 })
+                .limit(20)
+                .lean();
+            try {
+                const result = await TaskAgentService.runTaskAgent({
+                    req,
+                    task,
+                    TaskComment,
+                    userMessage: text,
+                    recentComments: recentComments.reverse(),
+                });
+                responseMessages.push(serializeTaskMessage(req, result.assistantComment));
+                responseTask = result.task || task;
+            } catch (error) {
+                console.error('[MobileAPI] Task agent error:', error);
+                agentError = {
+                    code: error.code || 'TASK_AGENT_ERROR',
+                    message: error.message || "L'IA n'a pas pu traiter cette demande.",
+                };
+                const errorComment = await TaskAgentService.createTaskAgentErrorComment({
+                    task,
+                    TaskComment,
+                    error,
+                });
+                responseMessages.push(serializeTaskMessage(req, errorComment));
+            }
+        }
+
+        res.status(201).json({
+            success: true,
+            messages: responseMessages,
+            task: await serializeSingleTask(req, responseTask),
+            ...(agentError ? { agentError } : {}),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Send task message error:', error);
+        sendCaughtError(res, error, 'Envoi du message impossible');
     }
 });
 

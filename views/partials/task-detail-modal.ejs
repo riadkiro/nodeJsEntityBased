@@ -70,6 +70,13 @@
 .tdm-mini-btn{height:28px;border:1px solid #e0e7ff;background:#fff;color:#4f46e5;border-radius:8px;padding:0 10px;font-family:inherit;font-size:11.5px;font-weight:700;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all .14s}
 .tdm-mini-btn:hover{background:#eef2ff;border-color:#c7d2fe}
 .tdm-attachments{margin-top:4px}
+.tdm-section-actions{display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tdm-image-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:4px 0 11px}
+.tdm-image-card{position:relative;aspect-ratio:4/3;border:1px solid #e8ecf1;border-radius:11px;background:#f8fafc;overflow:hidden}
+.tdm-image-open{width:100%;height:100%;border:0;padding:0;background:transparent;cursor:zoom-in;display:block}
+.tdm-image-open img{width:100%;height:100%;object-fit:cover;display:block}
+.tdm-image-remove{position:absolute;top:6px;right:6px;width:27px;height:27px;border:0;border-radius:999px;background:rgba(15,23,42,.68);color:#fff;display:grid;place-items:center;cursor:pointer}
+.tdm-image-remove:hover{background:#ef4444}
 .tdm-attachment-drop{border:1.5px dashed #dbe4f0;border-radius:11px;background:#fbfcff;min-height:74px;padding:10px;display:flex;flex-direction:column;gap:7px;transition:all .14s}
 .tdm-attachment-drop:hover{border-color:#c7d2fe;background:#f8faff}
 .tdm-attachment-empty{min-height:52px;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:12px;font-weight:500;text-align:center}
@@ -318,18 +325,44 @@
 
                             <div class="tdm-attachments">
                                 <div class="tdm-section-row">
-                                    <div class="tdm-section-label">Pièces jointes</div>
-                                    <button class="tdm-mini-btn" type="button" @click.stop="$refs.taskAttachmentInput.click()" :disabled="$store.taskModal.uploadBusy">
-                                        <iconify-icon icon="solar:paperclip-rounded-linear" width="14"></iconify-icon>
-                                        Ajouter
-                                    </button>
+                                    <div class="tdm-section-label">Images et pièces jointes</div>
+                                    <div class="tdm-section-actions">
+                                        <button class="tdm-mini-btn" type="button" @click.stop="$refs.taskCameraInput.click()" :disabled="$store.taskModal.uploadBusy">
+                                            <iconify-icon icon="solar:camera-linear" width="14"></iconify-icon>
+                                            Photo
+                                        </button>
+                                        <button class="tdm-mini-btn" type="button" @click.stop="$refs.taskImageInput.click()" :disabled="$store.taskModal.uploadBusy">
+                                            <iconify-icon icon="solar:gallery-add-linear" width="14"></iconify-icon>
+                                            Images
+                                        </button>
+                                        <button class="tdm-mini-btn" type="button" @click.stop="$refs.taskAttachmentInput.click()" :disabled="$store.taskModal.uploadBusy">
+                                            <iconify-icon icon="solar:paperclip-rounded-linear" width="14"></iconify-icon>
+                                            Fichier
+                                        </button>
+                                    </div>
                                 </div>
+                                <input class="tdm-hidden-input" x-ref="taskCameraInput" type="file" accept="image/*" capture="environment" @change="$store.taskModal.uploadAttachments($event.target.files); $event.target.value = ''">
+                                <input class="tdm-hidden-input" x-ref="taskImageInput" type="file" accept="image/*" multiple @change="$store.taskModal.uploadAttachments($event.target.files); $event.target.value = ''">
                                 <input class="tdm-hidden-input" x-ref="taskAttachmentInput" type="file" multiple @change="$store.taskModal.uploadAttachments($event.target.files); $event.target.value = ''">
-                                <div class="tdm-attachment-drop" @dragover.prevent @drop.prevent="$store.taskModal.uploadAttachments($event.dataTransfer.files)">
+                                <template x-if="$store.taskModal.imageAttachments().length">
+                                    <div class="tdm-image-grid">
+                                        <template x-for="attachment in $store.taskModal.imageAttachments()" :key="attachment._id || attachment.filename">
+                                            <div class="tdm-image-card">
+                                                <button class="tdm-image-open" type="button" @click.stop="$store.taskModal.openAttachmentViewer(attachment, $store.taskModal.imageAttachments())">
+                                                    <img :src="$store.taskModal.attachmentUrl(attachment)" :alt="attachment.originalName || 'Image de la tâche'">
+                                                </button>
+                                                <button class="tdm-image-remove" type="button" title="Supprimer l’image" @click.stop="$store.taskModal.deleteAttachment(attachment)">
+                                                    <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
+                                                </button>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                                <div class="tdm-attachment-drop" x-show="$store.taskModal.fileAttachments().length || !($store.taskModal.task.attachments || []).length" @dragover.prevent @drop.prevent="$store.taskModal.uploadAttachments($event.dataTransfer.files)">
                                     <template x-if="!($store.taskModal.task.attachments || []).length">
                                         <div class="tdm-attachment-empty" x-text="$store.taskModal.uploadBusy ? 'Ajout en cours...' : 'Déposez des fichiers ici ou utilisez Ajouter'"></div>
                                     </template>
-                                    <template x-for="attachment in ($store.taskModal.task.attachments || [])" :key="attachment._id || attachment.filename">
+                                    <template x-for="attachment in $store.taskModal.fileAttachments()" :key="attachment._id || attachment.filename">
                                         <div class="tdm-attachment-item">
                                             <span class="tdm-attachment-icon">
                                                 <iconify-icon :icon="$store.taskModal.attachmentIcon(attachment)" width="15"></iconify-icon>
@@ -1718,6 +1751,14 @@ document.addEventListener('alpine:init', () => {
 	            const ext = this.attachmentExtension(attachment);
 	            return mime.startsWith('image/') && mime !== 'image/svg+xml'
 	                || ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.bmp', '.avif'].includes(ext);
+	        },
+
+	        imageAttachments() {
+	            return (this.task?.attachments || []).filter(attachment => this.isImageAttachment(attachment));
+	        },
+
+	        fileAttachments() {
+	            return (this.task?.attachments || []).filter(attachment => !this.isImageAttachment(attachment));
 	        },
 
 	        attachmentCategory(attachment) {

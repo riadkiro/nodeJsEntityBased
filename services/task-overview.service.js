@@ -264,13 +264,20 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
         completedAt: task.completedAt || null,
         assignedTo: task.assignedTo || '',
         order: Number.isFinite(Number(task.order)) ? Number(task.order) : 0,
-        attachments: Array.isArray(task.attachments) ? task.attachments.map(att => ({
-            _id: att._id?.toString?.() || String(att._id || ''),
-            filename: att.filename || '',
-            originalName: att.originalName || att.filename || 'Fichier',
-            mimeType: att.mimeType || '',
-            size: Number(att.size || 0),
-        })) : [],
+        attachments: Array.isArray(task.attachments) ? task.attachments.map(att => {
+            const attachmentId = att._id?.toString?.() || String(att._id || '');
+            return {
+                _id: attachmentId,
+                filename: att.filename || '',
+                originalName: att.originalName || att.filename || 'Fichier',
+                mimeType: att.mimeType || '',
+                size: Number(att.size || 0),
+                uploadedAt: att.uploadedAt || null,
+                url: attachmentId
+                    ? `/api/mobile/accounts/${encodeURIComponent(String(req.account_number || ''))}/tasks/${encodeURIComponent(taskId)}/images/${encodeURIComponent(attachmentId)}/content`
+                    : '',
+            };
+        }) : [],
         hasAttachment: Array.isArray(task.attachments) && task.attachments.length > 0,
         listId,
         taskListId: listId,

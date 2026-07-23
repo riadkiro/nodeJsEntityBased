@@ -17,6 +17,7 @@ const {
 } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');
 const TaskListsService = require('../services/task-lists.service');
+const TaskImagesService = require('../services/task-images.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -1123,10 +1124,15 @@ router.delete('/accounts/:accountNumber/task-lists/:listId', async (req, res) =>
             return sendError(res, 403, 'Cette liste ne peut pas etre supprimee', 'TASK_LIST_PROTECTED');
         }
 
-        const tasks = await RecordTask.find({ taskListId: list._id }).select('_id').lean();
+        const tasks = await RecordTask.find({ taskListId: list._id }).select('_id attachments').lean();
         const taskIds = tasks.map(task => task._id);
         await Promise.all(tasks.map(task => cancelTaskReminder(req, task)));
         if (taskIds.length) await TaskComment.deleteMany({ taskId: { $in: taskIds } });
+        tasks.forEach(task => {
+            (task.attachments || []).forEach(attachment => {
+                TaskImagesService.removeFile(req.account_number, attachment.filename);
+            });
+        });
         await RecordTask.deleteMany({ taskListId: list._id });
         await TaskListShare.deleteMany({
             ownerAccountNumber: req.account_number,
@@ -1380,6 +1386,12 @@ router.delete('/accounts/:accountNumber/task-lists/:listId/tasks/:taskId', async
         if (access.TaskComment) {
             await access.TaskComment.deleteMany({ taskId: task._id });
         }
+        (task.attachments || []).forEach(attachment => {
+            TaskImagesService.removeFile(
+                access.accountNumber || req.account_number,
+                attachment.filename,
+            );
+        });
         await task.deleteOne();
         res.json({ success: true });
     } catch (error) {
@@ -1396,6 +1408,95 @@ router.get('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
     } catch (error) {
         console.error('[MobileAPI] Task detail error:', error);
         sendError(res, 500, error.message || 'Erreur serveur');
+    }
+});
+
+router.post(
+    '/accounts/:accountNumber/tasks/:taskId/images',
+    TaskImagesService.uploadImages,
+    async (req, res) => {
+        let persisted = false;
+        try {
+            const task = await loadTenantTask(req, req.params.taskId);
+            if (!task) {
+                TaskImagesService.cleanupRequestFiles(req);
+                return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+            }
+            if (!req.files?.length) {
+                return sendError(res, 400, 'Aucune image fournie', 'VALIDATION_ERROR');
+            }
+
+            const attachments = req.files
+                .map(file => TaskImagesService.attachmentFromFile(req, file, req.user._id))
+                .filter(Boolean);
+            if (!attachments.length) {
+                TaskImagesService.cleanupRequestFiles(req);
+                return sendError(res, 400, 'Images invalides', 'VALIDATION_ERROR');
+            }
+
+            task.attachments = task.attachments || [];
+            task.attachments.push(...attachments);
+            await task.save();
+            persisted = true;
+            res.status(201).json({
+                success: true,
+                task: await serializeSingleTask(req, task),
+            });
+        } catch (error) {
+            if (!persisted) TaskImagesService.cleanupRequestFiles(req);
+            console.error('[MobileAPI] Upload task images error:', error);
+            sendCaughtError(res, error, 'Upload des images impossible');
+        }
+    },
+);
+
+router.get('/accounts/:accountNumber/tasks/:taskId/images/:attachmentId/content', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const attachment = typeof task.attachments?.id === 'function'
+            ? task.attachments.id(req.params.attachmentId)
+            : (task.attachments || []).find(item => String(item._id) === String(req.params.attachmentId));
+        if (!attachment || !TaskImagesService.isImageAttachment(attachment)) {
+            return sendError(res, 404, 'Image introuvable', 'IMAGE_NOT_FOUND');
+        }
+        const filePath = TaskImagesService.resolvePath(req.account_number, attachment.filename);
+        if (!filePath) return sendError(res, 404, 'Image introuvable', 'IMAGE_NOT_FOUND');
+
+        res.setHeader('Cache-Control', 'private, max-age=3600');
+        res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(attachment.originalName || 'image')}"`);
+        if (attachment.mimeType) res.type(attachment.mimeType);
+        return res.sendFile(filePath);
+    } catch (error) {
+        console.error('[MobileAPI] Read task image error:', error);
+        sendCaughtError(res, error, 'Lecture de l’image impossible');
+    }
+});
+
+router.delete('/accounts/:accountNumber/tasks/:taskId/images/:attachmentId', async (req, res) => {
+    try {
+        const task = await loadTenantTask(req, req.params.taskId);
+        if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
+        const attachment = typeof task.attachments?.id === 'function'
+            ? task.attachments.id(req.params.attachmentId)
+            : (task.attachments || []).find(item => String(item._id) === String(req.params.attachmentId));
+        if (!attachment || !TaskImagesService.isImageAttachment(attachment)) {
+            return sendError(res, 404, 'Image introuvable', 'IMAGE_NOT_FOUND');
+        }
+
+        const filename = attachment.filename;
+        if (typeof attachment.deleteOne === 'function') attachment.deleteOne();
+        else task.attachments = (task.attachments || [])
+            .filter(item => String(item._id) !== String(req.params.attachmentId));
+        await task.save();
+        TaskImagesService.removeFile(req.account_number, filename);
+        res.json({
+            success: true,
+            task: await serializeSingleTask(req, task),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Delete task image error:', error);
+        sendCaughtError(res, error, 'Suppression de l’image impossible');
     }
 });
 
@@ -1718,6 +1819,9 @@ router.delete('/accounts/:accountNumber/tasks/:taskId', async (req, res) => {
         if (!task) return sendError(res, 404, 'Tache introuvable', 'TASK_NOT_FOUND');
 
         await cancelTaskReminder(req, task);
+        (task.attachments || []).forEach(attachment => {
+            TaskImagesService.removeFile(req.account_number, attachment.filename);
+        });
         await task.deleteOne();
         res.json({ success: true });
     } catch (error) {

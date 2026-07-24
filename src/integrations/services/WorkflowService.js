@@ -5,9 +5,8 @@
 
 const IntegrationProvider = require('../models/IntegrationProvider.model');
 const IntegrationAction = require('../models/IntegrationAction.model');
-const HttpRunner = require('./HttpRunner');
+const IntegrationService = require('./IntegrationService');
 const InternalActionRunner = require('./InternalActionRunner');
-const SecretVault = require('./SecretVault');
 const { resolveTemplate } = require('../utils/templateResolver');
 
 /**
@@ -72,6 +71,7 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
             const input = resolveTemplate(step.inputMapping || {}, context);
 
             let result;
+            let executionAlreadyLogged = false;
 
             // ═══ ROUTING: Internal vs External ═══
             if (provider.baseUrl === 'internal://') {
@@ -79,20 +79,22 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
                 result = await InternalActionRunner.execute({ action, input, tenantReq });
             } else {
                 // ── External Action (HTTP) ──
-                const connection = await ConnectionModel.findOne({
+                result = await IntegrationService.executeAction({
+                    ProviderModel: IntegrationProvider,
+                    ActionModel: IntegrationAction,
+                    ConnectionModel,
+                    LogModel,
                     workspaceId: job.workspaceId,
-                    providerKey: step.providerKey
+                    providerKey: step.providerKey,
+                    actionId: action._id.toString(),
+                    input,
+                    logContext: {
+                        workflowId: workflow._id,
+                        workflowJobId: job._id,
+                        stepId: step.id
+                    }
                 });
-
-                if (!connection || connection.status !== 'connected') {
-                    throw new Error(`Not connected to "${step.providerKey}"`);
-                }
-
-                const secrets = SecretVault.decrypt(connection.secrets);
-                result = await HttpRunner.executeWithRefresh(
-                    { provider, action, input, secrets },
-                    { provider, connection, ConnectionModel }
-                );
+                executionAlreadyLogged = true;
             }
 
             const stepLatency = Date.now() - stepStartTime;
@@ -108,7 +110,7 @@ async function processJob({ job, workflow, ConnectionModel, LogModel, JobModel, 
             const errorType = errorTypeMap[rawErrorCode] || rawErrorCode;
 
             // Log execution
-            await LogModel.create({
+            if (!executionAlreadyLogged) await LogModel.create({
                 workspaceId: job.workspaceId,
                 providerKey: step.providerKey,
                 actionKey: action.actionKey,

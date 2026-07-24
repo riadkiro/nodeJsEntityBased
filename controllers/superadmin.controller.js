@@ -13,6 +13,7 @@ const User = require("../models/user.model");
 const Account = require("../models/account.model");
 const Plan = require("../models/plan.model");
 const Subscription = require("../models/subscription.model");
+const PlatformIntegrations = require("../services/platform-integrations.service");
 const {
     convertPendingInvitesToGrants,
     invitationRedirectUrl,
@@ -198,6 +199,7 @@ module.exports = {
                 .sort({ created_on: -1 })
                 .skip((page - 1) * limit)
                 .limit(limit);
+            const platformProviders = await PlatformIntegrations.listProviderCatalog();
 
             // Enrich with owner info
             for (let acc of accounts) {
@@ -212,9 +214,28 @@ module.exports = {
                 accounts,
                 pagination: { page, limit, total, pages: Math.ceil(total / limit) },
                 filters: { search, status },
+                platformProviders,
             });
         } catch (error) {
             console.error("[SuperAdmin] Accounts list error:", error);
+            res.status(500).send("Server Error");
+        }
+    },
+
+    platformIntegrationsPage: async (req, res) => {
+        try {
+            const providers = await PlatformIntegrations.listProviderCatalog();
+            res.render("superadmin/sa-platform-integrations", {
+                layout: "layout-superadmin",
+                user: req.user,
+                providers,
+                quota: {
+                    dailyLimitEur: PlatformIntegrations.DAILY_LIMIT_EUR,
+                    monthlyLimitEur: PlatformIntegrations.MONTHLY_LIMIT_EUR,
+                },
+            });
+        } catch (error) {
+            console.error("[SuperAdmin] Platform integrations page error:", error);
             res.status(500).send("Server Error");
         }
     },
@@ -587,6 +608,56 @@ module.exports = {
         } catch (error) {
             console.error("[SuperAdmin] Update account status error:", error);
             res.status(500).json({ error: "Server Error" });
+        }
+    },
+
+    savePlatformCredential: async (req, res) => {
+        try {
+            const credential = await PlatformIntegrations.saveCredential({
+                providerKey: req.body.providerKey,
+                token: req.body.token,
+                estimatedCostPerCallEur: req.body.estimatedCostPerCallEur,
+                defaultModel: req.body.defaultModel,
+                maxOutputTokens: req.body.maxOutputTokens,
+                userId: req.user._id,
+            });
+            res.json({
+                success: true,
+                message: "Clé globale enregistrée et chiffrée",
+                credential,
+            });
+        } catch (error) {
+            console.error("[SuperAdmin] Save platform credential error:", error);
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    deletePlatformCredential: async (req, res) => {
+        try {
+            await PlatformIntegrations.deleteCredential(req.body.providerKey);
+            res.json({
+                success: true,
+                message: "Clé globale supprimée et accès désactivé pour tous les comptes",
+            });
+        } catch (error) {
+            console.error("[SuperAdmin] Delete platform credential error:", error);
+            res.status(400).json({ error: error.message });
+        }
+    },
+
+    updateAccountPlatformIntegration: async (req, res) => {
+        try {
+            const enabled = req.body.enabled === true || req.body.enabled === "true";
+            await PlatformIntegrations.setAccountProvider({
+                accountId: req.body.accountId,
+                providerKey: req.body.providerKey,
+                enabled,
+                userId: req.user._id,
+            });
+            res.json({ success: true, enabled });
+        } catch (error) {
+            console.error("[SuperAdmin] Update account platform integration error:", error);
+            res.status(400).json({ error: error.message });
         }
     },
 

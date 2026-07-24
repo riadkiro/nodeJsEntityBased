@@ -12,6 +12,7 @@ const IntegrationAction = require('../models/IntegrationAction.model');
 const IntegrationConnectionSchema = require('../models/IntegrationConnection.model').schema;
 const IntegrationLogSchema = require('../models/IntegrationLog.model').schema;
 const IntegrationService = require('../services/IntegrationService');
+const PlatformIntegrations = require('../../../services/platform-integrations.service');
 
 /**
  * Middleware to load tenant models
@@ -54,6 +55,10 @@ router.get('/', async (req, res) => {
         // Get tenant's connections
         const connections = await req.ConnectionModel.find({ workspaceId: req.account_number })
             .lean();
+        const platformState = await PlatformIntegrations.getAccountAccess(
+            req.account_number,
+            providers.map(provider => provider.key)
+        );
 
         // Create a map of connections by providerKey
         const connectionMap = {};
@@ -62,11 +67,25 @@ router.get('/', async (req, res) => {
         }
 
         // Merge provider info with connection status
-        const integrations = providers.map(provider => ({
-            ...provider,
-            connection: connectionMap[provider.key] || null,
-            isConnected: connectionMap[provider.key]?.status === 'connected'
-        }));
+        const integrations = providers.map(provider => {
+            const personalConnected = connectionMap[provider.key]?.status === 'connected';
+            const platformAccess = platformState.access[provider.key] || {
+                enabled: false,
+                configured: false,
+                available: false
+            };
+            return {
+                ...provider,
+                connection: connectionMap[provider.key] || null,
+                platformAccess,
+                credentialSource: personalConnected
+                    ? 'account'
+                    : platformAccess.available
+                        ? 'platform'
+                        : null,
+                isConnected: personalConnected || platformAccess.available
+            };
+        });
 
         if (req.accepts('html')) {
             res.render('integrations/tenant/integrations-list', {
@@ -106,6 +125,22 @@ router.get('/:providerKey', async (req, res) => {
             workspaceId: req.account_number,
             providerKey
         }).lean();
+        const platformState = await PlatformIntegrations.getAccountAccess(
+            req.account_number,
+            [providerKey]
+        );
+        const platformAccess = platformState.access[providerKey] || {
+            enabled: false,
+            configured: false,
+            available: false
+        };
+        const personalConnected = connection?.status === 'connected';
+        const isConnected = personalConnected || platformAccess.available;
+        const credentialSource = personalConnected
+            ? 'account'
+            : platformAccess.available
+                ? 'platform'
+                : null;
 
         // Get recent logs
         const logs = await IntegrationService.getLogs({
@@ -122,7 +157,10 @@ router.get('/:providerKey', async (req, res) => {
                 actions,
                 connection,
                 logs,
-                isConnected: connection?.status === 'connected',
+                isConnected,
+                credentialSource,
+                platformAccess,
+                quota: platformState.quota,
                 account_number: req.account_number
             });
         } else {
@@ -134,6 +172,10 @@ router.get('/:providerKey', async (req, res) => {
                     ...connection,
                     secrets: undefined  // Never expose secrets
                 } : null,
+                isConnected,
+                credentialSource,
+                platformAccess,
+                quota: platformState.quota,
                 logs
             });
         }

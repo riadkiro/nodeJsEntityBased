@@ -25,6 +25,7 @@ router.get("/users", superadminController.usersList);
 router.get("/users/:userId", superadminController.userDetail);
 router.get("/accounts", superadminController.accountsList);
 router.get("/billing", superadminController.billingPage);
+router.get("/integrations", superadminController.platformIntegrationsPage);
 router.get("/entity-templates", entityTemplateController.listPage);
 router.get("/space-templates", spaceTemplateController.listPage);
 
@@ -35,6 +36,9 @@ router.post("/api/users/role", superadminController.updateUserRole);
 router.post("/api/users/membership", superadminController.updateMembership);
 router.post("/api/users/delete", superadminController.deleteUser);
 router.post("/api/accounts/status", superadminController.updateAccountStatus);
+router.post("/api/accounts/platform-integration", superadminController.updateAccountPlatformIntegration);
+router.post("/api/platform-integrations/credential", superadminController.savePlatformCredential);
+router.delete("/api/platform-integrations/credential", superadminController.deletePlatformCredential);
 router.post("/api/accounts/invite", superadminController.inviteToAccount);
 router.post("/api/billing/plans/sync-defaults", superadminController.syncBillingPlans);
 router.post("/api/billing/subscription", superadminController.updateAccountSubscription);

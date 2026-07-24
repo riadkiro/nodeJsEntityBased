@@ -1,0 +1,144 @@
+<div>
+    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 20px; margin-bottom: 24px;">
+        <div>
+            <h1 style="font-size: 24px; font-weight: 800; color: #0f172a; margin: 0;">Clés API globales</h1>
+            <p style="font-size: 13px; color: #64748b; margin: 5px 0 0; max-width: 720px;">
+                Ces clés permettent d’offrir les intégrations aux comptes sélectionnés. Elles sont chiffrées au repos et ne sont jamais renvoyées au navigateur.
+            </p>
+        </div>
+        <a href="/superadmin/accounts" class="sa-btn sa-btn-outline">
+            <iconify-icon icon="solar:buildings-bold-duotone" width="17"></iconify-icon>
+            Activer par compte
+        </a>
+    </div>
+
+    <div class="sa-panel" style="margin-bottom: 20px; border-color: #c7d2fe; background: linear-gradient(135deg, #eef2ff, #fff);">
+        <div style="padding: 18px 20px; display: flex; align-items: center; gap: 14px;">
+            <div style="width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; color: #4f46e5; background: #fff;">
+                <iconify-icon icon="solar:shield-check-bold-duotone" width="24"></iconify-icon>
+            </div>
+            <div>
+                <div style="font-size: 14px; font-weight: 800; color: #312e81;">Garde-fou commun à toutes les clés offertes</div>
+                <div style="font-size: 12px; color: #6366f1; margin-top: 2px;">
+                    Maximum estimé par compte : <strong><%= quota.dailyLimitEur.toFixed(2).replace('.', ',') %> €/jour</strong>
+                    et <strong><%= quota.monthlyLimitEur.toFixed(2).replace('.', ',') %> €/mois</strong>.
+                    Les appels en erreur sont remboursés du quota.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px;">
+        <% providers.forEach(provider => { const credential = provider.credential || {}; %>
+            <form class="sa-panel platform-provider-form" data-provider="<%= provider.key %>">
+                <div class="sa-panel-header">
+                    <div style="display: flex; align-items: center; gap: 11px;">
+                        <div style="width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; color: #4f46e5; background: #eef2ff;">
+                            <iconify-icon icon="<%= provider.key === 'openai' ? 'solar:stars-bold-duotone' : provider.key === 'unsplash' ? 'solar:gallery-bold-duotone' : 'solar:global-bold-duotone' %>" width="21"></iconify-icon>
+                        </div>
+                        <div>
+                            <div style="font-size: 15px; font-weight: 800; color: #0f172a;"><%= provider.name %></div>
+                            <div style="font-size: 11px; color: #94a3b8;"><%= provider.key %> · <%= provider.category || 'Autre' %></div>
+                        </div>
+                    </div>
+                    <span class="sa-badge <%= credential.configured ? 'sa-badge-green' : 'sa-badge-gray' %>">
+                        <%= credential.configured ? 'Configurée' : 'Non configurée' %>
+                    </span>
+                </div>
+
+                <div class="sa-panel-body">
+                    <label class="sa-label">Clé API / token</label>
+                    <input class="sa-input" type="password" name="token" autocomplete="new-password"
+                           placeholder="<%= credential.configured ? 'Laisser vide pour conserver la clé actuelle' : 'Coller la clé secrète' %>">
+                    <p style="font-size: 10px; color: #94a3b8; margin: 6px 0 16px;">
+                        Aucune valeur existante n’est affichée, même au SuperAdmin.
+                    </p>
+
+                    <label class="sa-label">Coût estimé réservé par appel (€)</label>
+                    <input class="sa-input" type="number" name="estimatedCostPerCallEur"
+                           min="0.0001" max="0.5" step="0.0001"
+                           value="<%= Number(credential.estimatedCostPerCallEur || 0.01) %>">
+                    <p style="font-size: 10px; color: #94a3b8; margin: 6px 0 16px;">
+                        Sert au calcul atomique du budget. Un appel API échoué ne consomme pas ce montant.
+                    </p>
+
+                    <% if (provider.key === 'openai') { %>
+                        <div style="display: grid; grid-template-columns: 1.4fr .8fr; gap: 10px; margin-bottom: 16px;">
+                            <div>
+                                <label class="sa-label">Modèle imposé (optionnel)</label>
+                                <input class="sa-input" type="text" name="defaultModel"
+                                       value="<%= credential.defaultModel || '' %>"
+                                       placeholder="Ex. modèle économique">
+                            </div>
+                            <div>
+                                <label class="sa-label">Tokens max.</label>
+                                <input class="sa-input" type="number" name="maxOutputTokens"
+                                       min="64" max="4096" step="1"
+                                       value="<%= Number(credential.maxOutputTokens || 1200) %>">
+                            </div>
+                        </div>
+                    <% } %>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 8px;">
+                        <% if (credential.configured) { %>
+                            <button type="button" class="sa-btn sa-btn-danger" onclick="removeCredential('<%= provider.key %>', '<%= provider.name %>')">
+                                Supprimer
+                            </button>
+                        <% } %>
+                        <button type="submit" class="sa-btn sa-btn-primary">
+                            <iconify-icon icon="solar:diskette-bold-duotone" width="16"></iconify-icon>
+                            Enregistrer
+                        </button>
+                    </div>
+                </div>
+            </form>
+        <% }) %>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.platform-provider-form').forEach(form => {
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = form.querySelector('button[type="submit"]');
+        const data = new FormData(form);
+        button.disabled = true;
+        try {
+            const response = await fetch('/superadmin/api/platform-integrations/credential', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    providerKey: form.dataset.provider,
+                    token: data.get('token') || '',
+                    estimatedCostPerCallEur: data.get('estimatedCostPerCallEur'),
+                    defaultModel: data.get('defaultModel') || '',
+                    maxOutputTokens: data.get('maxOutputTokens') || 1200
+                })
+            });
+            const result = await response.json();
+            if (!response.ok || !result.success) throw new Error(result.error || 'Enregistrement impossible');
+            location.reload();
+        } catch (error) {
+            button.disabled = false;
+            alert(error.message);
+        }
+    });
+});
+
+async function removeCredential(providerKey, providerName) {
+    if (!confirm(`Supprimer la clé globale ${providerName} ? Elle sera désactivée pour tous les comptes.`)) return;
+    const response = await fetch('/superadmin/api/platform-integrations/credential', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ providerKey })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.success) {
+        alert(result.error || 'Suppression impossible');
+        return;
+    }
+    location.reload();
+}
+</script>

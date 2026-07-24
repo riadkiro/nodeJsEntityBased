@@ -31,7 +31,7 @@ const IntegrationLogSchema = new mongoose.Schema(
         // Error classification for filtering/analytics
         errorType: {
             type: String,
-            enum: ["auth", "rate_limit", "network", "invalid_config", "internal", "validation", null],
+            enum: ["auth", "rate_limit", "network", "invalid_config", "internal", "validation", "quota", null],
             default: null
         },
         latencyMs: {
@@ -57,6 +57,18 @@ const IntegrationLogSchema = new mongoose.Schema(
             ref: "WorkflowJob"
         },
         stepId: String,
+        credentialSource: {
+            type: String,
+            enum: ["account", "platform"],
+            default: "account"
+        },
+        estimatedCostEur: {
+            type: Number,
+            default: 0
+        },
+        quota: {
+            type: mongoose.Schema.Types.Mixed
+        },
         // Error details if failed
         errorMessage: String
     },

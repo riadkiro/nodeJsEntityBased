@@ -48,7 +48,7 @@
                         <% if (integration.isConnected) { %>
                             <span class="text-xs px-2 py-1 rounded bg-success/20 text-success flex items-center gap-1">
                                 <span class="w-2 h-2 bg-success rounded-full"></span>
-                                Connected
+                                <%= integration.credentialSource === 'platform' ? 'Offert par Dexapp' : 'Clé personnelle' %>
                             </span>
                         <% } else { %>
                             <span class="text-xs text-gray-500 dark:text-gray-400">Not connected</span>

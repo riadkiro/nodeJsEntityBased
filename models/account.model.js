@@ -149,6 +149,17 @@ const AccountSchema = new mongoose.Schema({
     },
   },
 
+  // Platform-funded integrations. Credentials stay encrypted in the global DB
+  // and are never copied to, or exposed inside, a tenant database.
+  platformIntegrations: {
+    providers: [{
+      providerKey: { type: String, lowercase: true, trim: true },
+      enabled: { type: Boolean, default: false },
+      updatedAt: { type: Date, default: Date.now },
+      updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    }],
+  },
+
   permissions: [{ type: mongoose.Schema.Types.ObjectId, ref: "Permission" }],
 
   // Global Drive folders (account-level custom folders)

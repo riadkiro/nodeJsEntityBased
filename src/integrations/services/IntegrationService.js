@@ -5,6 +5,27 @@
 
 const SecretVault = require('./SecretVault');
 const HttpRunner = require('./HttpRunner');
+const PlatformIntegrations = require('../../../services/platform-integrations.service');
+
+function quotaExceededResult(quota) {
+    return {
+        success: false,
+        code: 'PLATFORM_QUOTA_EXHAUSTED',
+        errorType: 'quota',
+        error: PlatformIntegrations.QUOTA_EXHAUSTED_MESSAGE,
+        errorMessage: PlatformIntegrations.QUOTA_EXHAUSTED_MESSAGE,
+        credentialSource: 'platform',
+        quota
+    };
+}
+
+function connectionErrorResult(error) {
+    return {
+        success: false,
+        error: error || 'Not connected to this provider',
+        errorMessage: error || 'Not connected to this provider'
+    };
+}
 
 /**
  * Connect a workspace to a provider
@@ -97,33 +118,73 @@ async function testConnection({
         return { success: false, error: 'Test action not found' };
     }
 
-    // Get connection and decrypt secrets
-    const connection = await ConnectionModel.findOne({ workspaceId, providerKey });
-    if (!connection || !connection.secrets) {
-        return { success: false, error: 'Not connected. Please provide credentials first.' };
-    }
-
-    let secrets;
+    let resolved;
     try {
-        secrets = SecretVault.decrypt(connection.secrets);
+        resolved = await PlatformIntegrations.resolveCredentials({
+            ConnectionModel,
+            workspaceId,
+            providerKey,
+            allowErroredConnection: true
+        });
     } catch (err) {
         return { success: false, error: 'Failed to decrypt credentials' };
+    }
+    if (!resolved.source) {
+        return connectionErrorResult(resolved.error);
+    }
+
+    let reservation = null;
+    let executionInput = action.testPayload || {};
+    if (resolved.source === 'platform') {
+        reservation = await PlatformIntegrations.consumeBudget({
+            accountNumber: workspaceId,
+            credential: resolved.credential
+        });
+        if (!reservation.allowed) {
+            const quotaResult = quotaExceededResult(reservation.quota);
+            await createLog({
+                LogModel,
+                workspaceId,
+                providerKey,
+                actionKey: action.actionKey,
+                result: quotaResult,
+                credentialSource: resolved.source,
+                estimatedCostEur: 0,
+                quota: reservation.quota
+            });
+            return quotaResult;
+        }
+        executionInput = PlatformIntegrations.preparePlatformInput(
+            providerKey,
+            executionInput,
+            resolved.credential
+        );
     }
 
     // Execute test action with test payload
     const result = await HttpRunner.execute({
         provider,
         action,
-        input: action.testPayload || {},
-        secrets
+        input: executionInput,
+        secrets: resolved.secrets
     });
 
-    // Update connection status
-    await ConnectionModel.findByIdAndUpdate(connection._id, {
-        status: result.success ? 'connected' : 'error',
-        lastTestAt: new Date(),
-        lastError: result.success ? null : result.errorMessage
-    });
+    if (resolved.source === 'platform' && !result.success) {
+        await PlatformIntegrations.refundBudget({
+            accountNumber: workspaceId,
+            reservation
+        });
+        reservation.quota = await PlatformIntegrations.getUsage(workspaceId);
+    }
+
+    // A platform-funded test must never alter a tenant's personal connection.
+    if (resolved.source === 'account' && resolved.connection) {
+        await ConnectionModel.findByIdAndUpdate(resolved.connection._id, {
+            status: result.success ? 'connected' : 'error',
+            lastTestAt: new Date(),
+            lastError: result.success ? null : result.errorMessage
+        });
+    }
 
     // Log the test
     await createLog({
@@ -131,10 +192,17 @@ async function testConnection({
         workspaceId,
         providerKey,
         actionKey: action.actionKey,
-        result
+        result,
+        credentialSource: resolved.source,
+        estimatedCostEur: result.success ? reservation?.estimatedCostEur : 0,
+        quota: reservation?.quota
     });
 
-    return result;
+    return {
+        ...result,
+        credentialSource: resolved.source,
+        ...(reservation?.quota ? { quota: reservation.quota } : {})
+    };
 }
 
 /**
@@ -149,6 +217,7 @@ async function testConnection({
  * @param {string} options.actionId - MongoDB _id or actionKey
  * @param {object} options.input - User input
  * @param {number} [options.timeoutMs] - Optional request timeout override
+ * @param {object} [options.logContext] - Optional workflow identifiers
  * @returns {Promise<object>} - Execution result
  */
 async function executeAction({
@@ -160,7 +229,8 @@ async function executeAction({
     providerKey,
     actionId,
     input = {},
-    timeoutMs
+    timeoutMs,
+    logContext = {}
 }) {
     // Get provider
     const provider = await ProviderModel.findOne({ key: providerKey });
@@ -190,29 +260,69 @@ async function executeAction({
         return { success: false, error: 'Action does not belong to this provider' };
     }
 
-    // Get connection and decrypt secrets
-    const connection = await ConnectionModel.findOne({ workspaceId, providerKey });
-    if (!connection || connection.status !== 'connected') {
-        return { success: false, error: 'Not connected to this provider' };
+    let resolved;
+    try {
+        resolved = await PlatformIntegrations.resolveCredentials({
+            ConnectionModel,
+            workspaceId,
+            providerKey
+        });
+    } catch (err) {
+        return { success: false, error: 'Failed to decrypt credentials' };
+    }
+    if (!resolved.source) {
+        return connectionErrorResult(resolved.error);
     }
 
-    let secrets = {};
-    if (connection.secrets) {
-        try {
-            secrets = SecretVault.decrypt(connection.secrets);
-        } catch (err) {
-            return { success: false, error: 'Failed to decrypt credentials' };
+    let reservation = null;
+    let executionInput = input;
+    if (resolved.source === 'platform') {
+        reservation = await PlatformIntegrations.consumeBudget({
+            accountNumber: workspaceId,
+            credential: resolved.credential
+        });
+        if (!reservation.allowed) {
+            const quotaResult = quotaExceededResult(reservation.quota);
+            await createLog({
+                LogModel,
+                workspaceId,
+                providerKey,
+                actionKey: action.actionKey,
+                result: quotaResult,
+                credentialSource: resolved.source,
+                estimatedCostEur: 0,
+                quota: reservation.quota,
+                logContext
+            });
+            return quotaResult;
         }
+        executionInput = PlatformIntegrations.preparePlatformInput(
+            providerKey,
+            input,
+            resolved.credential
+        );
     }
 
     // Execute
-    const result = await HttpRunner.execute({
+    const runnerOptions = {
         provider,
         action,
-        input,
-        secrets,
+        input: executionInput,
+        secrets: resolved.secrets,
         timeoutMs
-    });
+    };
+    const refreshContext = resolved.source === 'account' && resolved.connection
+        ? { provider, connection: resolved.connection, ConnectionModel }
+        : null;
+    const result = await HttpRunner.executeWithRefresh(runnerOptions, refreshContext);
+
+    if (resolved.source === 'platform' && !result.success) {
+        await PlatformIntegrations.refundBudget({
+            accountNumber: workspaceId,
+            reservation
+        });
+        reservation.quota = await PlatformIntegrations.getUsage(workspaceId);
+    }
 
     // Log execution
     await createLog({
@@ -220,10 +330,18 @@ async function executeAction({
         workspaceId,
         providerKey,
         actionKey: action.actionKey,
-        result
+        result,
+        credentialSource: resolved.source,
+        estimatedCostEur: result.success ? reservation?.estimatedCostEur : 0,
+        quota: reservation?.quota,
+        logContext
     });
 
-    return result;
+    return {
+        ...result,
+        credentialSource: resolved.source,
+        ...(reservation?.quota ? { quota: reservation.quota } : {})
+    };
 }
 
 /**
@@ -267,7 +385,17 @@ async function executeActionForTest({
 /**
  * Create execution log
  */
-async function createLog({ LogModel, workspaceId, providerKey, actionKey, result }) {
+async function createLog({
+    LogModel,
+    workspaceId,
+    providerKey,
+    actionKey,
+    result,
+    credentialSource = 'account',
+    estimatedCostEur = 0,
+    quota = null,
+    logContext = {}
+}) {
     try {
         await LogModel.create({
             workspaceId,
@@ -279,7 +407,13 @@ async function createLog({ LogModel, workspaceId, providerKey, actionKey, result
             latencyMs: result.latencyMs,
             requestMeta: result.meta?.requestMeta || {},
             responseMeta: result.meta?.responseMeta || {},
-            errorMessage: result.errorMessage
+            errorMessage: result.errorMessage || result.error,
+            credentialSource,
+            estimatedCostEur: Number(estimatedCostEur || 0),
+            quota: quota || undefined,
+            workflowId: logContext.workflowId,
+            workflowJobId: logContext.workflowJobId,
+            stepId: logContext.stepId
         });
     } catch (err) {
         console.error('[IntegrationService] Failed to create log:', err.message);

@@ -27,7 +27,7 @@
                 <% if (isConnected) { %>
                     <span class="px-3 py-1 rounded-full bg-success/20 text-success flex items-center gap-2">
                         <span class="w-2 h-2 bg-success rounded-full"></span>
-                        Connected
+                        <%= credentialSource === 'platform' ? 'Offert par Dexapp' : 'Clé personnelle' %>
                     </span>
                 <% } else { %>
                     <span class="px-3 py-1 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-500">
@@ -45,6 +45,14 @@
         <% if (isConnected) { %>
             <div class="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg mb-4">
                 <div>
+                    <% if (credentialSource === 'platform') { %>
+                        <p class="text-sm dark:text-gray-300"><strong>Accès API offert par Dexapp</strong></p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            Budget estimé : <%= Number(quota.dayEstimatedCostEur || 0).toFixed(3) %> € / 0,50 € aujourd’hui,
+                            <%= Number(quota.monthEstimatedCostEur || 0).toFixed(3) %> € / 5 € ce mois-ci.
+                        </p>
+                        <p class="text-xs text-gray-500 mt-1">Vous pouvez ajouter votre propre clé ci-dessous pour ne plus utiliser ce quota.</p>
+                    <% } else { %>
                     <p class="text-sm dark:text-gray-300">Connected since: <strong><%= connection?.connectedAt ? new Date(connection.connectedAt).toLocaleDateString() : 'N/A' %></strong></p>
                     <% if (connection?.lastTestAt) { %>
                         <p class="text-xs text-gray-500 mt-1">Last tested: <%= new Date(connection.lastTestAt).toLocaleString() %></p>
@@ -73,15 +81,34 @@
                             <% } %>
                         </div>
                     <% } %>
+                    <% } %>
                 </div>
                 <div class="flex gap-2">
                     <button onclick="testConnection()" class="btn btn-sm btn-outline-success">Test Connection</button>
-                    <% if (['oauth2', 'oidc'].includes(provider.authType) && connection?.oauthMeta) { %>
+                    <% if (credentialSource === 'account' && ['oauth2', 'oidc'].includes(provider.authType) && connection?.oauthMeta) { %>
                         <button onclick="refreshToken()" class="btn btn-sm btn-outline-info">Refresh Token</button>
                     <% } %>
+                    <% if (credentialSource === 'account') { %>
                     <button onclick="disconnect()" class="btn btn-sm btn-outline-danger">Disconnect</button>
+                    <% } %>
                 </div>
             </div>
+            <% if (credentialSource === 'platform' && !['oauth2', 'oidc'].includes(provider.authType)) { %>
+                <form id="connectForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium dark:text-gray-300 mb-1">Utiliser ma propre clé API</label>
+                        <input type="password" name="token" required
+                               placeholder="Votre clé reste chiffrée et remplace l’accès offert"
+                               class="form-input w-full dark:bg-gray-900 dark:border-gray-800">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Enregistrer ma clé</button>
+                </form>
+            <% } else if (credentialSource === 'platform') { %>
+                <a href="/account/<%= account_number %>/integrations/<%= provider.key %>/oauth/connect"
+                   class="btn btn-primary">
+                    Connecter mon propre compte <%= provider.name %>
+                </a>
+            <% } %>
         <% } else { %>
             <% if (['oauth2', 'oidc'].includes(provider.authType)) { %>
                 <!-- OAuth Connect Button -->

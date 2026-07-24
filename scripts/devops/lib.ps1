@@ -48,8 +48,9 @@ function Get-DexappDeployConfig {
     $defaults = @{
         GIT_BRANCH = "beta"
         PM2_NAME = "dexioSaas"
-        SERVER_INSTALL_CMD = "npm ci --omit=dev"
+        SERVER_INSTALL_CMD = "npm ci"
         SERVER_BUILD_CMD = "npm run build:all"
+        SERVER_PRUNE_CMD = "npm prune --omit=dev"
         SERVER_RELOAD_CMD = "pm2 reload dexioSaas --update-env"
         LOCAL_MONGO_BASE_URI = "mongodb://127.0.0.1:27017/"
         REMOTE_MONGO_BASE_URI = "mongodb://127.0.0.1:27017/"

@@ -46,6 +46,7 @@ $remote = @(
     "git pull --ff-only origin '$branch'"
     $config.SERVER_INSTALL_CMD
     $config.SERVER_BUILD_CMD
+    $config.SERVER_PRUNE_CMD
     $config.SERVER_RELOAD_CMD
 ) -join " && "
 

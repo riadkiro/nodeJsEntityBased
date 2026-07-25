@@ -33,6 +33,11 @@ async function runTaskAgent({
             goal: cleanText(userMessage).slice(0, 4000),
             conversationId,
             contextSelections: {},
+            conversationContext: {
+                type: 'task',
+                id: cleanId(task._id),
+                label: cleanText(task.title, 'Tâche')
+            },
             taskContext: {
                 taskId: task._id,
                 imageContent: TaskImagesService.visionContent(
@@ -87,7 +92,7 @@ async function runTaskAgent({
         userName: 'Dexio IA',
         userAvatar: '',
         authorType: 'ai',
-        audience: 'team',
+        audience: 'ai',
         agent: {
             status: run.status === 'error' ? 'error' : 'completed',
             action: createdSubtasks.length ? 'create_subtasks' : 'none',
@@ -113,6 +118,108 @@ async function runTaskAgent({
     };
 }
 
+async function runMobileAiAgent({
+    req,
+    contextType,
+    task = null,
+    list = null,
+    note = null,
+    recordId,
+    userMessage,
+    conversationId = '',
+    imageContent = [],
+    uploadedImageCount = 0,
+    chatHistoryText = ''
+}) {
+    if (!req?.tenantDbConnection) {
+        throw new TaskAgentError("L'IA n'est pas disponible dans cet espace.", 'AI_NOT_CONFIGURED');
+    }
+    if (typeof RecordAiRouter.executeRecordAgentRun !== 'function') {
+        throw new TaskAgentError("Le mode Agent IA n'est pas disponible.", 'RECORD_AGENT_UNAVAILABLE');
+    }
+
+    const isTask = contextType === 'task' && task;
+    const isList = contextType === 'task_list' && list;
+    const isNote = contextType === 'note' && note;
+    if (!isTask && !isList && !isNote) {
+        throw new TaskAgentError('Contexte IA non pris en charge.', 'AI_CONTEXT_INVALID');
+    }
+
+    const contextDocument = isTask ? task : (isList ? list : note);
+    const contextId = cleanId(contextDocument._id);
+    const contextLabel = cleanText(
+        isTask ? task.title : (isList ? list.label : note.title),
+        isTask ? 'Tâche' : (isList ? 'Liste' : 'Note')
+    );
+
+    let runResult;
+    try {
+        runResult = await RecordAiRouter.executeRecordAgentRun(req, {
+            recordId,
+            goal: cleanText(userMessage).slice(0, 4000),
+            conversationId,
+            contextSelections: isNote ? { notes: [note._id] } : {},
+            conversationContext: {
+                type: contextType,
+                id: contextId,
+                label: contextLabel
+            },
+            taskContext: isTask ? {
+                taskId: task._id,
+                imageContent: Array.isArray(imageContent) ? imageContent.slice(0, 4) : [],
+                uploadedImageCount: Number(uploadedImageCount || 0),
+                chatHistoryText
+            } : null,
+            listContext: isList ? {
+                listId: list._id,
+                imageContent: Array.isArray(imageContent) ? imageContent.slice(0, 4) : [],
+                uploadedImageCount: Number(uploadedImageCount || 0),
+                chatHistoryText
+            } : null
+        });
+    } catch (error) {
+        throw asTaskAgentError(error);
+    }
+
+    let run = runResult.run;
+    let conversation = runResult.conversation;
+    const applicableActionIds = (run.proposedActions || [])
+        .filter(action => {
+            if (!['proposed', 'failed'].includes(action.status)) return false;
+            if (isTask) {
+                return action.tool === 'create_subtasks'
+                    && cleanId(action.input?.taskId) === cleanId(task._id);
+            }
+            return isList && action.tool === 'create_task';
+        })
+        .map(action => action.id);
+
+    if (applicableActionIds.length) {
+        try {
+            const applyResult = await RecordAiRouter.executeRecordAgentApply(req, {
+                recordId,
+                runId: run._id,
+                actionIds: applicableActionIds,
+                rejectUnselected: false
+            });
+            run = applyResult.run;
+            conversation = applyResult.conversation || conversation;
+        } catch (error) {
+            throw asTaskAgentError(error);
+        }
+    }
+
+    return {
+        run,
+        conversation,
+        reply: buildMobileAgentReply(run),
+        createdItems: collectMobileCreatedItems(run),
+        pendingActionCount: (run.proposedActions || []).filter(
+            action => action.status === 'proposed'
+        ).length
+    };
+}
+
 async function createTaskAgentErrorComment({ task, TaskComment, error }) {
     const normalized = asTaskAgentError(error);
     return TaskComment.create({
@@ -124,7 +231,7 @@ async function createTaskAgentErrorComment({ task, TaskComment, error }) {
         userName: 'Dexio IA',
         userAvatar: '',
         authorType: 'ai',
-        audience: 'team',
+        audience: 'ai',
         agent: {
             status: 'error',
             action: 'none',
@@ -177,10 +284,50 @@ function collectCreatedSubtasks(run, actionIds = []) {
         .filter(item => item.title);
 }
 
-function buildAgentReply(run, createdSubtasks = [], pendingActions = []) {
+function collectCreatedTasks(run) {
+    return (run.proposedActions || [])
+        .filter(action => action.tool === 'create_task' && action.status === 'applied')
+        .map(action => ({
+            title: cleanText(
+                action.result?.title
+                || action.input?.title
+                || action.title
+            ).slice(0, 240),
+            taskId: cleanId(action.result?.taskId)
+        }))
+        .filter(item => item.title);
+}
+
+function collectMobileCreatedItems(run) {
+    return [
+        ...collectCreatedTasks(run),
+        ...collectCreatedSubtasks(run)
+    ];
+}
+
+function buildMobileAgentReply(run) {
+    const createdSubtasks = collectCreatedSubtasks(run);
+    const createdTasks = collectCreatedTasks(run);
+    const pendingActions = (run.proposedActions || []).filter(
+        action => action.status === 'proposed'
+    );
+    return buildAgentReply(run, createdSubtasks, pendingActions, createdTasks);
+}
+
+function buildAgentReply(
+    run,
+    createdSubtasks = [],
+    pendingActions = [],
+    createdTasks = []
+) {
     const summary = cleanText(run.summary);
     const parts = [];
     if (summary) parts.push(summary);
+    if (createdTasks.length) {
+        parts.push(
+            `${createdTasks.length} tâche${createdTasks.length > 1 ? 's ont été créées' : ' a été créée'} dans la liste.`
+        );
+    }
     if (createdSubtasks.length) {
         parts.push(
             `${createdSubtasks.length} sous-tâche${createdSubtasks.length > 1 ? 's ont été créées' : ' a été créée'} dans la tâche.`
@@ -223,5 +370,8 @@ function cleanText(value, fallback = '') {
 module.exports = {
     TaskAgentError,
     runTaskAgent,
-    createTaskAgentErrorComment
+    runMobileAiAgent,
+    createTaskAgentErrorComment,
+    buildMobileAgentReply,
+    collectMobileCreatedItems
 };

@@ -98,7 +98,13 @@ function sendCaughtError(res, error, fallback = 'Erreur serveur') {
     if (error instanceof ReminderService.ReminderValidationError) {
         return sendError(res, error.status || 400, error.message, error.code);
     }
-    return sendError(res, 500, error.message || fallback);
+    const status = Number(error?.statusCode || error?.status || 500);
+    return sendError(
+        res,
+        status >= 400 && status <= 599 ? status : 500,
+        error.message || fallback,
+        error.code
+    );
 }
 
 function normalizeEmail(email) {
@@ -882,6 +888,170 @@ function serializeTaskMessage(req, comment = {}) {
     };
 }
 
+function normalizeMobileAiContextType(value) {
+    const type = String(value || '').trim().toLowerCase();
+    return ['task', 'task_list', 'note'].includes(type) ? type : '';
+}
+
+async function loadMobileAiContext(req, rawType, contextId) {
+    const type = normalizeMobileAiContextType(rawType);
+    if (!type || !/^[a-f\d]{24}$/i.test(String(contextId || ''))) return null;
+
+    if (type === 'task') {
+        const task = await loadTenantTask(req, contextId);
+        if (!task) return null;
+        return {
+            type,
+            id: task._id.toString(),
+            label: task.title || 'Tâche',
+            recordId: task.recordId,
+            task,
+            list: null,
+            imageCount: (task.attachments || []).filter(
+                attachment => TaskImagesService.isImageAttachment(attachment)
+            ).length
+        };
+    }
+
+    if (type === 'note') {
+        const RecordNote = await tenantCollection(req, 'RecordNote');
+        const note = await RecordNote.findById(contextId).lean();
+        if (!note) return null;
+        if (note.isProtected) {
+            const error = new Error(
+                "Déverrouille cette note avant de l'utiliser avec l'IA."
+            );
+            error.statusCode = 403;
+            error.code = 'PROTECTED_NOTE_AI_FORBIDDEN';
+            throw error;
+        }
+        return {
+            type,
+            id: note._id.toString(),
+            label: note.title || 'Note',
+            recordId: note.recordId,
+            task: null,
+            list: null,
+            note,
+            imageCount: 0
+        };
+    }
+
+    const access = await loadMobileTaskListAccess(req, contextId);
+    if (!access) return null;
+    if (access.shared) {
+        const error = new Error(
+            "Le chat IA d'une liste partagée sera bientôt disponible."
+        );
+        error.statusCode = 403;
+        error.code = 'SHARED_LIST_AI_UNAVAILABLE';
+        throw error;
+    }
+    const taskCount = await access.RecordTask.countDocuments({
+        taskListId: access.list._id
+    });
+    return {
+        type,
+        id: access.list._id.toString(),
+        label: access.list.label || 'Liste',
+        recordId: access.list.recordId,
+        task: null,
+        list: access.list,
+        taskCount,
+        imageCount: 0
+    };
+}
+
+async function findMobileAiConversation(req, aiContext) {
+    const RecordAgentConversation = await tenantCollection(
+        req,
+        'RecordAgentConversation'
+    );
+    return RecordAgentConversation.findOne({
+        recordId: aiContext.recordId,
+        userId: String(req.user._id),
+        contextType: aiContext.type,
+        contextId: aiContext.id,
+        archived: { $ne: true }
+    }).sort({ updatedAt: -1 });
+}
+
+async function mobileAiRuns(req, aiContext, conversationId = '') {
+    let conversation = null;
+    if (/^[a-f\d]{24}$/i.test(String(conversationId || ''))) {
+        const RecordAgentConversation = await tenantCollection(
+            req,
+            'RecordAgentConversation'
+        );
+        conversation = await RecordAgentConversation.findOne({
+            _id: conversationId,
+            recordId: aiContext.recordId,
+            userId: String(req.user._id),
+            contextType: aiContext.type,
+            contextId: aiContext.id,
+            archived: { $ne: true }
+        });
+    }
+    conversation = conversation || await findMobileAiConversation(req, aiContext);
+    if (!conversation) return { conversation: null, runs: [] };
+
+    const RecordAgentRun = await tenantCollection(req, 'RecordAgentRun');
+    const runs = await RecordAgentRun.find({
+        recordId: aiContext.recordId,
+        userId: String(req.user._id),
+        conversationId: conversation._id,
+        archived: { $ne: true }
+    })
+        .sort({ createdAt: -1 })
+        .limit(80)
+        .lean();
+    return { conversation, runs: runs.reverse() };
+}
+
+function serializeMobileAiMessages(runs = []) {
+    return (runs || []).flatMap(run => {
+        const createdItems = TaskAgentService.collectMobileCreatedItems(run);
+        const pendingActionCount = (run.proposedActions || []).filter(
+            action => action.status === 'proposed'
+        ).length;
+        const hasError = run.status === 'error' || Boolean(run.error);
+        return [
+            {
+                id: `${run._id}-user`,
+                role: 'user',
+                text: run.goal || '',
+                imageCount: Number(run.contextStats?.userImageCount || 0),
+                createdItems: [],
+                pendingActionCount: 0,
+                hasError: false,
+                createdAt: run.createdAt || null
+            },
+            {
+                id: `${run._id}-assistant`,
+                role: 'assistant',
+                text: hasError
+                    ? (run.error || "L'IA n'a pas pu traiter cette demande.")
+                    : TaskAgentService.buildMobileAgentReply(run),
+                imageCount: 0,
+                createdItems,
+                pendingActionCount,
+                hasError,
+                createdAt: run.updatedAt || run.createdAt || null
+            }
+        ];
+    });
+}
+
+function serializeMobileAiContext(aiContext) {
+    return {
+        type: aiContext.type,
+        id: aiContext.id,
+        label: aiContext.label,
+        imageCount: Number(aiContext.imageCount || 0),
+        taskCount: Number(aiContext.taskCount || 0)
+    };
+}
+
 async function loadMobileTaskListAccess(req, listId) {
     if (!/^[a-f\d]{24}$/i.test(String(listId || ''))) return null;
 
@@ -1107,6 +1277,130 @@ router.put('/accounts/:accountNumber/tasks/tags', async (req, res) => {
         sendCaughtError(res, error);
     }
 });
+
+router.get('/accounts/:accountNumber/ai-chat/messages', async (req, res) => {
+    try {
+        const aiContext = await loadMobileAiContext(
+            req,
+            req.query?.contextType,
+            req.query?.contextId
+        );
+        if (!aiContext) {
+            return sendError(
+                res,
+                404,
+                'Contexte IA introuvable',
+                'AI_CONTEXT_NOT_FOUND'
+            );
+        }
+        const { conversation, runs } = await mobileAiRuns(req, aiContext);
+        res.json({
+            success: true,
+            conversationId: conversation?._id?.toString?.() || '',
+            context: serializeMobileAiContext(aiContext),
+            messages: serializeMobileAiMessages(runs)
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Read AI chat error:', error);
+        sendCaughtError(res, error, 'Lecture du chat IA impossible');
+    }
+});
+
+router.post(
+    '/accounts/:accountNumber/ai-chat/messages',
+    TaskImagesService.uploadImages,
+    async (req, res) => {
+        try {
+            const aiContext = await loadMobileAiContext(
+                req,
+                req.body?.contextType,
+                req.body?.contextId
+            );
+            if (!aiContext) {
+                return sendError(
+                    res,
+                    404,
+                    'Contexte IA introuvable',
+                    'AI_CONTEXT_NOT_FOUND'
+                );
+            }
+
+            const uploadedAttachments = (req.files || [])
+                .map(file =>
+                    TaskImagesService.attachmentFromFile(req, file, req.user._id)
+                )
+                .filter(Boolean);
+            const uploadedVision = TaskImagesService.visionContent(
+                req.account_number,
+                uploadedAttachments,
+                { maxImages: 4, detail: 'high' }
+            );
+            const taskVision = aiContext.task
+                ? TaskImagesService.visionContent(
+                    req.account_number,
+                    aiContext.task.attachments || [],
+                    { maxImages: 4, detail: 'high' }
+                )
+                : [];
+            const imageContent = [
+                ...uploadedVision,
+                ...taskVision
+            ].slice(0, 4);
+            const rawText = cleanText(req.body?.text, '').slice(0, 5000);
+            const text = rawText || (
+                uploadedAttachments.length
+                    ? (
+                        aiContext.type === 'task_list'
+                            ? 'Analyse ces photos et crée dans cette liste les tâches à faire aujourd’hui.'
+                            : 'Analyse ces photos et crée les sous-tâches utiles pour cette tâche.'
+                    )
+                    : ''
+            );
+            if (!text) {
+                return sendError(
+                    res,
+                    400,
+                    'Message ou photo requis',
+                    'VALIDATION_ERROR'
+                );
+            }
+
+            const result = await TaskAgentService.runMobileAiAgent({
+                req,
+                contextType: aiContext.type,
+                task: aiContext.task,
+                list: aiContext.list,
+                note: aiContext.note,
+                recordId: aiContext.recordId,
+                userMessage: text,
+                conversationId: cleanText(req.body?.conversationId, ''),
+                imageContent,
+                uploadedImageCount: uploadedAttachments.length
+            });
+            const { conversation, runs } = await mobileAiRuns(
+                req,
+                aiContext,
+                result.conversation?._id?.toString?.() || ''
+            );
+            res.status(201).json({
+                success: true,
+                conversationId: conversation?._id?.toString?.() || '',
+                context: serializeMobileAiContext(aiContext),
+                messages: serializeMobileAiMessages(runs),
+                createdItems: result.createdItems,
+                pendingActionCount: result.pendingActionCount,
+                ...(aiContext.task
+                    ? { task: await serializeSingleTask(req, aiContext.task) }
+                    : {})
+            });
+        } catch (error) {
+            console.error('[MobileAPI] Send AI chat message error:', error);
+            sendCaughtError(res, error, 'Envoi au chat IA impossible');
+        } finally {
+            TaskImagesService.cleanupRequestFiles(req);
+        }
+    }
+);
 
 router.get('/accounts/:accountNumber/task-lists', async (req, res) => {
     try {

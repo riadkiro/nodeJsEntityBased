@@ -591,6 +591,7 @@ function taskListTaskStats(tasks = []) {
 function serializeMobileTaskList(list, tasks = []) {
     const stats = taskListTaskStats(tasks);
     const listId = list._id?.toString?.() || String(list._id || '');
+    const displayOptions = TaskListsService.normalizeTaskListDisplayOptions(list.displayOptions);
     return {
         id: listId,
         _id: listId,
@@ -602,6 +603,8 @@ function serializeMobileTaskList(list, tasks = []) {
         isDefault: !!list.isDefault,
         showInMyLists: !!list.showInMyLists,
         myListOrder: Number(list.myListOrder) || 0,
+        displayOptions,
+        addTasksToToday: displayOptions.dayMode,
         isShared: false,
         isFavorite: false,
         ...stats,
@@ -1423,6 +1426,16 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
         if (duplicate) return sendError(res, 409, 'Une liste porte déjà ce nom', 'TASK_LIST_EXISTS');
 
         const priorities = await getAccountTaskPriorities(req);
+        const requestedDisplayOptions = req.body?.displayOptions
+            && typeof req.body.displayOptions === 'object'
+            ? req.body.displayOptions
+            : {};
+        const displayOptions = TaskListsService.normalizeTaskListDisplayOptions({
+            ...requestedDisplayOptions,
+            ...(req.body?.addTasksToToday !== undefined
+                ? { dayMode: req.body.addTasksToToday === true }
+                : {}),
+        });
         const list = await TaskList.create({
             recordId: record._id,
             label,
@@ -1433,6 +1446,7 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
             isDefault: false,
             showInMyLists: true,
             myListOrder: existingLists.length + 1,
+            displayOptions,
             statuses: defaultStatuses,
             priorities,
         });
@@ -1565,6 +1579,12 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
         const status = normalizeStatus(req.body?.status);
         const order = await access.RecordTask.countDocuments({ taskListId: access.list._id });
         const tagOptions = await upsertTaskListTagOptions(access, req.body?.tags);
+        const scheduleDefaults = TaskListsService.taskListScheduleDefaults(access.list, {
+            isDayPriority: req.body?.isDayPriority,
+            startDate: req.body?.startDate,
+            dueDate: req.body?.dueDate,
+            timeZone: req.body?.timeZone || req.query?.tz,
+        });
 
         const task = await access.RecordTask.create({
             taskListId: access.list._id,
@@ -1577,9 +1597,9 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
             priorityColor: priorityOption.color || '',
             tags: TaskListsService.normalizeTaskTags(req.body?.tags, tagOptions),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
-            isDayPriority: false,
-            startDate: req.body?.startDate || null,
-            dueDate: req.body?.dueDate || null,
+            isDayPriority: scheduleDefaults.isDayPriority,
+            startDate: scheduleDefaults.startDate,
+            dueDate: scheduleDefaults.dueDate,
             assignedTo: cleanText(req.body?.assignedTo, ''),
             order,
             completedAt: status === STATUS_DONE ? new Date() : null,

@@ -217,6 +217,28 @@ function normalizeTaskListDisplayOptions(value = {}) {
     );
 }
 
+function taskListScheduleDefaults(list = {}, input = {}) {
+    const startDate = input.startDate || null;
+    const dueDate = input.dueDate || null;
+    const hasExplicitDate = Boolean(startDate || dueDate);
+    const dayMode = normalizeTaskListDisplayOptions(list.displayOptions).dayMode;
+    const explicitlyForToday = input.isDayPriority === true;
+    const shouldScheduleToday = !hasExplicitDate && (dayMode || explicitlyForToday);
+    const dateTools = shouldScheduleToday
+        ? TaskOverview.createDateTools({
+            tz: cleanText(input.timeZone, 'Africa/Casablanca'),
+        })
+        : null;
+
+    return {
+        isDayPriority: input.isDayPriority === undefined
+            ? shouldScheduleToday
+            : Boolean(input.isDayPriority),
+        startDate: startDate || (shouldScheduleToday ? dateTools.todayKey : null),
+        dueDate,
+    };
+}
+
 function recordTitle(record = {}, fallback = 'Sans titre') {
     return cleanText(record.computedTitle || record.referenceTitle || record.title, fallback);
 }
@@ -259,6 +281,7 @@ function serializeTaskListSummary(req, list = {}, tasks = [], record = {}, entit
     const color = cleanTaskListColor(list.color, contextType === 'account' ? '#6366f1' : (record.color || entity.color || '#6366f1'));
     const icon = cleanTaskListIcon(list.icon, contextType === 'account' ? 'solar:checklist-bold-duotone' : 'solar:list-check-bold-duotone');
     const stats = taskStats(tasks);
+    const displayOptions = normalizeTaskListDisplayOptions(list.displayOptions);
     const entitySlug = cleanText(entity.slug, '');
     const link = contextType === 'record' && entitySlug && recordId
         ? `/account/${req.account_number}/record/${entitySlug}/${recordId}/tasks`
@@ -274,7 +297,8 @@ function serializeTaskListSummary(req, list = {}, tasks = [], record = {}, entit
         icon,
         viewMode: cleanTaskListViewMode(list.viewMode, 'list'),
         tags: normalizeTaskTagOptions(list.tags),
-        displayOptions: normalizeTaskListDisplayOptions(list.displayOptions),
+        displayOptions,
+        addTasksToToday: displayOptions.dayMode,
         order: Number.isFinite(Number(list.order)) ? Number(list.order) : 0,
         myListOrder: Number.isFinite(Number(list.myListOrder)) ? Number(list.myListOrder) : 0,
         isDefault: !!list.isDefault,
@@ -625,6 +649,7 @@ module.exports = {
     replaceAccountTaskTags,
     normalizeTaskSubtasks,
     normalizeTaskListDisplayOptions,
+    taskListScheduleDefaults,
     updateTaskListTags,
     defaultRecordTaskListLabel,
     ensurePersonalTaskRecord,

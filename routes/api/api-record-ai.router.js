@@ -7,6 +7,7 @@ const path = require('path');
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../../middleware/tenant');
 const { taskTenantModels } = require('../../services/task-tenant-models.service');
+const TaskListsService = require('../../services/task-lists.service');
 const TaskImagesService = require('../../services/task-images.service');
 const {
     getAccountTaskPriorities,
@@ -8554,6 +8555,11 @@ async function applyAgentAction(req, record, entity, action) {
         const accountPriorities = await getAccountTaskPriorities(req);
         const priorityOption = priorityOptionFor(action.input?.priority, accountPriorities);
         const dueDate = action.input?.dueDate ? new Date(action.input.dueDate) : null;
+        const validDueDate = dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null;
+        const scheduleDefaults = TaskListsService.taskListScheduleDefaults(list, {
+            dueDate: validDueDate,
+            timeZone: action.input?.timeZone,
+        });
         const { RecordTask } = await taskTenantModels(req);
         const task = await RecordTask.create({
             taskListId: list._id,
@@ -8564,7 +8570,9 @@ async function applyAgentAction(req, record, entity, action) {
             statusColor: '#9ca3af',
             priority: priorityOption.label,
             priorityColor: priorityOption.color || '',
-            dueDate: dueDate && !Number.isNaN(dueDate.getTime()) ? dueDate : null
+            isDayPriority: scheduleDefaults.isDayPriority,
+            startDate: scheduleDefaults.startDate,
+            dueDate: scheduleDefaults.dueDate
         });
 
         return {

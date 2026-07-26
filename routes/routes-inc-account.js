@@ -484,6 +484,12 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
         const { entity, record, list } = target;
         const { RecordTask: RecordTaskModel } = await taskTenantModels(req);
         const order = await RecordTaskModel.countDocuments({ taskListId: list._id });
+        const scheduleDefaults = TaskListsService.taskListScheduleDefaults(list, {
+            isDayPriority: req.body?.isDayPriority,
+            startDate: req.body?.startDate,
+            dueDate: req.body?.dueDate,
+            timeZone: req.body?.timeZone,
+        });
         const task = await RecordTaskModel.create({
             taskListId: list._id,
             recordId: record._id,
@@ -495,9 +501,9 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
             priorityColor: priorityOption.color || '',
             tags: TaskListsService.normalizeTaskTags(req.body?.tags, accountTags),
             subtasks: TaskListsService.normalizeTaskSubtasks(req.body?.subtasks),
-            isDayPriority: !!req.body?.isDayPriority,
-            startDate: req.body?.startDate || null,
-            dueDate: req.body?.dueDate || null,
+            isDayPriority: scheduleDefaults.isDayPriority,
+            startDate: scheduleDefaults.startDate,
+            dueDate: scheduleDefaults.dueDate,
             assignedTo: hubTaskText(req.body?.assignedTo, ''),
             order
         });

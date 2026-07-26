@@ -20,6 +20,7 @@ const TaskListsService = require('../services/task-lists.service');
 const TaskImagesService = require('../services/task-images.service');
 const TaskAgentService = require('../services/record-ai-task-bridge.service');
 const MobileAgendaService = require('../services/mobile-agenda.service');
+const MobileNotesService = require('../services/mobile-notes.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -1281,6 +1282,98 @@ router.delete('/accounts/:accountNumber/agenda-events/:eventId', async (req, res
     } catch (error) {
         console.error('[MobileAPI] Delete agenda event error:', error);
         sendCaughtError(res, error, 'Suppression de la date impossible');
+    }
+});
+
+router.get('/accounts/:accountNumber/notes', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store');
+        const notes = await MobileNotesService.listNotes(req, req.query || {});
+        res.json({ success: true, notes, totalNotes: notes.length });
+    } catch (error) {
+        console.error('[MobileAPI] List notes error:', error);
+        sendCaughtError(res, error, 'Lecture des notes impossible');
+    }
+});
+
+router.get('/accounts/:accountNumber/notes/targets', async (req, res) => {
+    try {
+        const targets = await MobileNotesService.listNoteTargets(
+            req,
+            req.query || {},
+        );
+        res.json({ success: true, targets });
+    } catch (error) {
+        console.error('[MobileAPI] List note targets error:', error);
+        sendCaughtError(res, error, 'Lecture des fiches impossible');
+    }
+});
+
+router.post('/accounts/:accountNumber/notes', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store');
+        const note = await MobileNotesService.createNote(req, req.body || {});
+        res.status(201).json({ success: true, note });
+    } catch (error) {
+        console.error('[MobileAPI] Create note error:', error);
+        sendCaughtError(res, error, 'Création de la note impossible');
+    }
+});
+
+router.post(
+    '/accounts/:accountNumber/notes/:noteId/biometric-unlock',
+    async (req, res) => {
+        try {
+            if (req.body?.biometricConfirmation !== true) {
+                return sendError(
+                    res,
+                    400,
+                    'Confirmation biométrique requise.',
+                    'BIOMETRIC_CONFIRMATION_REQUIRED',
+                );
+            }
+            res.setHeader('Cache-Control', 'no-store');
+            const note = await MobileNotesService.unlockNoteWithBiometrics(
+                req,
+                req.params.noteId,
+            );
+            console.info(
+                `[MobileAPI] Protected note unlocked user=${req.user._id} note=${req.params.noteId}`,
+            );
+            res.json({ success: true, note });
+        } catch (error) {
+            console.error('[MobileAPI] Unlock note error:', error);
+            sendCaughtError(res, error, 'Déverrouillage de la note impossible');
+        }
+    },
+);
+
+router.patch('/accounts/:accountNumber/notes/:noteId', async (req, res) => {
+    try {
+        res.setHeader('Cache-Control', 'no-store');
+        const note = await MobileNotesService.updateNote(
+            req,
+            req.params.noteId,
+            req.body || {},
+        );
+        res.json({ success: true, note });
+    } catch (error) {
+        console.error('[MobileAPI] Update note error:', error);
+        sendCaughtError(res, error, 'Modification de la note impossible');
+    }
+});
+
+router.delete('/accounts/:accountNumber/notes/:noteId', async (req, res) => {
+    try {
+        await MobileNotesService.deleteNote(
+            req,
+            req.params.noteId,
+            req.body || {},
+        );
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Delete note error:', error);
+        sendCaughtError(res, error, 'Suppression de la note impossible');
     }
 });
 

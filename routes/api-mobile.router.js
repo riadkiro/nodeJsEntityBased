@@ -19,6 +19,7 @@ const TaskOverview = require('../services/task-overview.service');
 const TaskListsService = require('../services/task-lists.service');
 const TaskImagesService = require('../services/task-images.service');
 const TaskAgentService = require('../services/record-ai-task-bridge.service');
+const MobileAgendaService = require('../services/mobile-agenda.service');
 const {
     getAccountTaskPriorities,
     priorityOptionFor,
@@ -1236,6 +1237,50 @@ router.get('/accounts/:accountNumber/reminders', async (req, res) => {
     } catch (error) {
         console.error('[MobileAPI] List reminders error:', error);
         sendCaughtError(res, error);
+    }
+});
+
+router.get('/accounts/:accountNumber/agenda-events', async (req, res) => {
+    try {
+        const events = await MobileAgendaService.listAgendaEvents(req, req.query || {});
+        res.json({ success: true, events });
+    } catch (error) {
+        console.error('[MobileAPI] List agenda events error:', error);
+        sendCaughtError(res, error, 'Lecture de agenda impossible');
+    }
+});
+
+router.post('/accounts/:accountNumber/agenda-events', async (req, res) => {
+    try {
+        const event = await MobileAgendaService.createAgendaEvent(req, req.body || {});
+        res.status(201).json({ success: true, event });
+    } catch (error) {
+        console.error('[MobileAPI] Create agenda event error:', error);
+        sendCaughtError(res, error, 'Creation de la date impossible');
+    }
+});
+
+router.patch('/accounts/:accountNumber/agenda-events/:eventId', async (req, res) => {
+    try {
+        const event = await MobileAgendaService.updateAgendaEvent(
+            req,
+            req.params.eventId,
+            req.body || {},
+        );
+        res.json({ success: true, event });
+    } catch (error) {
+        console.error('[MobileAPI] Update agenda event error:', error);
+        sendCaughtError(res, error, 'Modification de la date impossible');
+    }
+});
+
+router.delete('/accounts/:accountNumber/agenda-events/:eventId', async (req, res) => {
+    try {
+        await MobileAgendaService.deleteAgendaEvent(req, req.params.eventId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Delete agenda event error:', error);
+        sendCaughtError(res, error, 'Suppression de la date impossible');
     }
 });
 

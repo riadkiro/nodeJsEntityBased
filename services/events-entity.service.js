@@ -3,6 +3,16 @@ const { tenantCollection } = require('../middleware/tenant')
 
 const EVENT_FIELD_DEFS = [
     {
+        name: 'toute_la_journee',
+        label: 'Toute la journ\u00e9e',
+        type: 'boolean',
+        category: 'dates',
+        isSystem: true,
+        ui: { icon: 'solar:sun-2-bold-duotone', rows: 1, width: 'half' },
+        type_config: { default: false },
+        render: { input: 'switch' },
+    },
+    {
         name: 'heure_debut',
         label: 'Heure de d\u00e9but',
         type: 'date',

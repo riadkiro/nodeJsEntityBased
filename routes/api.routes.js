@@ -3313,6 +3313,8 @@ router.post('/api/records/:recordId/events', async (req, res) => {
             isImportantDate,
             widgetDateImportante,
             importantDate,
+            allDay,
+            isAllDay,
         } = req.body;
         const parentRecordId = req.params.recordId;
 
@@ -3353,6 +3355,10 @@ router.post('/api/records/:recordId/events', async (req, res) => {
         }
         if (fieldMap.heure_fin && endDate) {
             customFields.push({ field_id: fieldMap.heure_fin, value: endDate });
+        }
+        if (fieldMap.toute_la_journee) {
+            const raw = firstDefinedValue(allDay, isAllDay);
+            customFields.push({ field_id: fieldMap.toute_la_journee, value: normalizeEventBoolean(raw, false) });
         }
         if (fieldMap.widget_prochains_evenements) {
             const raw = firstDefinedValue(showInUpcomingWidget, widgetProchainsEvenements, upcomingWidget);
@@ -3453,6 +3459,8 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
             isImportantDate,
             widgetDateImportante,
             importantDate,
+            allDay,
+            isAllDay,
         } = req.body;
 
         const event = await Record.findById(eventId);
@@ -3497,6 +3505,10 @@ router.patch('/api/records/:recordId/events/:eventId', async (req, res) => {
         const importantDateValue = firstDefinedValue(isImportantDate, widgetDateImportante, importantDate);
         if (importantDateValue !== undefined) {
             updateCustomField('widget_date_importante', normalizeEventBoolean(importantDateValue, false));
+        }
+        const allDayValue = firstDefinedValue(allDay, isAllDay);
+        if (allDayValue !== undefined) {
+            updateCustomField('toute_la_journee', normalizeEventBoolean(allDayValue, false));
         }
 
         if (endDate !== undefined) updateCustomField('heure_fin', endDate);

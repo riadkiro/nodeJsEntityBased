@@ -60,12 +60,18 @@ const EVENT_FIELD_DEFS = [
         ui: { icon: 'solar:tag-bold-duotone', rows: 1, width: 'half' },
         type_config: {
             options: [
-                { label: 'Consultation', value: 'consultation' },
+                { label: 'Anniversaire', value: 'anniversaire' },
+                { label: 'F\u00eate', value: 'fete' },
+                { label: 'Jour f\u00e9ri\u00e9', value: 'jour_ferie' },
                 { label: 'R\u00e9union', value: 'reunion' },
+                { label: 'Rendez-vous', value: 'rendez_vous' },
+                { label: '\u00c9ch\u00e9ance', value: 'echeance' },
                 { label: 'Rappel', value: 'rappel' },
-                { label: 'T\u00e2che', value: 'tache' },
-                { label: 'Personnel', value: 'personnel' },
                 { label: 'Autre', value: 'autre' },
+                // Valeurs historiques conserv\u00e9es pour les anciens enregistrements.
+                { label: 'Consultation', value: 'consultation' },
+                { label: 'Personnel', value: 'personnel' },
+                { label: 'T\u00e2che', value: 'tache' },
             ],
         },
         render: { input: 'select' },
@@ -128,12 +134,17 @@ const STATUS_OPTIONS = [
 ]
 
 const TYPE_OPTIONS = [
-    { label: 'Consultation', color: '#4361ee', order: 0 },
-    { label: 'R\u00e9union', color: '#8b5cf6', order: 1 },
-    { label: 'Rappel', color: '#f59e0b', order: 2 },
-    { label: 'T\u00e2che', color: '#10b981', order: 3 },
-    { label: 'Personnel', color: '#ec4899', order: 4 },
-    { label: 'Autre', color: '#6b7280', order: 5 },
+    { label: 'Anniversaire', color: '#ec4899', icon: 'solar:cake-bold-duotone', order: 0 },
+    { label: 'F\u00eate', color: '#f97316', icon: 'solar:confetti-bold-duotone', order: 1 },
+    { label: 'Jour f\u00e9ri\u00e9', color: '#22c55e', icon: 'solar:flag-bold-duotone', order: 2 },
+    { label: 'R\u00e9union', color: '#8b5cf6', icon: 'solar:users-group-rounded-bold-duotone', order: 3 },
+    { label: 'Rendez-vous', color: '#0ea5e9', icon: 'solar:calendar-mark-bold-duotone', order: 4 },
+    { label: '\u00c9ch\u00e9ance', color: '#14b8a6', icon: 'solar:bill-list-bold-duotone', order: 5 },
+    { label: 'Rappel', color: '#f59e0b', icon: 'solar:bell-bold-duotone', order: 6 },
+    { label: 'Autre', color: '#6b7280', icon: 'solar:calendar-bold-duotone', order: 7 },
+    { label: 'Consultation', color: '#4361ee', order: 8 },
+    { label: 'T\u00e2che', color: '#10b981', order: 9 },
+    { label: 'Personnel', color: '#ec4899', order: 10 },
 ]
 
 function mergeIds(existing = [], additions = []) {
@@ -232,8 +243,8 @@ async function ensureClassification(Classification, { key, name, options }) {
 
     let changed = false
     for (const option of options) {
-        const exists = (classification.options || []).some(existing => existing.label === option.label)
-        if (!exists) {
+        const existing = (classification.options || []).find(item => item.label === option.label)
+        if (!existing) {
             classification.options.push({
                 _id: new mongoose.Types.ObjectId(),
                 badgeStyle: 'dot',
@@ -241,6 +252,14 @@ async function ensureClassification(Classification, { key, name, options }) {
                 ...option,
             })
             changed = true
+            continue
+        }
+
+        for (const key of ['color', 'icon', 'order']) {
+            if (option[key] !== undefined && existing[key] !== option[key]) {
+                existing[key] = option[key]
+                changed = true
+            }
         }
     }
 
@@ -328,4 +347,6 @@ async function ensureEventsEntity(req) {
 
 module.exports = {
     ensureEventsEntity,
+    EVENT_FIELD_DEFS,
+    TYPE_OPTIONS,
 }

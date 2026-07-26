@@ -2,6 +2,19 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 
 const Agenda = require('../services/mobile-agenda.service');
+const EventsEntity = require('../services/events-entity.service');
+
+test('exposes the mobile date categories in the events entity', () => {
+    const typeField = EventsEntity.EVENT_FIELD_DEFS.find(field => field.name === 'type_evenement');
+    const options = typeField.type_config.options;
+    const values = options.map(option => option.value);
+
+    assert.deepEqual(
+        values.slice(0, 8),
+        ['anniversaire', 'fete', 'jour_ferie', 'reunion', 'rendez_vous', 'echeance', 'rappel', 'autre'],
+    );
+    assert.ok(EventsEntity.TYPE_OPTIONS.slice(0, 8).every(option => option.icon));
+});
 
 test('normalizes an all-day important date', () => {
     const input = Agenda.normalizeAgendaInput({

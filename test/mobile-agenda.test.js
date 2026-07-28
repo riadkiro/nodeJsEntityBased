@@ -70,3 +70,35 @@ test('serializes existing event entity fields for mobile', () => {
     assert.equal(serialized.isImportant, true);
     assert.equal(serialized.location, 'Casablanca');
 });
+
+test('serializes several agenda reminders through the shared reminder model', () => {
+    const event = {
+        _id: '64a000000000000000000001',
+        title: 'Voyage',
+        date: new Date('2030-08-10T10:00:00.000Z'),
+        customFields: [],
+    };
+    const reminders = [
+        {
+            _id: '64b000000000000000000001',
+            targetType: 'agenda_event',
+            targetId: '64a000000000000000000001',
+            scheduledAt: new Date('2030-08-03T10:00:00.000Z'),
+            status: 'scheduled',
+            metadata: { mode: 'notification' },
+        },
+        {
+            _id: '64b000000000000000000002',
+            targetType: 'agenda_event',
+            targetId: '64a000000000000000000001',
+            scheduledAt: new Date('2030-08-07T10:00:00.000Z'),
+            status: 'scheduled',
+            metadata: { mode: 'alarm' },
+        },
+    ];
+
+    const serialized = Agenda.serializeAgendaEvent(event, {}, reminders);
+    assert.equal(serialized.reminders.length, 2);
+    assert.equal(serialized.reminder.id, '64b000000000000000000001');
+    assert.equal(serialized.reminders[1].metadata.mode, 'alarm');
+});

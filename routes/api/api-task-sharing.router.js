@@ -106,6 +106,35 @@ function serializeMessage(req, message) {
     };
 }
 
+async function serializeContactWithChat(req, contact) {
+    const serialized = serializeContact(req, contact);
+    if (contact.status !== 'accepted') {
+        return {
+            ...serialized,
+            unreadCount: 0,
+            lastMessage: null,
+            lastMessageAt: null,
+        };
+    }
+
+    const [lastMessage, unreadCount] = await Promise.all([
+        ContactMessage.findOne({ contactId: contact._id })
+            .sort({ createdAt: -1 })
+            .lean(),
+        ContactMessage.countDocuments({
+            contactId: contact._id,
+            senderUserId: { $ne: req.user._id },
+            readBy: { $ne: req.user._id },
+        }),
+    ]);
+    return {
+        ...serialized,
+        unreadCount,
+        lastMessage: lastMessage ? serializeMessage(req, lastMessage) : null,
+        lastMessageAt: lastMessage?.createdAt || null,
+    };
+}
+
 async function loadList(req, listId) {
     if (!/^[a-f\d]{24}$/i.test(String(listId || ''))) return null;
     const { TaskList } = await taskTenantModels(req);
@@ -126,7 +155,15 @@ router.get('/contacts', async (req, res) => {
             ],
         }).sort({ updatedAt: -1 }).lean();
 
-        res.json({ success: true, contacts: contacts.map(contact => serializeContact(req, contact)) });
+        const serializedContacts = await Promise.all(
+            contacts.map(contact => serializeContactWithChat(req, contact)),
+        );
+        serializedContacts.sort((left, right) => {
+            const leftTime = left.lastMessageAt ? new Date(left.lastMessageAt).getTime() : 0;
+            const rightTime = right.lastMessageAt ? new Date(right.lastMessageAt).getTime() : 0;
+            return rightTime - leftTime;
+        });
+        res.json({ success: true, contacts: serializedContacts });
     } catch (error) {
         console.error('[TaskSharing] contacts error:', error);
         res.status(500).json({ success: false, error: error.message || 'Contacts indisponibles' });
@@ -254,6 +291,14 @@ router.get('/contacts/:contactId/messages', async (req, res) => {
             .sort({ createdAt: -1 })
             .limit(limit)
             .lean();
+
+        await ContactMessage.updateMany({
+            contactId: contact._id,
+            senderUserId: { $ne: req.user._id },
+            readBy: { $ne: req.user._id },
+        }, {
+            $addToSet: { readBy: req.user._id },
+        });
 
         res.json({
             success: true,

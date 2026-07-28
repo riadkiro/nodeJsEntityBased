@@ -1285,6 +1285,101 @@ router.delete('/accounts/:accountNumber/agenda-events/:eventId', async (req, res
     }
 });
 
+async function upsertAgendaEventReminder(req, event, reminderInput) {
+    return ReminderService.upsertReminder({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'agenda_event',
+        targetModel: 'Record',
+        targetId: event.id,
+        slotKey: reminderInput.slotKey || 'default',
+        title: reminderInput.title || event.title,
+        message: reminderInput.message || '',
+        scheduledAt: reminderInput.scheduledAt,
+        timeZone: reminderInput.timeZone,
+        channel: reminderInput.channel || 'local',
+        metadata: {
+            ...(reminderInput.metadata || {}),
+            eventTitle: event.title,
+            eventDate: event.startAt,
+            source: 'mobile',
+        },
+    });
+}
+
+router.post('/accounts/:accountNumber/agenda-events/:eventId/reminders', async (req, res) => {
+    try {
+        const event = await MobileAgendaService.getAgendaEvent(req, req.params.eventId);
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput || reminderInput.enabled === false) {
+            return sendError(res, 400, 'Date de rappel requise', 'VALIDATION_ERROR');
+        }
+        if (!req.body?.slotKey || reminderInput.slotKey === 'default') {
+            reminderInput.slotKey = `mobile-${Date.now().toString(36)}`;
+        }
+        const reminder = await upsertAgendaEventReminder(req, event, reminderInput);
+        res.status(201).json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            event: await MobileAgendaService.getAgendaEvent(req, req.params.eventId),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Create agenda reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.patch('/accounts/:accountNumber/agenda-events/:eventId/reminders/:reminderId', async (req, res) => {
+    try {
+        const event = await MobileAgendaService.getAgendaEvent(req, req.params.eventId);
+        const current = await ReminderService.findReminderByIdForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'agenda_event',
+            targetId: event.id,
+            reminderId: req.params.reminderId,
+        });
+        if (!current) return sendError(res, 404, 'Rappel introuvable', 'REMINDER_NOT_FOUND');
+
+        const reminderInput = ReminderService.reminderPayloadFromBody(req.body);
+        if (!reminderInput || reminderInput.enabled === false) {
+            return sendError(res, 400, 'Date de rappel requise', 'VALIDATION_ERROR');
+        }
+        reminderInput.slotKey = current.slotKey;
+        const reminder = await upsertAgendaEventReminder(req, event, reminderInput);
+        res.json({
+            success: true,
+            reminder: ReminderService.serializeReminder(reminder),
+            event: await MobileAgendaService.getAgendaEvent(req, req.params.eventId),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Update agenda reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
+router.delete('/accounts/:accountNumber/agenda-events/:eventId/reminders/:reminderId', async (req, res) => {
+    try {
+        const event = await MobileAgendaService.getAgendaEvent(req, req.params.eventId);
+        const reminder = await ReminderService.cancelReminderByIdForTarget({
+            accountNumber: req.account_number,
+            userId: req.user._id,
+            targetType: 'agenda_event',
+            targetId: event.id,
+            reminderId: req.params.reminderId,
+        });
+        if (!reminder) return sendError(res, 404, 'Rappel introuvable', 'REMINDER_NOT_FOUND');
+        res.json({
+            success: true,
+            reminder: null,
+            event: await MobileAgendaService.getAgendaEvent(req, req.params.eventId),
+        });
+    } catch (error) {
+        console.error('[MobileAPI] Delete agenda reminder error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.get('/accounts/:accountNumber/notes', async (req, res) => {
     try {
         res.setHeader('Cache-Control', 'no-store');

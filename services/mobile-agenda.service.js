@@ -1,5 +1,6 @@
 const { tenantCollection } = require('../middleware/tenant');
 const { ensureEventsEntity } = require('./events-entity.service');
+const ReminderService = require('./reminders/reminder.service');
 
 class AgendaValidationError extends Error {
     constructor(message, code = 'AGENDA_VALIDATION_ERROR', status = 400) {
@@ -178,10 +179,13 @@ function classificationStatus(event = {}, eventsEntity = {}) {
     };
 }
 
-function serializeAgendaEvent(event = {}, eventsEntity = {}) {
+function serializeAgendaEvent(event = {}, eventsEntity = {}, reminders = []) {
     const values = customValuesFor(event, eventsEntity);
     const allDay = normalizeBoolean(values.toute_la_journee, false);
     const status = classificationStatus(event, eventsEntity);
+    const serializedReminders = (reminders || [])
+        .map(ReminderService.serializeReminder)
+        .filter(Boolean);
     return {
         id: event._id?.toString?.() || String(event.id || ''),
         title: cleanText(event.title, 'Evenement'),
@@ -197,6 +201,8 @@ function serializeAgendaEvent(event = {}, eventsEntity = {}) {
         tags: normalizeTags(values.tags_evenement),
         status: status.label,
         statusColor: status.color,
+        reminder: serializedReminders[0] || null,
+        reminders: serializedReminders,
         createdAt: event.createdAt || null,
         updatedAt: event.updatedAt || null,
     };
@@ -274,7 +280,17 @@ async function listAgendaEvents(req, query = {}) {
         if (to) filter.date.$lte = to;
     }
     const events = await Record.find(filter).sort({ date: 1, createdAt: 1 }).lean();
-    return events.map(event => serializeAgendaEvent(event, eventsEntity));
+    const remindersByEvent = await ReminderService.scheduledRemindersMap({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'agenda_event',
+        targetIds: events.map(event => event._id),
+    });
+    return events.map(event => serializeAgendaEvent(
+        event,
+        eventsEntity,
+        remindersByEvent.get(event._id.toString()) || [],
+    ));
 }
 
 async function createAgendaEvent(req, input = {}) {
@@ -308,18 +324,56 @@ async function updateAgendaEvent(req, eventId, input = {}) {
     applyAgendaFields(event, normalized, eventsEntity);
     event.updatedBy = req.user?._id;
     await event.save();
-    return serializeAgendaEvent(event.toObject ? event.toObject() : event, eventsEntity);
+    const reminders = await ReminderService.listRemindersForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'agenda_event',
+        targetId: event._id,
+    });
+    return serializeAgendaEvent(
+        event.toObject ? event.toObject() : event,
+        eventsEntity,
+        reminders,
+    );
+}
+
+async function getAgendaEvent(req, eventId) {
+    if (!/^[a-f\d]{24}$/i.test(String(eventId || ''))) {
+        throw new AgendaValidationError('Date introuvable.', 'AGENDA_NOT_FOUND', 404);
+    }
+    const { Record, eventsEntity } = await agendaContext(req);
+    const event = await Record.findOne({
+        _id: eventId,
+        entityId: eventsEntity._id,
+    }).lean();
+    if (!event) {
+        throw new AgendaValidationError('Date introuvable.', 'AGENDA_NOT_FOUND', 404);
+    }
+    const reminders = await ReminderService.listRemindersForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'agenda_event',
+        targetId: event._id,
+    });
+    return serializeAgendaEvent(event, eventsEntity, reminders);
 }
 
 async function deleteAgendaEvent(req, eventId) {
     const { Record, eventsEntity } = await agendaContext(req);
-    const deleted = await Record.findOneAndDelete({
+    const event = await Record.findOne({
         _id: eventId,
         entityId: eventsEntity._id,
     });
-    if (!deleted) {
+    if (!event) {
         throw new AgendaValidationError('Date introuvable.', 'AGENDA_NOT_FOUND', 404);
     }
+    await ReminderService.cancelRemindersForTarget({
+        accountNumber: req.account_number,
+        userId: req.user._id,
+        targetType: 'agenda_event',
+        targetId: event._id,
+    });
+    await event.deleteOne();
     return true;
 }
 
@@ -333,5 +387,6 @@ module.exports = {
     listAgendaEvents,
     createAgendaEvent,
     updateAgendaEvent,
+    getAgendaEvent,
     deleteAgendaEvent,
 };

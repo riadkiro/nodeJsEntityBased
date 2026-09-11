@@ -54,3 +54,44 @@ test('an explicit task date takes precedence over the list day mode', () => {
     assert.equal(schedule.startDate, null);
     assert.equal(schedule.dueDate, dueDate);
 });
+
+test('a new list task is placed after the highest existing order', async () => {
+    const calls = {};
+    const query = {
+        select(value) {
+            calls.select = value;
+            return this;
+        },
+        sort(value) {
+            calls.sort = value;
+            return this;
+        },
+        async lean() {
+            return { order: 7 };
+        },
+    };
+    const RecordTask = {
+        findOne(filter) {
+            calls.filter = filter;
+            return query;
+        },
+    };
+
+    const order = await TaskListsService.nextTaskOrder(RecordTask, 'list-1');
+
+    assert.equal(order, 8);
+    assert.deepEqual(calls.filter, { taskListId: 'list-1' });
+    assert.equal(calls.select, 'order');
+    assert.deepEqual(calls.sort, { order: -1, createdAt: -1 });
+});
+
+test('the first task in a list starts at order zero', async () => {
+    const query = {
+        select() { return this; },
+        sort() { return this; },
+        async lean() { return null; },
+    };
+    const RecordTask = { findOne: () => query };
+
+    assert.equal(await TaskListsService.nextTaskOrder(RecordTask, 'list-1'), 0);
+});

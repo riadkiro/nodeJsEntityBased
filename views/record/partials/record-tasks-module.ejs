@@ -2962,7 +2962,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success && data.task) {
                     if (!list.tasks) list.tasks = [];
-                    list.tasks.unshift(this.normalizeTask({ ...data.task, taskListId: list._id }));
+                    list.tasks.push(this.normalizeTask({ ...data.task, taskListId: list._id }));
                     list.count = (list.count || 0) + 1;
                     this.previewNewTask[list._id] = '';
                 }
@@ -3196,7 +3196,7 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.success && data.task) {
-                    this.tasks.unshift(this.normalizeTask(data.task));
+                    this.tasks.push(this.normalizeTask(data.task));
                     this.newTaskTitle = '';
                     this.activeList.count = (this.activeList.count || 0) + 1;
                 }
@@ -3626,7 +3626,7 @@ document.addEventListener('alpine:init', () => {
                 if (!targetList.tasks) targetList.tasks = [];
                 const idx = targetList.tasks.findIndex(task => task._id === normalizedTask._id);
                 if (idx >= 0) targetList.tasks.splice(idx, 1, { ...targetList.tasks[idx], ...normalizedTask });
-                else if (!targetList.hasMoreTasks) targetList.tasks.unshift(normalizedTask);
+                else if (!targetList.hasMoreTasks) targetList.tasks.push(normalizedTask);
                 this.syncDayTaskForList(targetList, normalizedTask);
                 if (!targetList.hasMoreTasks) this.recalcListStats(targetList);
             }
@@ -3634,7 +3634,7 @@ document.addEventListener('alpine:init', () => {
             const activeIdx = (this.tasks || []).findIndex(task => task._id === normalizedTask._id);
             if (this.activeList && normalizedTask.taskListId === this.activeList._id) {
                 if (activeIdx >= 0) this.tasks.splice(activeIdx, 1, { ...this.tasks[activeIdx], ...normalizedTask });
-                else this.tasks.unshift(normalizedTask);
+                else this.tasks.push(normalizedTask);
             } else if (activeIdx >= 0) {
                 this.tasks.splice(activeIdx, 1);
             }

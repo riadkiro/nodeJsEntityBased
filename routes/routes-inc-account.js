@@ -483,7 +483,7 @@ router.post("/api/tasks-hub/personal-tasks", async (req, res) => {
         if (!target) return res.status(404).json({ error: 'Liste de tâches introuvable' });
         const { entity, record, list } = target;
         const { RecordTask: RecordTaskModel } = await taskTenantModels(req);
-        const order = await RecordTaskModel.countDocuments({ taskListId: list._id });
+        const order = await TaskListsService.nextTaskOrder(RecordTaskModel, list._id);
         const scheduleDefaults = TaskListsService.taskListScheduleDefaults(list, {
             isDayPriority: req.body?.isDayPriority,
             startDate: req.body?.startDate,

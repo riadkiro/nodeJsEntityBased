@@ -1814,7 +1814,7 @@ router.get('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res)
         if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
 
         const tasks = await access.RecordTask.find({ taskListId: access.list._id })
-            .sort({ order: 1, createdAt: 1 })
+            .sort({ order: 1, createdAt: -1 })
             .lean();
         let list = serializeMobileTaskList(access.list, tasks);
         if (access.shared) {
@@ -1870,7 +1870,7 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
         const priorities = normalizeOptions(access.list.priorities, await getAccountTaskPriorities(req));
         const priorityOption = priorityOptionFor(req.body?.priority, priorities);
         const status = normalizeStatus(req.body?.status);
-        const order = await access.RecordTask.countDocuments({ taskListId: access.list._id });
+        const order = await TaskListsService.nextTaskOrder(access.RecordTask, access.list._id);
         const tagOptions = await upsertTaskListTagOptions(access, req.body?.tags);
         const scheduleDefaults = TaskListsService.taskListScheduleDefaults(access.list, {
             isDayPriority: req.body?.isDayPriority,
@@ -1918,7 +1918,7 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks/reorder', async (
 
         const tasks = await access.RecordTask.find({ taskListId: access.list._id })
             .select('_id order')
-            .sort({ order: 1, createdAt: 1 })
+            .sort({ order: 1, createdAt: -1 })
             .lean();
         const allowedIds = new Set(tasks.map(task => task._id.toString()));
         const orderedIds = taskIds.filter(id => allowedIds.has(id));
@@ -2398,7 +2398,7 @@ router.post('/accounts/:accountNumber/tasks', async (req, res) => {
         const target = await ensurePersonalTaskList(req);
         const tenantModels = await taskTenantModels(req);
         const { RecordTask } = tenantModels;
-        const order = await RecordTask.countDocuments({ taskListId: target.list._id });
+        const order = await TaskListsService.nextTaskOrder(RecordTask, target.list._id);
         const status = normalizeStatus(req.body?.status);
         const priorities = await getAccountTaskPriorities(req);
         const priorityOption = priorityOptionFor(req.body?.priority, priorities);

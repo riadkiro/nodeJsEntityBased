@@ -1377,7 +1377,9 @@ router.get('/api/record/:recordId/task-lists', async (req, res) => {
         const accountPriorities = await getAccountTaskPriorities(req)
         const accountTags = await TaskListsService.getAccountTaskTags(req)
         const lists = await TaskList.find({ recordId: req.params.recordId }).sort({ order: 1, createdAt: 1 }).lean()
-        const tasks = await RecordTask.find({ recordId: req.params.recordId }).lean()
+        const tasks = await RecordTask.find({ recordId: req.params.recordId })
+            .sort({ order: 1, createdAt: -1 })
+            .lean()
         const taskPreviewLimit = 10
         const dayKey = value => {
             if (!value) return ''
@@ -1921,7 +1923,7 @@ router.post('/api/task-lists/:listId/tasks', async (req, res) => {
         const accountTags = await TaskListsService.upsertAccountTaskTags(req, req.body?.tags)
         const taskStatus = cleanTaskText(status, 'À faire')
         const taskPriorityOption = priorityOptionFor(priority, accountPriorities)
-        const order = await RecordTask.countDocuments({ taskListId: req.params.listId })
+        const order = await TaskListsService.nextTaskOrder(RecordTask, req.params.listId)
 
         const task = await RecordTask.create({
             taskListId: req.params.listId,

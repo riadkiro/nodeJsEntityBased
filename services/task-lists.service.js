@@ -58,6 +58,16 @@ function cleanTaskListViewMode(value, fallback = 'list') {
     return ['list', 'kanban'].includes(value) ? value : fallback;
 }
 
+async function nextTaskOrder(RecordTask, taskListId) {
+    const lastTask = await RecordTask.findOne({ taskListId })
+        .select('order')
+        .sort({ order: -1, createdAt: -1 })
+        .lean();
+    if (!lastTask) return 0;
+    const currentOrder = Number(lastTask.order);
+    return (Number.isFinite(currentOrder) ? Math.max(0, Math.trunc(currentOrder)) : 0) + 1;
+}
+
 function normalizeTaskTagOptions(options = []) {
     const seen = new Set();
     return (Array.isArray(options) ? options : [])
@@ -644,6 +654,7 @@ module.exports = {
     cleanTaskListColor,
     cleanTaskListIcon,
     cleanTaskListViewMode,
+    nextTaskOrder,
     normalizeOptionLabel,
     normalizeTaskTagOptions,
     normalizeTaskTags,

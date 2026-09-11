@@ -8561,6 +8561,7 @@ async function applyAgentAction(req, record, entity, action) {
             timeZone: action.input?.timeZone,
         });
         const { RecordTask } = await taskTenantModels(req);
+        const order = await TaskListsService.nextTaskOrder(RecordTask, list._id);
         const task = await RecordTask.create({
             taskListId: list._id,
             recordId: record._id,
@@ -8572,7 +8573,8 @@ async function applyAgentAction(req, record, entity, action) {
             priorityColor: priorityOption.color || '',
             isDayPriority: scheduleDefaults.isDayPriority,
             startDate: scheduleDefaults.startDate,
-            dueDate: scheduleDefaults.dueDate
+            dueDate: scheduleDefaults.dueDate,
+            order
         });
 
         return {

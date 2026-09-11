@@ -222,8 +222,11 @@ function taskListScheduleDefaults(list = {}, input = {}) {
     const dueDate = input.dueDate || null;
     const hasExplicitDate = Boolean(startDate || dueDate);
     const dayMode = normalizeTaskListDisplayOptions(list.displayOptions).dayMode;
+    const hasExplicitDayPriority = input.isDayPriority !== undefined;
     const explicitlyForToday = input.isDayPriority === true;
-    const shouldScheduleToday = !hasExplicitDate && (dayMode || explicitlyForToday);
+    const shouldScheduleToday = !hasExplicitDate && (
+        explicitlyForToday || (!hasExplicitDayPriority && dayMode)
+    );
     const dateTools = shouldScheduleToday
         ? TaskOverview.createDateTools({
             tz: cleanText(input.timeZone, 'Africa/Casablanca'),

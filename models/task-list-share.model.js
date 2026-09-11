@@ -13,6 +13,7 @@ const TaskListShareSchema = new mongoose.Schema({
     contactId: { type: mongoose.Schema.Types.ObjectId, ref: 'TaskContact', default: null, index: true },
     teamId: { type: String, default: '', index: true },
     role: { type: String, enum: ['viewer', 'editor', 'admin'], default: 'editor' },
+    recipientOrder: { type: Number, default: null },
     status: { type: String, enum: ['pending', 'active', 'revoked'], default: 'active', index: true },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
     revokedAt: { type: Date, default: null },

@@ -690,6 +690,12 @@ async function sharedTaskLists(req) {
             );
             results.push({
                 ...serializeMobileTaskList(list, tasksByListId.get(list._id.toString()) || []),
+                order: share.recipientOrder != null
+                    ? Number(share.recipientOrder)
+                    : 100000 + results.length,
+                myListOrder: share.recipientOrder != null
+                    ? Number(share.recipientOrder)
+                    : 100000 + results.length,
                 isShared: true,
                 shareId: share._id?.toString?.() || String(share._id || ''),
                 ownerAccountNumber: accountNumber,
@@ -1692,6 +1698,60 @@ router.post('/accounts/:accountNumber/task-lists', async (req, res) => {
     }
 });
 
+router.post('/accounts/:accountNumber/task-lists/reorder', async (req, res) => {
+    try {
+        const listIds = [...new Set((Array.isArray(req.body?.listIds) ? req.body.listIds : [])
+            .map(id => String(id || ''))
+            .filter(id => /^[a-f\d]{24}$/i.test(id)))];
+        if (!listIds.length) return sendError(res, 400, 'listIds array required', 'VALIDATION_ERROR');
+
+        const recordIds = await tenantRecordIds(req);
+        const { TaskList } = await taskTenantModels(req);
+        const ownedLists = await TaskList.find({
+            _id: { $in: listIds },
+            recordId: { $in: recordIds },
+        }).select('_id').lean();
+        const ownedIds = new Set(ownedLists.map(list => list._id.toString()));
+        const receivedShares = await TaskListShare.find({
+            ...currentUserShareQuery(req),
+            listId: { $in: listIds },
+        }).select('_id listId').lean();
+        const shareByListId = new Map(
+            receivedShares.map(share => [String(share.listId), share]),
+        );
+
+        const listOps = [];
+        const shareOps = [];
+        listIds.forEach((listId, index) => {
+            if (ownedIds.has(listId)) {
+                listOps.push({
+                    updateOne: {
+                        filter: { _id: listId },
+                        update: { $set: { myListOrder: index + 1 } },
+                    },
+                });
+            }
+            const share = shareByListId.get(listId);
+            if (share) {
+                shareOps.push({
+                    updateOne: {
+                        filter: { _id: share._id },
+                        update: { $set: { recipientOrder: index + 1 } },
+                    },
+                });
+            }
+        });
+        await Promise.all([
+            listOps.length ? TaskList.bulkWrite(listOps) : Promise.resolve(),
+            shareOps.length ? TaskListShare.bulkWrite(shareOps) : Promise.resolve(),
+        ]);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Reorder task lists error:', error);
+        sendCaughtError(res, error, 'Réorganisation des listes impossible');
+    }
+});
+
 router.delete('/accounts/:accountNumber/task-lists/:listId', async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(String(req.params.listId || ''))) {
@@ -1842,6 +1902,48 @@ router.post('/accounts/:accountNumber/task-lists/:listId/tasks', async (req, res
     } catch (error) {
         console.error('[MobileAPI] Create list task error:', error);
         sendCaughtError(res, error);
+    }
+});
+
+router.post('/accounts/:accountNumber/task-lists/:listId/tasks/reorder', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (!access.canEdit) return sendError(res, 403, 'Modification non autorisee', 'TASK_LIST_READONLY');
+
+        const taskIds = [...new Set((Array.isArray(req.body?.taskIds) ? req.body.taskIds : [])
+            .map(id => String(id || ''))
+            .filter(id => /^[a-f\d]{24}$/i.test(id)))];
+        if (!taskIds.length) return sendError(res, 400, 'taskIds array required', 'VALIDATION_ERROR');
+
+        const tasks = await access.RecordTask.find({ taskListId: access.list._id })
+            .select('_id order')
+            .sort({ order: 1, createdAt: 1 })
+            .lean();
+        const allowedIds = new Set(tasks.map(task => task._id.toString()));
+        const orderedIds = taskIds.filter(id => allowedIds.has(id));
+        const orderedSet = new Set(orderedIds);
+        const remainingIds = tasks
+            .map(task => task._id.toString())
+            .filter(id => !orderedSet.has(id));
+        const nextIds = [...orderedIds, ...remainingIds];
+        const currentOrder = new Map(
+            tasks.map(task => [task._id.toString(), Number(task.order) || 0]),
+        );
+        const operations = nextIds
+            .map((id, order) => ({ id, order }))
+            .filter(({ id, order }) => currentOrder.get(id) !== order)
+            .map(({ id, order }) => ({
+                updateOne: {
+                    filter: { _id: id, taskListId: access.list._id },
+                    update: { $set: { order } },
+                },
+            }));
+        if (operations.length) await access.RecordTask.bulkWrite(operations);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[MobileAPI] Reorder list tasks error:', error);
+        sendCaughtError(res, error, 'Réorganisation des tâches impossible');
     }
 });
 

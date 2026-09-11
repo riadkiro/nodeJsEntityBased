@@ -233,7 +233,9 @@ function serializeTaskRow(req, task, list, record, entity, reminder = null, opti
     const status = cleanText(task.status, STATUS_TODO);
     const priorityOption = priorityOptionFor(task.priority, priorities);
     const priority = priorityOption.label;
-    const recordTitle = record?.computedTitle || record?.referenceTitle || record?.title || 'Sans titre';
+    const recordTitle = record
+        ? record.computedTitle || record.referenceTitle || record.title || 'Sans titre'
+        : '';
     const listId = list?._id?.toString?.() || task.taskListId?.toString?.() || '';
     const recordId = record?._id?.toString?.() || task.recordId?.toString?.() || '';
     const entitySlug = entity?.slug || '';

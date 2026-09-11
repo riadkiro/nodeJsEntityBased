@@ -27,6 +27,21 @@ test('a day-mode list automatically schedules a new task for today', () => {
     assert.equal(schedule.dueDate, null);
 });
 
+test('an explicit mobile opt-out overrides a legacy day-mode list', () => {
+    const schedule = TaskListsService.taskListScheduleDefaults({
+        displayOptions: { dayMode: true },
+    }, {
+        isDayPriority: false,
+        timeZone: 'Africa/Casablanca',
+    });
+
+    assert.deepEqual(schedule, {
+        isDayPriority: false,
+        startDate: null,
+        dueDate: null,
+    });
+});
+
 test('an explicit task date takes precedence over the list day mode', () => {
     const dueDate = new Date('2030-03-20T10:00:00.000Z');
     const schedule = TaskListsService.taskListScheduleDefaults({

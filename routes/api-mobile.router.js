@@ -1752,6 +1752,33 @@ router.post('/accounts/:accountNumber/task-lists/reorder', async (req, res) => {
     }
 });
 
+router.patch('/accounts/:accountNumber/task-lists/:listId', async (req, res) => {
+    try {
+        const access = await loadMobileTaskListAccess(req, req.params.listId);
+        if (!access) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        if (access.shared) {
+            return sendError(res, 403, 'Renommage non autorise', 'TASK_LIST_PROTECTED');
+        }
+
+        const label = cleanText(req.body?.label, '');
+        if (!label) return sendError(res, 400, 'Nom de liste requis', 'VALIDATION_ERROR');
+        const { TaskList, RecordTask } = access;
+        const lists = await TaskList.find({ recordId: access.list.recordId }).select('_id label').lean();
+        const duplicate = lists.some(list =>
+            String(list._id) !== String(access.list._id)
+            && cleanListLabel(list.label).toLowerCase() === label.toLowerCase());
+        if (duplicate) return sendError(res, 409, 'Une liste porte deja ce nom', 'TASK_LIST_EXISTS');
+
+        const list = await TaskList.findByIdAndUpdate(access.list._id, { $set: { label } }, { new: true });
+        if (!list) return sendError(res, 404, 'Liste introuvable', 'TASK_LIST_NOT_FOUND');
+        const tasks = await RecordTask.find({ taskListId: list._id }).select('taskListId status done assignedTo').lean();
+        res.json({ success: true, list: serializeMobileTaskList(list, tasks) });
+    } catch (error) {
+        console.error('[MobileAPI] Rename task list error:', error);
+        sendCaughtError(res, error);
+    }
+});
+
 router.delete('/accounts/:accountNumber/task-lists/:listId', async (req, res) => {
     try {
         if (!mongoose.Types.ObjectId.isValid(String(req.params.listId || ''))) {

@@ -131,7 +131,7 @@ function resolveTimeZone(value) {
     }
 }
 
-function createDateTools(query = {}) {
+function createDateTools(query = {}, now = new Date()) {
     const timeZone = resolveTimeZone(query.tz || 'Africa/Casablanca');
     const formatter = new Intl.DateTimeFormat('en-US', {
         timeZone,
@@ -163,10 +163,10 @@ function createDateTools(query = {}) {
         return date.toISOString().split('T')[0];
     };
     const formatKey = value => valueHasExplicitTime(value) ? formatInTimeZone(value) : dateOnlyKey(value);
+    const todayKey = formatInTimeZone(now);
     const addDays = days => {
-        const date = new Date();
-        date.setUTCDate(date.getUTCDate() + days);
-        return formatInTimeZone(date);
+        const [year, month, day] = todayKey.split('-').map(Number);
+        return new Date(Date.UTC(year, month - 1, day + days)).toISOString().slice(0, 10);
     };
     const requestedDate = cleanText(query.date, '');
     const day = cleanText(query.day, 'today').toLowerCase();
@@ -175,14 +175,14 @@ function createDateTools(query = {}) {
         ? requestedDate
         : day === 'tomorrow'
             ? addDays(1)
-            : formatInTimeZone(new Date());
+            : todayKey;
 
     return {
         timeZone,
         dateKey,
         day,
         explicitDate,
-        todayKey: formatInTimeZone(new Date()),
+        todayKey,
         formatKey,
     };
 }

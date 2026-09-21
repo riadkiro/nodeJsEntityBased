@@ -23,3 +23,19 @@ test('a task serialized without a loaded record has no placeholder record title'
     assert.equal(row.recordTitle, '');
     assert.equal(row.listLabel, 'Liste des taches');
 });
+
+test('tomorrow in Casablanca remains the next calendar date across clock changes', () => {
+    const beforeWinterShift = TaskOverview.createDateTools(
+        { day: 'tomorrow', tz: 'Africa/Casablanca' },
+        new Date('2026-02-14T23:30:00Z'),
+    );
+    assert.equal(beforeWinterShift.todayKey, '2026-02-15');
+    assert.equal(beforeWinterShift.dateKey, '2026-02-16');
+
+    const beforeSummerShift = TaskOverview.createDateTools(
+        { day: 'tomorrow', tz: 'Africa/Casablanca' },
+        new Date('2026-03-21T23:30:00Z'),
+    );
+    assert.equal(beforeSummerShift.todayKey, '2026-03-21');
+    assert.equal(beforeSummerShift.dateKey, '2026-03-22');
+});

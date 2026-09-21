@@ -34,6 +34,33 @@ test('normalizes an all-day important date', () => {
     assert.deepEqual(input.tags, ['Famille', 'Important']);
 });
 
+test('stores the recurrence and rejects unsupported values', () => {
+    const input = Agenda.normalizeAgendaInput({
+        title: 'Anniversaire',
+        startAt: '2030-07-24T12:00:00.000Z',
+        recurrence: 'yearly',
+    });
+    assert.equal(input.recurrence, 'yearly');
+    assert.equal(Agenda.normalizeAgendaInput({
+        title: 'Sans répétition', startAt: '2030-07-24',
+    }).recurrence, 'none');
+    assert.throws(() => Agenda.normalizeAgendaInput({
+        title: 'Invalide', startAt: '2030-07-24', recurrence: 'sometimes',
+    }), error => error.code === 'AGENDA_VALIDATION_ERROR');
+});
+
+test('includes old recurring sources in a bounded list query', () => {
+    const filter = Agenda.agendaEventListFilter({
+        _id: 'events',
+        customFields: [{ _id: 'repeat-field', name: 'repetition_evenement' }],
+    }, { from: '2030-01-01', to: '2030-12-31' });
+    assert.equal(filter.entityId, 'events');
+    assert.equal(filter.$or.length, 2);
+    assert.equal(filter.$or[1].customFields.$elemMatch.field_id, 'repeat-field');
+    assert.deepEqual(filter.$or[1].customFields.$elemMatch.value.$in,
+        ['daily', 'weekly', 'monthly', 'yearly']);
+});
+
 test('rejects an end before the start', () => {
     assert.throws(
         () => Agenda.normalizeAgendaInput({
@@ -54,6 +81,7 @@ test('serializes existing event entity fields for mobile', () => {
             { field_id: 'all-day', value: false },
             { field_id: 'important', value: true },
             { field_id: 'location', value: 'Casablanca' },
+            { field_id: 'repeat', value: 'monthly' },
         ],
     };
     const entity = {
@@ -61,6 +89,7 @@ test('serializes existing event entity fields for mobile', () => {
             { _id: 'all-day', name: 'toute_la_journee' },
             { _id: 'important', name: 'widget_date_importante' },
             { _id: 'location', name: 'lieu_evenement' },
+            { _id: 'repeat', name: 'repetition_evenement' },
         ],
     };
 
@@ -69,6 +98,7 @@ test('serializes existing event entity fields for mobile', () => {
     assert.equal(serialized.allDay, false);
     assert.equal(serialized.isImportant, true);
     assert.equal(serialized.location, 'Casablanca');
+    assert.equal(serialized.recurrence, 'monthly');
 });
 
 test('serializes several agenda reminders through the shared reminder model', () => {

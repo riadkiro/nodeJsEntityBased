@@ -44,6 +44,16 @@ function normalizeTags(value) {
     return result.slice(0, 12);
 }
 
+const AGENDA_RECURRENCES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+
+function normalizeRecurrence(value) {
+    const recurrence = cleanText(value, 'none');
+    if (!AGENDA_RECURRENCES.includes(recurrence)) {
+        throw new AgendaValidationError('La répétition est invalide.');
+    }
+    return recurrence;
+}
+
 function validDate(value) {
     const date = value instanceof Date ? value : new Date(value);
     return Number.isNaN(date.getTime()) ? null : date;
@@ -135,6 +145,9 @@ function normalizeAgendaInput(input = {}, options = {}) {
     if (!partial || input.tags !== undefined) {
         normalized.tags = normalizeTags(input.tags);
     }
+    if (!partial || input.recurrence !== undefined) {
+        normalized.recurrence = normalizeRecurrence(input.recurrence);
+    }
 
     return normalized;
 }
@@ -199,6 +212,8 @@ function serializeAgendaEvent(event = {}, eventsEntity = {}, reminders = []) {
         location: cleanText(values.lieu_evenement),
         notes: cleanText(values.notes_evenement, event.description || ''),
         tags: normalizeTags(values.tags_evenement),
+        recurrence: AGENDA_RECURRENCES.includes(values.repetition_evenement)
+            ? values.repetition_evenement : 'none',
         status: status.label,
         statusColor: status.color,
         reminder: serializedReminders[0] || null,
@@ -241,6 +256,7 @@ function applyAgendaFields(event, normalized, eventsEntity) {
         ['lieu_evenement', normalized.location],
         ['notes_evenement', normalized.notes],
         ['tags_evenement', normalized.tags],
+        ['repetition_evenement', normalized.recurrence],
     ];
     for (const [name, value] of mappings) {
         if (value !== undefined) setCustomField(event, idByName, name, value);
@@ -271,14 +287,7 @@ async function agendaContext(req) {
 
 async function listAgendaEvents(req, query = {}) {
     const { Record, eventsEntity } = await agendaContext(req);
-    const filter = { entityId: eventsEntity._id };
-    const from = validDate(query.from);
-    const to = validDate(query.to);
-    if (from || to) {
-        filter.date = {};
-        if (from) filter.date.$gte = from;
-        if (to) filter.date.$lte = to;
-    }
+    const filter = agendaEventListFilter(eventsEntity, query);
     const events = await Record.find(filter).sort({ date: 1, createdAt: 1 }).lean();
     const remindersByEvent = await ReminderService.scheduledRemindersMap({
         accountNumber: req.account_number,
@@ -291,6 +300,39 @@ async function listAgendaEvents(req, query = {}) {
         eventsEntity,
         remindersByEvent.get(event._id.toString()) || [],
     ));
+}
+
+function agendaEventListFilter(eventsEntity, query = {}) {
+    const filter = { entityId: eventsEntity._id };
+    const from = validDate(query.from);
+    const to = validDate(query.to);
+    if (from || to) {
+        const dateRange = {};
+        if (from) dateRange.$gte = from;
+        if (to) dateRange.$lte = to;
+        filter.date = dateRange;
+        if (from) {
+            const recurrenceField = eventsEntity.customFields?.find(
+                field => field.name === 'repetition_evenement',
+            );
+            if (recurrenceField?._id) {
+                filter.$or = [
+                    { date: dateRange },
+                    {
+                        date: { $lt: from },
+                        customFields: {
+                            $elemMatch: {
+                                field_id: recurrenceField._id,
+                                value: { $in: AGENDA_RECURRENCES.slice(1) },
+                            },
+                        },
+                    },
+                ];
+                delete filter.date;
+            }
+        }
+    }
+    return filter;
 }
 
 async function createAgendaEvent(req, input = {}) {
@@ -382,6 +424,7 @@ module.exports = {
     normalizeBoolean,
     normalizeTags,
     normalizeAgendaInput,
+    agendaEventListFilter,
     serializeAgendaEvent,
     applyAgendaFields,
     listAgendaEvents,

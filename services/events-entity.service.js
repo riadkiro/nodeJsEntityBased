@@ -33,6 +33,24 @@ const EVENT_FIELD_DEFS = [
         render: { input: 'date' },
     },
     {
+        name: 'repetition_evenement',
+        label: 'Répétition',
+        type: 'select',
+        category: 'dates',
+        isSystem: true,
+        ui: { icon: 'solar:repeat-bold-duotone', rows: 1, width: 'half' },
+        type_config: {
+            options: [
+                { label: 'Jamais', value: 'none' },
+                { label: 'Chaque jour', value: 'daily' },
+                { label: 'Chaque semaine', value: 'weekly' },
+                { label: 'Chaque mois', value: 'monthly' },
+                { label: 'Chaque année', value: 'yearly' },
+            ],
+        },
+        render: { input: 'select' },
+    },
+    {
         name: 'duree_evenement',
         label: 'Dur\u00e9e (min)',
         type: 'number',

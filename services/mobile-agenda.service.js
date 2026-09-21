@@ -44,7 +44,7 @@ function normalizeTags(value) {
     return result.slice(0, 12);
 }
 
-const AGENDA_RECURRENCES = ['none', 'daily', 'weekly', 'monthly', 'yearly'];
+const AGENDA_RECURRENCES = ['none', 'daily', 'weekly', 'monthly', 'quarterly', 'yearly'];
 
 function normalizeRecurrence(value) {
     const recurrence = cleanText(value, 'none');

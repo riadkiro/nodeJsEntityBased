@@ -14,6 +14,12 @@ test('exposes the mobile date categories in the events entity', () => {
         ['anniversaire', 'fete', 'jour_ferie', 'reunion', 'rendez_vous', 'echeance', 'rappel', 'autre'],
     );
     assert.ok(EventsEntity.TYPE_OPTIONS.slice(0, 8).every(option => option.icon));
+    const recurrenceField = EventsEntity.EVENT_FIELD_DEFS.find(
+        field => field.name === 'repetition_evenement',
+    );
+    assert.ok(recurrenceField.type_config.options.some(
+        option => option.value === 'quarterly',
+    ));
 });
 
 test('normalizes an all-day important date', () => {
@@ -42,6 +48,10 @@ test('stores the recurrence and rejects unsupported values', () => {
     });
     assert.equal(input.recurrence, 'yearly');
     assert.equal(Agenda.normalizeAgendaInput({
+        title: 'Réunion trimestrielle', startAt: '2030-07-24',
+        recurrence: 'quarterly',
+    }).recurrence, 'quarterly');
+    assert.equal(Agenda.normalizeAgendaInput({
         title: 'Sans répétition', startAt: '2030-07-24',
     }).recurrence, 'none');
     assert.throws(() => Agenda.normalizeAgendaInput({
@@ -58,7 +68,7 @@ test('includes old recurring sources in a bounded list query', () => {
     assert.equal(filter.$or.length, 2);
     assert.equal(filter.$or[1].customFields.$elemMatch.field_id, 'repeat-field');
     assert.deepEqual(filter.$or[1].customFields.$elemMatch.value.$in,
-        ['daily', 'weekly', 'monthly', 'yearly']);
+        ['daily', 'weekly', 'monthly', 'quarterly', 'yearly']);
 });
 
 test('rejects an end before the start', () => {

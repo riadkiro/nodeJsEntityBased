@@ -45,6 +45,7 @@ const EVENT_FIELD_DEFS = [
                 { label: 'Chaque jour', value: 'daily' },
                 { label: 'Chaque semaine', value: 'weekly' },
                 { label: 'Chaque mois', value: 'monthly' },
+                { label: 'Chaque trimestre', value: 'quarterly' },
                 { label: 'Chaque année', value: 'yearly' },
             ],
         },

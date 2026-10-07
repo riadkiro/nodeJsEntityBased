@@ -2,15 +2,16 @@
  * Notes Hub API Router
  * 
  * Aggregates all notes across all entities/records for the global Notes Hub.
- * Pattern identical to Chat Hub and Agenda Hub.
+ * Returns a mobile-style recent list plus the legacy entity/record hierarchy.
  * 
  * Endpoints:
- *   GET /api/notes-hub — List all notes grouped by entity → record
+ *   GET /api/notes-hub — List all notes by recent activity and by entity → record
  */
 
 const express = require('express');
 const router = express.Router();
 const { tenantCollection } = require('../../middleware/tenant');
+const { sortNotesByRecentActivity } = require('../../services/note-recency.service');
 
 // ═══════════════════════════════════════════
 // GET /api/notes-hub
@@ -21,15 +22,17 @@ router.get('/', async (req, res) => {
         const Record = await tenantCollection(req, 'Record');
         const Entity = await tenantCollection(req, 'Entity');
 
-        if (!RecordNote) return res.json({ success: true, entities: [], totalNotes: 0 });
+        if (!RecordNote) return res.json({ success: true, notes: [], entities: [], totalNotes: 0 });
 
         // Fetch all non-archived notes
-        const allNotes = await RecordNote.find({ archived: { $ne: true } })
-            .sort({ pinned: -1, updatedAt: -1 })
-            .lean();
+        const allNotes = sortNotesByRecentActivity(
+            await RecordNote.find({ archived: { $ne: true } })
+                .sort({ pinned: -1, updatedAt: -1, createdAt: -1 })
+                .lean()
+        );
 
         if (allNotes.length === 0) {
-            return res.json({ success: true, entities: [], totalNotes: 0 });
+            return res.json({ success: true, notes: [], entities: [], totalNotes: 0 });
         }
 
         // Collect unique recordIds and entityIds
@@ -72,6 +75,7 @@ router.get('/', async (req, res) => {
 
         // Group notes by entity → record
         const entityMap = {};
+        const flatNotes = [];
 
         allNotes.forEach(note => {
             const recordId = note.recordId?.toString();
@@ -101,10 +105,21 @@ router.get('/', async (req, res) => {
             }
 
             // Don't send content of protected notes, and strip pinHash
-            const { pinHash, ...safeNote } = note;
+            const { pinHash, ...safeNoteData } = note;
+            const safeNote = {
+                ...safeNoteData,
+                recordId,
+                entityId,
+                recordTitle: record?.computedTitle || record?.title || 'Sans titre',
+                entityName: entityInfo.name || 'Inconnu',
+                entitySlug: entityInfo.slug || '',
+                entityIcon: entityInfo.icon || 'solar:folder-bold-duotone',
+                entityColor: entityInfo.color || '#8b5cf6'
+            };
             if (safeNote.isProtected) safeNote.content = null;
 
             entityMap[entityId].records[recordId].notes.push(safeNote);
+            flatNotes.push(safeNote);
         });
 
         // Convert to array format
@@ -118,6 +133,7 @@ router.get('/', async (req, res) => {
 
         res.json({
             success: true,
+            notes: flatNotes,
             entities: result,
             totalNotes: allNotes.length
         });

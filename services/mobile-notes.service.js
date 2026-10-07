@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { tenantCollection } = require('../middleware/tenant');
+const { sortNotesByRecentActivity } = require('./note-recency.service');
 
 class MobileNoteError extends Error {
     constructor(message, statusCode = 400, code = 'MOBILE_NOTE_ERROR') {
@@ -98,10 +99,12 @@ function metadataFor(note, maps) {
 
 async function listNotes(req, query = {}) {
     const { RecordNote, Record, Entity } = await noteModels(req);
-    const notes = await RecordNote.find({ archived: { $ne: true } })
-        .sort({ pinned: -1, updatedAt: -1 })
-        .limit(500)
-        .lean();
+    const notes = sortNotesByRecentActivity(
+        await RecordNote.find({ archived: { $ne: true } })
+            .sort({ pinned: -1, updatedAt: -1, createdAt: -1 })
+            .limit(500)
+            .lean()
+    );
     const maps = await metadataMaps(Record, Entity, notes);
     const search = cleanText(query.search).toLowerCase();
     const serialized = notes.map(note =>

@@ -86,6 +86,7 @@
 .th-task-checkbox{width:18px;height:18px;border:1.5px solid #d1d5db;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:transparent}
 .th-task-checkbox.checked{background:#10b981;border-color:#10b981;color:#fff}
 .th-task-check-simple:disabled,.th-done-action:disabled{cursor:wait;opacity:.72}
+.th-done-action.is-reopening{color:#cbd5e1}
 .th-task-info{min-width:0}
 .th-task-title-text{font-size:12.5px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-task-item.done .th-task-title-text{text-decoration:line-through;color:#94a3b8}
@@ -535,7 +536,7 @@
                                             :class="{ 'is-checked': isDone(task) }"
                                             :title="isDone(task) ? 'Marquer à faire' : 'Marquer terminé'"
                                             :disabled="isTaskTogglePending(task)"
-                                            @click.stop="toggleTaskStatus(task)">
+                                            @click.stop="toggleTaskStatus(task, $event.currentTarget)">
                                         <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                     </button>
                                     <div class="th-task-main-simple">
@@ -595,7 +596,7 @@
                             <div class="th-completed-list">
                                 <template x-for="task in completedSelectedTasks" :key="task._id || task.id">
                                     <div class="th-completed-row">
-                                        <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task)">
+                                        <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task, $event.currentTarget)">
                                             <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
                                         </button>
                                         <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
@@ -705,7 +706,7 @@
                                         class="th-task-check-simple"
                                         :class="{ 'is-checked': isDone(task) }"
                                         :disabled="isTaskTogglePending(task)"
-                                        @click.stop="toggleTaskStatus(task)">
+                                        @click.stop="toggleTaskStatus(task, $event.currentTarget)">
                                     <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                 </button>
                                 <div class="th-task-main-simple">
@@ -767,7 +768,7 @@
                         <div class="th-completed-list">
                             <template x-for="task in selectedMyListCompletedTasks" :key="task._id || task.id">
                                 <div class="th-completed-row">
-                                    <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task)">
+                                    <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task, $event.currentTarget)">
                                         <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
                                     </button>
                                     <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
@@ -1650,6 +1651,7 @@ document.addEventListener('alpine:init', () => {
             Alpine.store('taskModal').remove();
         },
         taskId(task = {}) {
+            task = task || {};
             return String(task._id || task.id || '');
         },
         setOptimisticTaskPatch(taskId, patch = null) {
@@ -1736,7 +1738,28 @@ document.addEventListener('alpine:init', () => {
             });
             this.fallbackTasks = (this.fallbackTasks || []).filter(item => this.taskId(item) !== id);
         },
-        async toggleTaskStatus(task) {
+        paintTaskToggleControl(control, completed) {
+            if (!control?.classList) return;
+            control.classList.toggle('is-checked', completed);
+            control.classList.toggle('is-reopening', !completed && control.classList.contains('th-done-action'));
+            control.disabled = true;
+            control.setAttribute('aria-pressed', completed ? 'true' : 'false');
+        },
+        waitForTaskTogglePaint() {
+            return new Promise(resolve => {
+                let settled = false;
+                const finish = () => {
+                    if (settled) return;
+                    settled = true;
+                    window.clearTimeout(fallback);
+                    resolve();
+                };
+                const fallback = window.setTimeout(finish, 80);
+                if (typeof window.requestAnimationFrame !== 'function') return;
+                window.requestAnimationFrame(() => window.requestAnimationFrame(finish));
+            });
+        },
+        async toggleTaskStatus(task, control = null) {
             const id = this.taskId(task);
             if (!id || this.pendingTaskToggles[id]) return;
             const newStatus = this.isDone(task) ? 'À faire' : 'Terminé';
@@ -1746,6 +1769,8 @@ document.addEventListener('alpine:init', () => {
                 completedAt: newStatus === 'Terminé' ? new Date().toISOString() : null,
                 updatedAt: new Date().toISOString()
             };
+            this.paintTaskToggleControl(control, newStatus === 'Terminé');
+            await this.waitForTaskTogglePaint();
             this.setOptimisticTaskPatch(id, optimistic);
             this.setTaskTogglePending(id, true);
             this.$nextTick(() => this.refreshTodaySortable());
@@ -2008,6 +2033,7 @@ document.addEventListener('alpine:init', () => {
             return this.rawVisibleTasks.filter(task => !this.isDone(task) && this.taskMatchesDate(task, key)).length;
         },
         taskHasAttachments(task = {}) {
+            task = task || {};
             return Array.isArray(task.attachments) && task.attachments.length > 0;
         },
         taskHasReminder(task = {}) {
@@ -2017,6 +2043,7 @@ document.addEventListener('alpine:init', () => {
             return !Number.isNaN(date.getTime());
         },
         listForTask(task = {}) {
+            task = task || {};
             const id = String(task.listId || task.taskListId || '');
             if (!id) return null;
             for (const record of this.allRecords || []) {
@@ -2038,13 +2065,16 @@ document.addEventListener('alpine:init', () => {
             return this.taskDisplayOption(task, key, fallback);
         },
         taskAccentColor(task = {}) {
+            task = task || {};
             return task.priorityColor || this.taskPriorityColor(task) || task.listColor || this.listForTask(task)?.color || '#805dca';
         },
         taskDisplayOption(task = {}, key, fallback = true) {
+            task = task || {};
             const options = task.displayOptions || this.listForTask(task)?.displayOptions || {};
             return options[key] === undefined ? fallback : options[key] !== false;
         },
         taskTagOptions(task = {}) {
+            task = task || {};
             const options = task.tagOptions || this.listForTask(task)?.tags || this.selectedMyList?.tags || [];
             return this.normalizeListTags(options);
         },

@@ -34,10 +34,10 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
             <span id="open-count" x-text="selectedOpenTasks.length"></span>
             <span id="done-count" x-text="completedSelectedTasks.length"></span>
             <template x-for="task in selectedOpenTasks" :key="task._id">
-                <button class="toggle-open" type="button" @click="toggleTaskStatus(task)">toggle</button>
+                <button class="toggle-open th-task-check-simple" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">toggle</button>
             </template>
             <template x-for="task in completedSelectedTasks" :key="task._id">
-                <button class="toggle-done" type="button" @click="toggleTaskStatus(task)">done</button>
+                <button class="toggle-done th-done-action" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">done</button>
             </template>
         </div>
     `);
@@ -58,19 +58,21 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
                             entityId: 'entity-1',
                             entityName: 'Famille',
                             entitySlug: 'famille',
-                            totalTasks: 1,
+                            totalTasks: 499,
                             doneTasks: 0,
                             records: [{
                                 recordId: 'record-1',
                                 recordTitle: 'Espace perso',
                                 entityName: 'Famille',
                                 entitySlug: 'famille',
-                                totalTasks: 1,
+                                totalTasks: 499,
                                 doneTasks: 0,
-                                lists: [{ id: 'list-1', listId: 'list-1', label: 'Liste des tâches' }],
-                                tasks: [{
-                                    _id: '64b64c0f0000000000000001',
-                                    title: 'Tâche lente',
+                                lists: [{ id: 'list-1', listId: 'list-1', label: 'Liste des tâches', totalTasks: 499, doneTasks: 0 }],
+                                tasks: Array.from({ length: 499 }, (_, index) => ({
+                                    _id: index === 0
+                                        ? '64b64c0f0000000000000001'
+                                        : String(index + 1).padStart(24, '0'),
+                                    title: 'Tâche lente ' + index,
                                     status: 'À faire',
                                     statusColor: '#9ca3af',
                                     isDayPriority: true,
@@ -78,7 +80,7 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
                                     taskListId: 'list-1',
                                     createdAt: new Date().toISOString(),
                                     updatedAt: new Date().toISOString()
-                                }]
+                                }))
                             }]
                         }]
                     })
@@ -115,7 +117,7 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
     await page.addScriptTag({ content: tasksHubScript() });
     await page.addScriptTag({ path: alpinePath });
 
-    await page.waitForFunction(() => document.querySelector('#open-count')?.textContent === '1');
+    await page.waitForFunction(() => document.querySelector('#open-count')?.textContent === '499');
 
     const immediateState = await page.evaluate(() => {
         const root = document.querySelector('[x-data="tasksHubApp"]');
@@ -123,23 +125,34 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
         document.querySelector('.toggle-open').click();
         const taskId = '64b64c0f0000000000000001';
         return {
+            controlPainted: document.querySelector('.toggle-open').classList.contains('is-checked'),
+            controlDisabled: document.querySelector('.toggle-open').disabled,
             pending: state.pendingTaskToggles[taskId] === true,
-            optimisticStatus: state.optimisticTaskPatches[taskId]?.status,
+            optimisticStatus: state.optimisticTaskPatches[taskId]?.status || null,
             requestStarted: window.__statusRequestStarted,
             requestResolved: window.__statusRequestResolved,
         };
     });
 
     assert.deepEqual(immediateState, {
-        pending: true,
-        optimisticStatus: 'Terminé',
-        requestStarted: true,
+        controlPainted: true,
+        controlDisabled: true,
+        pending: false,
+        optimisticStatus: null,
+        requestStarted: false,
         requestResolved: false,
     });
 
     const renderStartedAt = Date.now();
+    await page.waitForFunction(() => {
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        return window.__statusRequestStarted
+            && state.pendingTaskToggles['64b64c0f0000000000000001'] === true
+            && state.optimisticTaskPatches['64b64c0f0000000000000001']?.status === 'Terminé';
+    });
     await page.waitForFunction(() => (
-        document.querySelector('#open-count')?.textContent === '0'
+        document.querySelector('#open-count')?.textContent === '498'
         && document.querySelector('#done-count')?.textContent === '1'
     ));
     assert.ok(Date.now() - renderStartedAt < 750, 'optimistic completion waited for the API');
@@ -158,12 +171,14 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
             optimisticPatch: state.optimisticTaskPatches['64b64c0f0000000000000001'] || null,
             persistedStatus: state.entities[0].records[0].tasks[0].status,
             requestCount: window.__statusRequestCount,
+            nullTaskTags: state.taskTagOptions(null),
         };
     });
     assert.deepEqual(settledState, {
         optimisticPatch: null,
         persistedStatus: 'Terminé',
         requestCount: 1,
+        nullTaskTags: [],
     });
     assert.deepEqual(pageErrors, []);
 });

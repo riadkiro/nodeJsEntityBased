@@ -374,17 +374,18 @@
 .th-nav-empty{margin:14px;padding:18px 12px;border:1px dashed #dbe4f0;border-radius:10px;color:#8fa0bd;text-align:center;font-size:11.5px;font-weight:700}
 .th-detail-pane{min-width:0;min-height:0;overflow:hidden;background:#fff}
 .th-detail-scroll{height:100%;min-height:0;overflow:hidden;padding:0}
-.th-detail-scroll .th-simple-grid{width:100%;height:100%;max-width:none;margin:0;padding:0;grid-template-columns:300px minmax(0,1fr);gap:0;align-items:stretch}
-.th-side-stack{height:100%;min-height:0;top:0;position:static;gap:0;overflow-y:auto;border-right:1px solid #dbe2ea;background:#fbfcfe}
-.th-side-stack .th-panel{border:0;border-bottom:1px solid #e3e8ef;border-radius:0;box-shadow:none;background:transparent}
-.th-center{height:100%;min-height:0}
+.th-detail-scroll .th-simple-grid{width:100%;height:100%;max-width:none;margin:0;padding:0;grid-template-columns:minmax(0,1fr) 320px;gap:0;align-items:stretch}
+.th-side-stack{height:100%;min-height:0;grid-column:2;grid-row:1;top:0;position:static;gap:0;overflow-y:auto;border-left:1px solid #dbe2ea;background:#fbfcfe}
+.th-side-stack .th-panel{flex:0 0 auto;border:0;border-bottom:1px solid #e3e8ef;border-radius:0;box-shadow:none;background:transparent}
+.th-center{height:100%;min-height:0;grid-column:1;grid-row:1}
 .th-today-card{height:100%;min-height:0;border:0;border-radius:0;box-shadow:none;display:flex;flex-direction:column}
 .th-today-header{flex:0 0 auto}
-.th-today-body{flex:1;min-height:0;align-items:stretch;overflow:hidden}
-.th-open-list{min-height:0;overflow-y:auto;padding-right:6px}
+.th-today-body{flex:1;min-height:0;display:block;overflow:hidden}
+.th-open-list{height:100%;min-height:0;overflow-y:auto;padding-right:6px}
 .th-open-list .th-inline-form{position:sticky;bottom:0;z-index:2;margin-top:auto;padding-top:10px;padding-bottom:2px;background:#fff}
 .th-completed{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .th-completed-list{flex:1;min-height:0;max-height:none}
+.th-side-stack .th-completed-panel{height:auto;min-height:190px;flex:1 1 220px;border:0;padding:16px;background:transparent}
 .th-list-view{width:100%;height:100%;max-width:none;margin:0}
 .th-list-view .th-list-task-card{height:100%;min-height:0;border:0;border-radius:0;box-shadow:none;display:flex;flex-direction:column}
 .th-list-view .th-list-task-head{flex:0 0 auto}
@@ -428,7 +429,7 @@
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
-@media(max-width:1100px){.th-detail-scroll{overflow-y:auto}.th-detail-scroll .th-simple-grid{height:auto;grid-template-columns:1fr}.th-side-stack{height:auto;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-right:0;border-bottom:1px solid #e8edf5}.th-center,.th-today-card{height:auto}.th-today-card{min-height:520px}.th-today-body,.th-list-panel-body{grid-template-columns:1fr;overflow:visible}.th-open-list{overflow:visible}.th-completed{height:auto;border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px;overflow:visible}.th-completed-list{max-height:220px}}
+@media(max-width:1100px){.th-detail-scroll{overflow-y:auto}.th-detail-scroll .th-simple-grid{height:auto;grid-template-columns:1fr}.th-center{height:auto;grid-column:1;grid-row:1}.th-side-stack{height:auto;grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0;border-top:1px solid #e8edf5}.th-side-stack .th-completed-panel{grid-column:1/-1;min-height:220px}.th-today-card{height:auto;min-height:520px}.th-today-body,.th-list-panel-body{grid-template-columns:1fr;overflow:visible}.th-open-list{height:auto;overflow:visible}.th-completed{height:auto;border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px;overflow:visible}.th-side-stack .th-completed-panel{padding:18px;border-top:0}.th-completed-list{max-height:220px}}
 @media(max-width:900px){.th-wrap.th-simple{height:auto;min-height:calc(100vh - 78px);overflow:visible}.th-simple-shell{height:auto;grid-template-columns:1fr}.th-nav-sidebar{max-height:360px;border-right:0;border-bottom:1px solid #e0e6ed}.th-detail-pane{overflow:visible}.th-detail-scroll{height:auto;overflow:visible;padding:14px}.th-list-view .th-list-task-card{min-height:440px}.dark .th-nav-sidebar{border-bottom-color:#253b5c}}
 @media(max-width:640px){.th-simple-shell{padding:0;border-radius:10px}.th-side-stack{display:flex}.th-today-card,.th-list-task-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
 </style>
@@ -570,6 +571,27 @@ window.addEventListener('pagehide', () => {
                         </div>
                     </div>
                 </section>
+
+                <section class="th-completed th-completed-panel" x-show="todayPanelOption('showCompleted', true)">
+                    <div class="th-completed-head">
+                        <iconify-icon icon="solar:check-circle-bold" width="15" style="color:#22c55e"></iconify-icon>
+                        <strong x-text="completedTitle"></strong>
+                    </div>
+                    <div class="th-completed-list">
+                        <template x-for="task in completedSelectedTasks" :key="task._id || task.id">
+                            <div class="th-completed-row">
+                                <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task, $event.currentTarget)">
+                                    <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
+                                </button>
+                                <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
+                                <span class="th-completed-record" x-show="task.recordTitle && task.recordTitle !== 'Espace perso'" x-text="task.recordTitle"></span>
+                            </div>
+                        </template>
+                        <template x-if="completedSelectedTasks.length === 0">
+                            <div class="th-empty-simple" x-text="completedEmptyLabel"></div>
+                        </template>
+                    </div>
+                </section>
             </aside>
 
             <div class="th-center">
@@ -685,26 +707,6 @@ window.addEventListener('pagehide', () => {
                             <div class="th-error-simple" x-show="addError" x-text="addError"></div>
                         </div>
 
-                        <aside class="th-completed" x-show="todayPanelOption('showCompleted', true)">
-                            <div class="th-completed-head">
-                                <iconify-icon icon="solar:check-circle-bold" width="15" style="color:#22c55e"></iconify-icon>
-                                <strong x-text="completedTitle"></strong>
-                            </div>
-                            <div class="th-completed-list">
-                                <template x-for="task in completedSelectedTasks" :key="task._id || task.id">
-                                    <div class="th-completed-row">
-                                        <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task, $event.currentTarget)">
-                                            <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
-                                        </button>
-                                        <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
-                                        <span class="th-completed-record" x-show="task.recordTitle && task.recordTitle !== 'Espace perso'" x-text="task.recordTitle"></span>
-                                    </div>
-                                </template>
-                                <template x-if="completedSelectedTasks.length === 0">
-                                    <div class="th-empty-simple" x-text="completedEmptyLabel"></div>
-                                </template>
-                            </div>
-                        </aside>
                     </div>
                 </section>
             </div>

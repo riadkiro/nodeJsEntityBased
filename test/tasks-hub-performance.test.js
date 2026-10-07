@@ -21,7 +21,7 @@ function tasksHubScript() {
     return view.slice(contentStart, end).replaceAll('<%= account_number %>', '6804');
 }
 
-test('task completion renders before a slow API response', { timeout: 15_000 }, async (t) => {
+test('task completion and reorder stay local while APIs are slow', { timeout: 15_000 }, async (t) => {
     const browser = await puppeteer.launch({ headless: true });
     t.after(() => browser.close());
 
@@ -34,7 +34,9 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
             <span id="open-count" x-text="selectedOpenTasks.length"></span>
             <span id="done-count" x-text="completedSelectedTasks.length"></span>
             <template x-for="task in selectedOpenTasks" :key="task._id">
-                <button class="toggle-open th-task-check-simple" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">toggle</button>
+                <div class="th-task-row-simple" :data-task-id="task._id">
+                    <button class="toggle-open th-task-check-simple" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">toggle</button>
+                </div>
             </template>
             <template x-for="task in completedSelectedTasks" :key="task._id">
                 <button class="toggle-done th-done-action" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">done</button>
@@ -46,8 +48,13 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
         window.__statusRequestStarted = false;
         window.__statusRequestResolved = false;
         window.__statusRequestCount = 0;
+        window.__hubRequestCount = 0;
+        window.__reorderRequestStarted = false;
+        window.__reorderRequestResolved = false;
+        window.__reorderTaskIds = [];
         window.fetch = async (url, options = {}) => {
             if (String(url).endsWith('/api/tasks-hub')) {
+                window.__hubRequestCount += 1;
                 return {
                     ok: true,
                     json: async () => ({
@@ -109,6 +116,14 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
                         }
                     })
                 };
+            }
+
+            if (String(url).endsWith('/api/tasks-hub/reorder')) {
+                window.__reorderRequestStarted = true;
+                window.__reorderTaskIds = JSON.parse(options.body || '{}').taskIds || [];
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                window.__reorderRequestResolved = true;
+                return { ok: true, json: async () => ({ success: true }) };
             }
 
             throw new Error('Unexpected fetch: ' + url + ' ' + (options.method || 'GET'));
@@ -183,5 +198,46 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
         requestCount: 1,
         nullTaskTags: [],
     });
+
+    const reorderImmediate = await page.evaluate(() => {
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        const container = document.querySelector('.th-task-row-simple')?.parentElement;
+        const rows = Array.from(container.querySelectorAll(':scope > .th-task-row-simple'));
+        const moved = rows[1];
+        container.insertBefore(moved, rows[0]);
+        state.persistTodayOrder({
+            from: container,
+            to: container,
+            item: moved,
+            oldDraggableIndex: 1,
+            newDraggableIndex: 0,
+        });
+        const ordered = state.selectedOpenTasks.slice(0, 2);
+        return {
+            requestStarted: window.__reorderRequestStarted,
+            requestResolved: window.__reorderRequestResolved,
+            firstTaskId: state.taskId(ordered[0]),
+            firstTaskOrder: ordered[0]?.order,
+            secondTaskId: state.taskId(ordered[1]),
+            secondTaskOrder: ordered[1]?.order,
+            hubRequestCount: window.__hubRequestCount,
+        };
+    });
+    assert.deepEqual(reorderImmediate, {
+        requestStarted: true,
+        requestResolved: false,
+        firstTaskId: '000000000000000000000003',
+        firstTaskOrder: 0,
+        secondTaskId: '000000000000000000000002',
+        secondTaskOrder: 1,
+        hubRequestCount: 1,
+    });
+    await page.waitForFunction(() => window.__reorderRequestResolved);
+    assert.equal(await page.evaluate(() => window.__hubRequestCount), 1, 'reorder reloaded the whole hub');
+    assert.deepEqual(
+        (await page.evaluate(() => window.__reorderTaskIds.slice(0, 2))),
+        ['000000000000000000000003', '000000000000000000000002'],
+    );
     assert.deepEqual(pageErrors, []);
 });

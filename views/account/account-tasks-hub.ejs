@@ -2550,10 +2550,31 @@ document.addEventListener('alpine:init', () => {
             const el = this.$el?.querySelector?.('[data-task-widget-id="tasks-page-today"]');
             if (el) this.initTodaySortable(el);
         },
-        async persistTodayOrder(evt) {
-            const rows = Array.from(evt?.to?.querySelectorAll?.('.th-task-row-simple[data-task-id]') || []);
-            const ids = rows.map(row => row.dataset.taskId).filter(Boolean);
+        revertTodaySortableDom(evt) {
+            const container = evt?.from;
+            const item = evt?.item;
+            if (!container || !item) return;
+            const siblings = Array.from(container.querySelectorAll(':scope > .th-task-row-simple[data-task-id]'))
+                .filter(row => row !== item);
+            const oldIndex = Number.isInteger(evt.oldDraggableIndex) ? evt.oldDraggableIndex : evt.oldIndex;
+            const reference = Number.isInteger(oldIndex) ? (siblings[oldIndex] || null) : null;
+            container.insertBefore(item, reference);
+        },
+        persistTodayOrder(evt) {
+            const container = evt?.to || evt?.from;
+            if (!container) return;
+            const visibleById = new Map(this.selectedOpenTasks.map(task => [this.taskId(task), task]));
+            const ids = Array.from(container.querySelectorAll(':scope > .th-task-row-simple[data-task-id]'))
+                .map(row => String(row.dataset.taskId || ''))
+                .filter((id, index, all) => id && visibleById.has(id) && all.indexOf(id) === index);
+            this.revertTodaySortableDom(evt);
             if (ids.length < 2) return;
+
+            ids.forEach((id, order) => this.patchTaskEverywhere(id, { order }));
+            this.$nextTick(() => this.refreshTodaySortable());
+            this.syncTodayOrder(ids);
+        },
+        async syncTodayOrder(ids) {
             try {
                 const res = await fetch(API + '/api/tasks-hub/reorder', {
                     method: 'POST',
@@ -2563,11 +2584,9 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Réorganisation impossible');
-                await this.loadHub();
             } catch (e) {
                 console.error('[TasksHub] Reorder error:', e);
                 if (window.showMessage) window.showMessage(e.message || 'Réorganisation impossible', 'danger');
-                await this.loadHub();
             }
         },
         closeTaskMenu() {

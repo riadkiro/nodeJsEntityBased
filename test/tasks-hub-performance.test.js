@@ -1,0 +1,169 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+const puppeteer = require('puppeteer');
+
+const projectRoot = path.resolve(__dirname, '..');
+const viewPath = path.join(projectRoot, 'views', 'account', 'account-tasks-hub.ejs');
+const alpinePath = path.join(projectRoot, 'public', 'themes', 'default', 'assets', 'js', 'alpine.min.js');
+
+function tasksHubScript() {
+    const view = fs.readFileSync(viewPath, 'utf8');
+    const alpineMarker = "document.addEventListener('alpine:init'";
+    const markerPosition = view.indexOf(alpineMarker);
+    assert.notEqual(markerPosition, -1, 'tasks hub Alpine script not found');
+    const start = view.lastIndexOf('<script>', markerPosition);
+    assert.notEqual(start, -1, 'tasks hub script tag not found');
+    const contentStart = start + '<script>'.length;
+    const end = view.indexOf('</script>', contentStart);
+    assert.notEqual(end, -1, 'tasks hub Alpine script is not closed');
+    return view.slice(contentStart, end).replaceAll('<%= account_number %>', '6804');
+}
+
+test('task completion renders before a slow API response', { timeout: 15_000 }, async (t) => {
+    const browser = await puppeteer.launch({ headless: true });
+    t.after(() => browser.close());
+
+    const page = await browser.newPage();
+    const pageErrors = [];
+    page.on('pageerror', error => pageErrors.push(error.message));
+
+    await page.setContent(`
+        <div x-data="tasksHubApp">
+            <span id="open-count" x-text="selectedOpenTasks.length"></span>
+            <span id="done-count" x-text="completedSelectedTasks.length"></span>
+            <template x-for="task in selectedOpenTasks" :key="task._id">
+                <button class="toggle-open" type="button" @click="toggleTaskStatus(task)">toggle</button>
+            </template>
+            <template x-for="task in completedSelectedTasks" :key="task._id">
+                <button class="toggle-done" type="button" @click="toggleTaskStatus(task)">done</button>
+            </template>
+        </div>
+    `);
+
+    await page.addScriptTag({ content: `
+        window.__statusRequestStarted = false;
+        window.__statusRequestResolved = false;
+        window.__statusRequestCount = 0;
+        window.fetch = async (url, options = {}) => {
+            if (String(url).endsWith('/api/tasks-hub')) {
+                return {
+                    ok: true,
+                    json: async () => ({
+                        success: true,
+                        priorities: [],
+                        myLists: [],
+                        entities: [{
+                            entityId: 'entity-1',
+                            entityName: 'Famille',
+                            entitySlug: 'famille',
+                            totalTasks: 1,
+                            doneTasks: 0,
+                            records: [{
+                                recordId: 'record-1',
+                                recordTitle: 'Espace perso',
+                                entityName: 'Famille',
+                                entitySlug: 'famille',
+                                totalTasks: 1,
+                                doneTasks: 0,
+                                lists: [{ id: 'list-1', listId: 'list-1', label: 'Liste des tâches' }],
+                                tasks: [{
+                                    _id: '64b64c0f0000000000000001',
+                                    title: 'Tâche lente',
+                                    status: 'À faire',
+                                    statusColor: '#9ca3af',
+                                    isDayPriority: true,
+                                    listId: 'list-1',
+                                    taskListId: 'list-1',
+                                    createdAt: new Date().toISOString(),
+                                    updatedAt: new Date().toISOString()
+                                }]
+                            }]
+                        }]
+                    })
+                };
+            }
+
+            if (String(url).includes('/api/record-tasks/')) {
+                window.__statusRequestStarted = true;
+                window.__statusRequestCount += 1;
+                await new Promise(resolve => setTimeout(resolve, 1200));
+                window.__statusRequestResolved = true;
+                return {
+                    ok: true,
+                    json: async () => ({
+                        success: true,
+                        task: {
+                            _id: '64b64c0f0000000000000001',
+                            title: 'Tâche lente',
+                            status: 'Terminé',
+                            statusColor: '#22c55e',
+                            isDayPriority: true,
+                            listId: 'list-1',
+                            taskListId: 'list-1',
+                            completedAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        }
+                    })
+                };
+            }
+
+            throw new Error('Unexpected fetch: ' + url + ' ' + (options.method || 'GET'));
+        };
+    ` });
+    await page.addScriptTag({ content: tasksHubScript() });
+    await page.addScriptTag({ path: alpinePath });
+
+    await page.waitForFunction(() => document.querySelector('#open-count')?.textContent === '1');
+
+    const immediateState = await page.evaluate(() => {
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        document.querySelector('.toggle-open').click();
+        const taskId = '64b64c0f0000000000000001';
+        return {
+            pending: state.pendingTaskToggles[taskId] === true,
+            optimisticStatus: state.optimisticTaskPatches[taskId]?.status,
+            requestStarted: window.__statusRequestStarted,
+            requestResolved: window.__statusRequestResolved,
+        };
+    });
+
+    assert.deepEqual(immediateState, {
+        pending: true,
+        optimisticStatus: 'Terminé',
+        requestStarted: true,
+        requestResolved: false,
+    });
+
+    const renderStartedAt = Date.now();
+    await page.waitForFunction(() => (
+        document.querySelector('#open-count')?.textContent === '0'
+        && document.querySelector('#done-count')?.textContent === '1'
+    ));
+    assert.ok(Date.now() - renderStartedAt < 750, 'optimistic completion waited for the API');
+    assert.equal(await page.evaluate(() => window.__statusRequestResolved), false);
+
+    await page.waitForFunction(() => {
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        return window.__statusRequestResolved && !state.pendingTaskToggles['64b64c0f0000000000000001'];
+    });
+
+    const settledState = await page.evaluate(() => {
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        return {
+            optimisticPatch: state.optimisticTaskPatches['64b64c0f0000000000000001'] || null,
+            persistedStatus: state.entities[0].records[0].tasks[0].status,
+            requestCount: window.__statusRequestCount,
+        };
+    });
+    assert.deepEqual(settledState, {
+        optimisticPatch: null,
+        persistedStatus: 'Terminé',
+        requestCount: 1,
+    });
+    assert.deepEqual(pageErrors, []);
+});

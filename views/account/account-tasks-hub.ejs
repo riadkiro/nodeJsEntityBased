@@ -85,6 +85,7 @@
 .th-task-item:hover{background:#fafbff}
 .th-task-checkbox{width:18px;height:18px;border:1.5px solid #d1d5db;border-radius:5px;background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;color:transparent}
 .th-task-checkbox.checked{background:#10b981;border-color:#10b981;color:#fff}
+.th-task-check-simple:disabled,.th-done-action:disabled{cursor:wait;opacity:.72}
 .th-task-info{min-width:0}
 .th-task-title-text{font-size:12.5px;font-weight:700;color:#111827;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-task-item.done .th-task-title-text{text-decoration:line-through;color:#94a3b8}
@@ -533,6 +534,7 @@
                                             class="th-task-check-simple"
                                             :class="{ 'is-checked': isDone(task) }"
                                             :title="isDone(task) ? 'Marquer à faire' : 'Marquer terminé'"
+                                            :disabled="isTaskTogglePending(task)"
                                             @click.stop="toggleTaskStatus(task)">
                                         <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                     </button>
@@ -593,7 +595,7 @@
                             <div class="th-completed-list">
                                 <template x-for="task in completedSelectedTasks" :key="task._id || task.id">
                                     <div class="th-completed-row">
-                                        <button type="button" class="th-done-action" title="Remettre à faire" @click.stop="toggleTaskStatus(task)">
+                                        <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task)">
                                             <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
                                         </button>
                                         <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
@@ -702,6 +704,7 @@
                                 <button type="button"
                                         class="th-task-check-simple"
                                         :class="{ 'is-checked': isDone(task) }"
+                                        :disabled="isTaskTogglePending(task)"
                                         @click.stop="toggleTaskStatus(task)">
                                     <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                 </button>
@@ -764,7 +767,7 @@
                         <div class="th-completed-list">
                             <template x-for="task in selectedMyListCompletedTasks" :key="task._id || task.id">
                                 <div class="th-completed-row">
-                                    <button type="button" class="th-done-action" title="Remettre à faire" @click.stop="toggleTaskStatus(task)">
+                                    <button type="button" class="th-done-action" title="Remettre à faire" :disabled="isTaskTogglePending(task)" @click.stop="toggleTaskStatus(task)">
                                         <iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon>
                                     </button>
                                     <span class="th-completed-title" x-text="task.title" @click="openTask(task)"></span>
@@ -1187,6 +1190,8 @@ document.addEventListener('alpine:init', () => {
         calendarCursor: '',
         todaySortable: null,
         taskMenu: null,
+        optimisticTaskPatches: {},
+        pendingTaskToggles: {},
         priorityFilter: 'all',
         sortMode: 'all',
         ctxTaskId: null,
@@ -1401,6 +1406,7 @@ document.addEventListener('alpine:init', () => {
             return this.activeRecords.flatMap(record => (record.tasks || [])
                 .filter(task => !this.activeListId || String(task.listId || task.taskListId || '') === this.activeListId)
                 .map(task => {
+                    const taskId = this.taskId(task);
                     const taskListId = String(task.listId || task.taskListId || '');
                     const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === taskListId) || (record.lists || [])[0] || {};
                     const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
@@ -1422,7 +1428,8 @@ document.addEventListener('alpine:init', () => {
                         entityName: task.entityName || record.entityName,
                         entityIcon: task.entityIcon || record.entityIcon,
                         entityColor: task.entityColor || record.entityColor,
-                        scope: record.scope
+                        scope: record.scope,
+                        ...(this.optimisticTaskPatches[taskId] || {})
                     });
                 }));
         },
@@ -1432,6 +1439,7 @@ document.addEventListener('alpine:init', () => {
             return this.allRecords.flatMap(record => (record.tasks || [])
                 .filter(task => String(task.listId || task.taskListId || '') === id)
                 .map(task => {
+                    const taskId = this.taskId(task);
                     const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === id) || {};
                     return {
                         ...task,
@@ -1451,7 +1459,8 @@ document.addEventListener('alpine:init', () => {
                         entityName: task.entityName || record.entityName,
                         entityIcon: task.entityIcon || record.entityIcon,
                         entityColor: task.entityColor || record.entityColor,
-                        scope: record.scope
+                        scope: record.scope,
+                        ...(this.optimisticTaskPatches[taskId] || {})
                     };
                 }))
                 .sort((a, b) => {
@@ -1643,6 +1652,25 @@ document.addEventListener('alpine:init', () => {
         taskId(task = {}) {
             return String(task._id || task.id || '');
         },
+        setOptimisticTaskPatch(taskId, patch = null) {
+            const id = String(taskId || '');
+            if (!id) return;
+            const next = { ...(this.optimisticTaskPatches || {}) };
+            if (patch && typeof patch === 'object') next[id] = { ...patch };
+            else delete next[id];
+            this.optimisticTaskPatches = next;
+        },
+        setTaskTogglePending(taskId, pending) {
+            const id = String(taskId || '');
+            if (!id) return;
+            const next = { ...(this.pendingTaskToggles || {}) };
+            if (pending) next[id] = true;
+            else delete next[id];
+            this.pendingTaskToggles = next;
+        },
+        isTaskTogglePending(task = {}) {
+            return !!this.pendingTaskToggles[this.taskId(task)];
+        },
         findTaskById(taskId) {
             const id = String(taskId || '');
             if (!id) return null;
@@ -1710,17 +1738,16 @@ document.addEventListener('alpine:init', () => {
         },
         async toggleTaskStatus(task) {
             const id = this.taskId(task);
-            if (!id) return;
+            if (!id || this.pendingTaskToggles[id]) return;
             const newStatus = this.isDone(task) ? 'À faire' : 'Terminé';
-            const previous = { status: task.status, statusColor: task.statusColor, completedAt: task.completedAt, updatedAt: task.updatedAt };
             const optimistic = {
                 status: newStatus,
                 statusColor: newStatus === 'Terminé' ? '#22c55e' : '#9ca3af',
                 completedAt: newStatus === 'Terminé' ? new Date().toISOString() : null,
                 updatedAt: new Date().toISOString()
             };
-            Object.assign(task, optimistic);
-            this.patchTaskEverywhere(id, optimistic);
+            this.setOptimisticTaskPatch(id, optimistic);
+            this.setTaskTogglePending(id, true);
             this.$nextTick(() => this.refreshTodaySortable());
             try {
                 const res = await fetch(API + '/api/record-tasks/' + id, {
@@ -1731,18 +1758,17 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
-                if (data.task) {
-                    Object.assign(task, data.task);
-                    this.patchTaskEverywhere(id, data.task);
-                }
+                this.patchTaskEverywhere(id, data.task || optimistic);
+                this.setOptimisticTaskPatch(id, null);
                 this.$nextTick(() => this.refreshTodaySortable());
                 if (window.showMessage) window.showMessage(newStatus === 'Terminé' ? 'Tâche terminée' : 'Tâche rouverte', 'success');
             } catch (e) {
-                Object.assign(task, previous);
-                this.patchTaskEverywhere(id, previous);
+                this.setOptimisticTaskPatch(id, null);
                 this.$nextTick(() => this.refreshTodaySortable());
                 console.error('[TasksHub] Toggle error:', e);
                 if (window.showMessage) window.showMessage(e.message || 'Erreur', 'danger');
+            } finally {
+                this.setTaskTogglePending(id, false);
             }
         },
         toDateInputValue(value) {

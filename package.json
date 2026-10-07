@@ -15,6 +15,7 @@
     "build:all": "npm run build && npm run tailwind",
     "build:css": "npm run tailwind",
     "build:watch": "vite build --watch",
+    "test:tasks-hub-performance": "node --test test/tasks-hub-performance.test.js",
     "test:platform-integrations": "node --test test/platform-integrations.test.js",
     "live:push": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/devops/push-live.ps1",
     "live:pull-code": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/devops/pull-live-code.ps1",

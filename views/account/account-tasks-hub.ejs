@@ -380,19 +380,19 @@
 @media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
 </style>
 
+<script>
+document.body.classList.add('focus-workspace-mode', 'tasks-focus-mode');
+window.addEventListener('pagehide', () => {
+    document.body.classList.remove('focus-workspace-mode', 'tasks-focus-mode');
+}, { once: true });
+</script>
+
 <div class="th-wrap th-simple"
      x-data="tasksHubApp"
      x-cloak
      @click.window="closeTaskMenu()"
      @keydown.escape.window="closePanelConfig(); closeListModal(); closeTaskMenu(); closeTask()">
     <div class="th-simple-shell">
-        <header class="th-simple-header">
-            <div>
-                <h1>Bonjour, <%= typeof user !== 'undefined' && user && user.name ? user.name.split(' ')[0] : 'Riad' %> 👋</h1>
-                <p>Voici ce qui se passe aujourd'hui</p>
-            </div>
-        </header>
-
         <nav class="th-main-tabs" aria-label="Navigation tâches">
             <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'today' }" @click="openTodayTab()">
                 <iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon>

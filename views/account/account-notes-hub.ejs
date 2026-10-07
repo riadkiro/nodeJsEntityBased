@@ -4,31 +4,16 @@
 
 <style>
 /* ═══ Notes Hub ═══ */
-.nh-page { max-width:1500px; margin:0 auto; padding:20px 28px; }
-.nh-header { display:flex; align-items:center; gap:16px; margin-bottom:28px; padding:28px 32px; background:linear-gradient(135deg,#8b5cf608,#8b5cf604); border:1px solid #8b5cf620; border-radius:16px; position:relative; overflow:hidden; }
-.nh-header::before { content:''; position:absolute; top:-40px; right:-40px; width:160px; height:160px; background:radial-gradient(circle,#8b5cf612,transparent 70%); border-radius:50%; pointer-events:none; }
-.nh-header-icon { width:56px; height:56px; border-radius:14px; display:flex; align-items:center; justify-content:center; background:linear-gradient(135deg,#8b5cf620,#8b5cf610); flex-shrink:0; z-index:1; }
-.nh-header-info { flex:1; z-index:1; }
-.nh-header-info h1 { font-size:22px; font-weight:700; color:#0e1726; margin:0 0 4px; }
-.nh-header-info p { font-size:13px; color:#888da8; margin:0; }
-.nh-header-count { text-align:center; z-index:1; }
-.nh-header-count-value { font-size:28px; font-weight:800; color:#8b5cf6; line-height:1; }
-.nh-header-count-label { font-size:11px; color:#888da8; text-transform:uppercase; letter-spacing:.5px; }
-
-/* Breadcrumb */
-.nh-breadcrumb { display:flex; align-items:center; gap:4px; margin-bottom:18px; flex-wrap:wrap; }
-.nh-bc-item { display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:600; color:#94a3b8; background:none; border:none; cursor:pointer; padding:4px 8px; border-radius:6px; transition:all .15s; text-decoration:none; font-family:inherit; }
-.nh-bc-item:hover { color:#8b5cf6; background:#8b5cf608; }
-.nh-bc-item--active { color:#1e293b; cursor:default; }
-.nh-bc-item--active:hover { color:#1e293b; background:transparent; }
-.nh-bc-sep { display:inline-flex; align-items:center; color:#cbd5e1; }
-
-/* Evernote-style master/detail workspace */
-.nh-workspace { height:calc(100vh - 310px); min-height:520px; display:grid; grid-template-columns:minmax(285px,350px) minmax(0,1fr); overflow:hidden; border:1px solid #e0e6ed; border-radius:16px; background:#fff; box-shadow:0 10px 30px rgba(15,23,42,.04); }
-.nh-sidebar { min-width:0; display:grid; grid-template-rows:auto 1fr; overflow:hidden; border-right:1px solid #e0e6ed; background:#fbfcfe; }
-.nh-sidebar-header { padding:16px; border-bottom:1px solid #e8edf3; background:#fff; }
+.nh-page { width:100%; height:calc(100vh - 86px); min-height:540px; margin:0; }
+.nh-loading { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; }
+/* WhatsApp-style master/detail workspace */
+.nh-workspace { height:100%; min-height:0; display:grid; grid-template-columns:minmax(310px,370px) minmax(0,1fr); overflow:hidden; border:1px solid #dbe2ea; border-radius:14px; background:#fff; box-shadow:0 14px 38px rgba(15,23,42,.08); }
+.nh-sidebar { min-width:0; display:grid; grid-template-rows:auto 1fr; overflow:hidden; border-right:1px solid #dbe2ea; background:#f7f8fa; }
+.nh-sidebar-header { padding:17px 16px 14px; border-bottom:1px solid #e3e8ef; background:#fff; }
 .nh-sidebar-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:11px; }
-.nh-sidebar-title { font-size:14px; font-weight:800; color:#0e1726; }
+.nh-sidebar-title-wrap { display:flex; align-items:center; gap:9px; min-width:0; }
+.nh-sidebar-icon { width:30px; height:30px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; border-radius:9px; color:#8b5cf6; background:#8b5cf612; }
+.nh-sidebar-title { font-size:15px; font-weight:800; color:#0e1726; }
 .nh-sidebar-total { min-width:25px; height:22px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center; border-radius:999px; background:#8b5cf612; color:#8b5cf6; font-size:11px; font-weight:800; }
 .nh-search { height:38px; display:flex; align-items:center; gap:8px; padding:0 10px; border:1px solid #e0e6ed; border-radius:10px; background:#f8fafc; transition:all .15s; }
 .nh-search:focus-within { border-color:#8b5cf670; background:#fff; box-shadow:0 0 0 3px #8b5cf610; }
@@ -37,9 +22,11 @@
 .nh-search-clear { width:24px; height:24px; display:inline-flex; align-items:center; justify-content:center; border:0; border-radius:7px; background:transparent; color:#94a3b8; cursor:pointer; }
 .nh-search-clear:hover { color:#8b5cf6; background:#8b5cf610; }
 .nh-sidebar-list { min-height:0; overflow-y:auto; overscroll-behavior:contain; }
-.nh-note-list-item { width:100%; display:block; padding:15px 16px; border:0; border-bottom:1px solid #edf0f4; background:transparent; color:inherit; text-align:left; cursor:pointer; font-family:inherit; transition:background .15s, box-shadow .15s; }
-.nh-note-list-item:hover { background:#f4f1ff; }
-.nh-note-list-item--active { background:#f0ebff; box-shadow:inset 3px 0 0 #8b5cf6; }
+.nh-note-list-item { width:100%; display:grid; grid-template-columns:42px minmax(0,1fr); align-items:start; gap:11px; padding:13px 15px; border:0; border-bottom:1px solid #e8edf2; background:transparent; color:inherit; text-align:left; cursor:pointer; font-family:inherit; transition:background .15s, box-shadow .15s; }
+.nh-note-list-item:hover { background:#f0edf9; }
+.nh-note-list-item--active { background:#eae5f8; box-shadow:inset 4px 0 0 #8b5cf6; }
+.nh-note-avatar { width:42px; height:42px; display:flex; align-items:center; justify-content:center; border-radius:50%; color:#8b5cf6; background:#ece8f8; }
+.nh-note-list-content { min-width:0; }
 .nh-note-list-top { display:flex; align-items:center; gap:7px; min-width:0; }
 .nh-note-list-title { min-width:0; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:13px; font-weight:800; color:#172033; }
 .nh-note-list-icons { flex-shrink:0; display:inline-flex; align-items:center; gap:5px; color:#8b5cf6; }
@@ -53,7 +40,7 @@
 /* Note viewer */
 .nh-detail { min-width:0; min-height:0; overflow:hidden; background:#fff; }
 .nh-viewer { height:100%; min-height:0; display:grid; grid-template-rows:auto 1fr; overflow:hidden; background:#fff; }
-.nh-viewer-header { min-width:0; padding:16px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:11px; }
+.nh-viewer-header { min-width:0; padding:14px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:11px; background:#f8fafc; }
 .nh-viewer-heading { min-width:0; flex:1; }
 .nh-viewer-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; font-weight:800; color:#0e1726; }
 .nh-viewer-subtitle { display:flex; align-items:center; gap:5px; min-width:0; margin-top:3px; color:#94a3b8; font-size:10px; }
@@ -93,9 +80,6 @@
 .nh-empty p { font-size:13px; margin:0; }
 
 /* Dark mode */
-[data-theme="dark"] .nh-header { background:linear-gradient(135deg,#8b5cf610,#8b5cf606); border-color:#8b5cf630; }
-[data-theme="dark"] .nh-header-info h1,
-.dark .nh-header-info h1 { color:#e0e6ed; }
 [data-theme="dark"] .nh-workspace, .dark .nh-workspace,
 [data-theme="dark"] .nh-sidebar, .dark .nh-sidebar,
 [data-theme="dark"] .nh-sidebar-header, .dark .nh-sidebar-header,
@@ -109,19 +93,18 @@
 [data-theme="dark"] .nh-note-list-item, .dark .nh-note-list-item { border-color:#1b2e4b; }
 [data-theme="dark"] .nh-note-list-item:hover, .dark .nh-note-list-item:hover { background:#171b35; }
 [data-theme="dark"] .nh-note-list-item--active, .dark .nh-note-list-item--active { background:#201a3b; }
-[data-theme="dark"] .nh-viewer-header, .dark .nh-viewer-header { border-color:#253b5c; }
+[data-theme="dark"] .nh-note-avatar, .dark .nh-note-avatar { background:#241d40; }
+[data-theme="dark"] .nh-viewer-header, .dark .nh-viewer-header { border-color:#253b5c; background:#111d30; }
 [data-theme="dark"] .nh-viewer-title, .dark .nh-viewer-title { color:#e0e6ed; }
 [data-theme="dark"] .nh-viewer-body, .dark .nh-viewer-body { color:#cbd5e1; }
 [data-theme="dark"] .nh-detail-empty h3, .dark .nh-detail-empty h3 { color:#e0e6ed; }
 [data-theme="dark"] .nh-pin-modal, .dark .nh-pin-modal { background:#0e1726; border:1px solid #253b5c; }
 [data-theme="dark"] .nh-pin-title, .dark .nh-pin-title { color:#e0e6ed; }
 [data-theme="dark"] .nh-pin-input, .dark .nh-pin-input { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
-[data-theme="dark"] .nh-bc-item--active, .dark .nh-bc-item--active { color:#e0e6ed; }
 [data-theme="dark"] .nh-empty h3, .dark .nh-empty h3 { color:#e0e6ed; }
 
 @media (max-width: 900px) {
-    .nh-page { padding:16px; }
-    .nh-header { margin-bottom:18px; padding:20px; }
+    .nh-page { height:auto; min-height:calc(100vh - 78px); }
     .nh-workspace { height:auto; min-height:0; grid-template-columns:1fr; }
     .nh-sidebar { max-height:360px; border-right:0; border-bottom:1px solid #e0e6ed; }
     [data-theme="dark"] .nh-sidebar, .dark .nh-sidebar { border-bottom-color:#253b5c; }
@@ -130,14 +113,7 @@
 }
 
 @media (max-width: 560px) {
-    .nh-page { padding:12px; }
-    .nh-header { gap:11px; padding:16px; border-radius:13px; }
-    .nh-header-icon { width:44px; height:44px; }
-    .nh-header-info h1 { font-size:18px; }
-    .nh-header-info p { display:none; }
-    .nh-header-count-value { font-size:22px; }
-    .nh-breadcrumb { margin-bottom:12px; }
-    .nh-workspace { border-radius:13px; }
+    .nh-workspace { border-radius:10px; }
     .nh-detail { min-height:420px; }
     .nh-viewer-header { align-items:flex-start; padding:14px; }
     .nh-record-link span { display:none; }
@@ -146,48 +122,22 @@
 </style>
 
 <div class="nh-page" x-data="notesHub" x-cloak>
-    <!-- Header -->
-    <div class="nh-header">
-        <div class="nh-header-icon">
-            <iconify-icon icon="solar:notebook-bold-duotone" width="28" style="color:#8b5cf6"></iconify-icon>
-        </div>
-        <div class="nh-header-info">
-            <h1>Notes Hub</h1>
-            <p>Toutes les notes de vos enregistrements</p>
-        </div>
-        <div class="nh-header-count">
-            <div class="nh-header-count-value" x-text="totalNotes"></div>
-            <div class="nh-header-count-label">Notes</div>
-        </div>
-    </div>
-
-    <!-- Breadcrumb -->
-    <div class="nh-breadcrumb">
-        <button class="nh-bc-item" :class="!activeNote ? 'nh-bc-item--active' : ''" @click="goToRoot()">
-            <iconify-icon icon="solar:notebook-bold-duotone" width="14" style="color:#8b5cf6"></iconify-icon>
-            Notes Hub
-        </button>
-        <template x-if="activeNote">
-            <span class="nh-bc-sep">
-                <iconify-icon icon="solar:alt-arrow-right-linear" width="12"></iconify-icon>
-                <span class="nh-bc-item nh-bc-item--active" x-text="activeNote.title || 'Sans titre'"></span>
-            </span>
-        </template>
-    </div>
-
     <!-- Loading -->
-    <div x-show="loading" style="text-align:center;padding:40px;">
+    <div x-show="loading" class="nh-loading">
         <iconify-icon icon="line-md:loading-twotone-loop" width="28" style="color:#8b5cf6"></iconify-icon>
         <p style="font-size:12px;color:#888da8;margin-top:8px;">Chargement...</p>
     </div>
 
-    <!-- Evernote-style list and viewer -->
+    <!-- Focused list and viewer -->
     <template x-if="!loading">
         <div class="nh-workspace">
             <aside class="nh-sidebar">
                 <div class="nh-sidebar-header">
                     <div class="nh-sidebar-heading">
-                        <span class="nh-sidebar-title">Toutes les notes</span>
+                        <span class="nh-sidebar-title-wrap">
+                            <span class="nh-sidebar-icon"><iconify-icon icon="solar:notebook-bold-duotone" width="17"></iconify-icon></span>
+                            <span class="nh-sidebar-title">Notes</span>
+                        </span>
                         <span class="nh-sidebar-total" x-text="filteredNotes.length"></span>
                     </div>
                     <div class="nh-search">
@@ -208,19 +158,24 @@
                     </template>
                     <template x-for="note in filteredNotes" :key="noteId(note)">
                         <button type="button" class="nh-note-list-item" :class="isActiveNote(note) ? 'nh-note-list-item--active' : ''" @click="openNote(note)">
-                            <div class="nh-note-list-top">
-                                <span class="nh-note-list-title" x-text="note.title || 'Sans titre'"></span>
-                                <span class="nh-note-list-icons">
-                                    <iconify-icon x-show="note.pinned" icon="solar:pin-bold" width="13" style="color:#f59e0b"></iconify-icon>
-                                    <iconify-icon x-show="note.isProtected" icon="solar:lock-keyhole-bold-duotone" width="13"></iconify-icon>
+                            <span class="nh-note-avatar" :style="'color:' + (note.color || '#8b5cf6') + ';background:' + (note.color || '#8b5cf6') + '15'">
+                                <iconify-icon :icon="note.isProtected ? 'solar:lock-keyhole-bold-duotone' : (note.icon || 'solar:notebook-bold-duotone')" width="20"></iconify-icon>
+                            </span>
+                            <span class="nh-note-list-content">
+                                <span class="nh-note-list-top">
+                                    <span class="nh-note-list-title" x-text="note.title || 'Sans titre'"></span>
+                                    <span class="nh-note-list-icons">
+                                        <iconify-icon x-show="note.pinned" icon="solar:pin-bold" width="13" style="color:#f59e0b"></iconify-icon>
+                                        <iconify-icon x-show="note.isProtected" icon="solar:lock-keyhole-bold-duotone" width="13"></iconify-icon>
+                                    </span>
                                 </span>
-                            </div>
-                            <div class="nh-note-list-preview" x-text="notePreview(note)"></div>
-                            <div class="nh-note-list-meta">
-                                <iconify-icon :icon="note.entityIcon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (note.entityColor || '#8b5cf6')"></iconify-icon>
-                                <span class="nh-note-list-context" x-text="(note.entityName || 'Inconnu') + ' · ' + (note.recordTitle || 'Sans titre')"></span>
-                                <span class="nh-note-list-activity" x-text="activityLabel(note)"></span>
-                            </div>
+                                <span class="nh-note-list-preview" x-text="notePreview(note)"></span>
+                                <span class="nh-note-list-meta">
+                                    <iconify-icon :icon="note.entityIcon || 'solar:folder-bold-duotone'" width="12" :style="'color:' + (note.entityColor || '#8b5cf6')"></iconify-icon>
+                                    <span class="nh-note-list-context" x-text="(note.entityName || 'Inconnu') + ' · ' + (note.recordTitle || 'Sans titre')"></span>
+                                    <span class="nh-note-list-activity" x-text="activityLabel(note)"></span>
+                                </span>
+                            </span>
                         </button>
                     </template>
                 </div>
@@ -285,6 +240,11 @@
 </div>
 
 <script>
+document.body.classList.add('focus-workspace-mode', 'notes-focus-mode');
+window.addEventListener('pagehide', () => {
+    document.body.classList.remove('focus-workspace-mode', 'notes-focus-mode');
+}, { once: true });
+
 document.addEventListener('alpine:init', () => {
     const _accountNumber = '<%= account_number %>';
     const _apiBase = '/account/' + _accountNumber;
@@ -339,11 +299,6 @@ document.addEventListener('alpine:init', () => {
                 console.error('[NotesHub] Load error:', e);
             }
             this.loading = false;
-        },
-
-        goToRoot() {
-            this.activeNote = null;
-            this.activeNoteContent = '';
         },
 
         selectInitialNote() {

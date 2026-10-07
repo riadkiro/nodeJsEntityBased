@@ -97,6 +97,43 @@ html.sidebar-collapsed-boot .main-container .main-content:where([dir="rtl"], [di
   margin-right: 56px !important;
 }
 
+/* Distraction-free workspaces keep the global icon rail without the wide menu. */
+body.focus-workspace-mode [data-island="ai-assistant"] {
+  display: none !important;
+}
+
+body.focus-workspace-mode .main-content > .animate__animated {
+  padding: 10px 12px 12px !important;
+}
+
+@media (min-width: 1024px) {
+  body.focus-workspace-mode .sidebar {
+    width: 56px !important;
+    left: 0 !important;
+    right: auto !important;
+    overflow: visible !important;
+  }
+
+  body.focus-workspace-mode .horizontal-logo {
+    display: none !important;
+  }
+
+  body.focus-workspace-mode .main-container .main-content {
+    margin-left: 56px !important;
+  }
+
+  body.focus-workspace-mode.rtl .main-container .main-content {
+    margin-left: 0 !important;
+    margin-right: 56px !important;
+  }
+}
+
+@media (max-width: 900px) {
+  body.focus-workspace-mode .main-content > .animate__animated {
+    padding: 8px !important;
+  }
+}
+
 hr {
   border: 1px solid var(--border-color);
 }

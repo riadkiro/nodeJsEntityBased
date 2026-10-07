@@ -350,6 +350,35 @@
 .th-task-switch::after{content:'';position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18);transition:transform .15s}
 .th-task-switch.is-on{background:#10b981}
 .th-task-switch.is-on::after{transform:translateX(16px)}
+
+/* WhatsApp-style tasks workspace */
+.th-wrap.th-simple{height:calc(100vh - 86px);min-height:540px;overflow:hidden;background:#f8fafc}
+.th-simple-shell{width:100%;height:100%;max-width:none;margin:0;padding:0;display:grid;grid-template-columns:minmax(300px,350px) minmax(0,1fr);overflow:hidden;border:1px solid #dbe2ea;border-radius:14px;background:#fff;box-shadow:0 14px 38px rgba(15,23,42,.08)}
+.th-nav-sidebar{min-width:0;min-height:0;display:grid;grid-template-rows:auto 1fr;overflow:hidden;border-right:1px solid #dbe2ea;background:#f7f8fa}
+.th-nav-header{min-height:64px;padding:14px 15px;display:flex;align-items:center;justify-content:space-between;gap:12px;border-bottom:1px solid #e3e8ef;background:#fff}
+.th-nav-heading{display:flex;align-items:center;gap:9px;min-width:0;color:#0e1726;font-size:15px;font-weight:850}
+.th-nav-heading-icon{width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;border-radius:10px;background:#10b98114;color:#10b981}
+.th-nav-total{min-width:25px;height:22px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#10b98114;color:#059669;font-size:11px;font-weight:850}
+.th-nav-list{min-height:0;overflow-y:auto;overscroll-behavior:contain}
+.th-nav-item{width:100%;min-height:76px;display:grid;grid-template-columns:42px minmax(0,1fr) auto;align-items:center;gap:11px;padding:12px 14px;border:0;border-bottom:1px solid #e8edf2;background:transparent;color:inherit;text-align:left;font-family:inherit;cursor:pointer;transition:background .15s,box-shadow .15s}
+.th-nav-item:hover{background:#edf8f4}
+.th-nav-item.active{background:#e1f4ed;box-shadow:inset 4px 0 0 #10b981}
+.th-nav-avatar{width:42px;height:42px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto;background:color-mix(in srgb,var(--list-color,#10b981) 14%,#fff);color:var(--list-color,#10b981)}
+.th-nav-copy{min-width:0;display:block}
+.th-nav-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#172033;font-size:13px;font-weight:850}
+.th-nav-meta{display:block;margin-top:5px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#7c879c;font-size:11px;font-weight:650}
+.th-nav-badge{min-width:24px;height:22px;padding:0 7px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:#fff;color:#64748b;font-size:10.5px;font-weight:850;box-shadow:0 0 0 1px #e2e8f0}
+.th-nav-section-head{height:42px;padding:0 12px 0 16px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #e8edf2;background:#fbfcfe;color:#64748b;font-size:10.5px;font-weight:850;text-transform:uppercase;letter-spacing:.55px}
+.th-nav-add{width:28px;height:28px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:9px;background:#10b98112;color:#059669;cursor:pointer}
+.th-nav-add:hover{background:#10b98122}
+.th-nav-empty{margin:14px;padding:18px 12px;border:1px dashed #dbe4f0;border-radius:10px;color:#8fa0bd;text-align:center;font-size:11.5px;font-weight:700}
+.th-detail-pane{min-width:0;min-height:0;overflow:hidden;background:#fff}
+.th-detail-scroll{height:100%;min-height:0;overflow-y:auto;padding:20px}
+.th-detail-scroll .th-simple-grid{max-width:1180px;margin:0 auto;padding:0}
+.th-list-view{max-width:1180px;margin:0 auto}
+.th-list-view .th-list-task-card{min-height:calc(100vh - 128px)}
+.th-side-stack{top:0}
+
 .dark .th-wrap.th-simple,.dark .th-today-card,.dark .th-panel,.dark .th-my-list-card,.dark .th-list-modal,.dark .th-list-task-card{background:#060818;color:#e0e6ed;border-color:#253b5c}
 .dark .th-create-list-btn,.dark .th-list-input,.dark .th-list-tag-add,.dark .th-list-modal-close,.dark .th-list-icon-choice,.dark .th-list-toggle,.dark .th-list-btn,.dark .th-list-segmented,.dark .th-main-tab,.dark .th-list-config-btn{background:#0e1726;border-color:#253b5c;color:#9fb0cb}
 .dark .th-create-list-btn:hover,.dark .th-list-config-btn:hover,.dark .th-list-tag-add:hover,.dark .th-list-modal-close:hover,.dark .th-list-icon-choice:hover,.dark .th-list-icon-choice.active,.dark .th-list-toggle:hover,.dark .th-list-btn:hover{background:#1b2447;border-color:#4f46e5;color:#a5b4fc}
@@ -373,11 +402,20 @@
 .dark .th-task-ctx-priorities button{background:color-mix(in srgb,var(--priority-color,#94a3b8) 18%,#0e1726)}
 .dark .th-task-ctx-priorities button.th-task-ctx-create{background:#111f35;border-color:#4f46e5;color:#a5b4fc}
 .dark .th-task-ctx-empty{background:#111f35;border-color:#253b5c;color:#8ea0bd}
+.dark .th-simple-shell,.dark .th-nav-sidebar,.dark .th-nav-header,.dark .th-detail-pane{background:#0e1726;border-color:#253b5c}
+.dark .th-nav-sidebar{background:#0b1424}
+.dark .th-nav-heading,.dark .th-nav-label{color:#e0e6ed}
+.dark .th-nav-item,.dark .th-nav-section-head{border-color:#1b2e4b}
+.dark .th-nav-section-head{background:#0e1726;color:#8ea0bd}
+.dark .th-nav-item:hover{background:#11241f}
+.dark .th-nav-item.active{background:#123127}
+.dark .th-nav-badge{background:#111d30;color:#9fb0cb;box-shadow:0 0 0 1px #253b5c}
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
-@media(max-width:980px){.th-simple-grid,.th-my-view{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body,.th-list-panel-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
-@media(max-width:640px){.th-simple-shell{padding:18px 14px 32px}.th-simple-header h1{font-size:24px}.th-side-stack{display:flex}.th-today-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
+@media(max-width:1100px){.th-simple-grid{grid-template-columns:1fr}.th-side-stack{position:static;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.th-today-body,.th-list-panel-body{grid-template-columns:1fr}.th-completed{border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px}}
+@media(max-width:900px){.th-wrap.th-simple{height:auto;min-height:calc(100vh - 78px);overflow:visible}.th-simple-shell{height:auto;grid-template-columns:1fr}.th-nav-sidebar{max-height:360px;border-right:0;border-bottom:1px solid #e0e6ed}.th-detail-pane{overflow:visible}.th-detail-scroll{height:auto;overflow:visible;padding:14px}.th-list-view .th-list-task-card{min-height:440px}.dark .th-nav-sidebar{border-bottom-color:#253b5c}}
+@media(max-width:640px){.th-simple-shell{padding:0;border-radius:10px}.th-side-stack{display:flex}.th-today-card,.th-list-task-card{padding:16px 14px}.th-today-header{align-items:flex-start}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
 </style>
 
 <script>
@@ -393,19 +431,63 @@ window.addEventListener('pagehide', () => {
      @click.window="closeTaskMenu()"
      @keydown.escape.window="closePanelConfig(); closeListModal(); closeTaskMenu(); closeTask()">
     <div class="th-simple-shell">
-        <nav class="th-main-tabs" aria-label="Navigation tâches">
-            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'today' }" @click="openTodayTab()">
-                <iconify-icon icon="solar:bolt-bold-duotone" width="15"></iconify-icon>
-                Tâches du jour
-            </button>
-            <button type="button" class="th-main-tab" :class="{ 'active': hubTab === 'lists' }" @click="openListsTab()">
-                <iconify-icon icon="solar:list-check-bold-duotone" width="15"></iconify-icon>
-                Mes listes
-                <span class="th-main-tab-count" x-text="myLists.length"></span>
-            </button>
-        </nav>
+        <aside class="th-nav-sidebar" aria-label="Navigation des tâches">
+            <div class="th-nav-header">
+                <span class="th-nav-heading">
+                    <span class="th-nav-heading-icon"><iconify-icon icon="solar:checklist-bold-duotone" width="18"></iconify-icon></span>
+                    <span>Tâches</span>
+                </span>
+                <span class="th-nav-total" x-text="myLists.length + 1"></span>
+            </div>
 
-        <div class="th-simple-grid" x-show="hubTab === 'today'">
+            <div class="th-nav-list">
+                <button type="button"
+                        class="th-nav-item"
+                        :class="{ 'active': hubTab === 'today' }"
+                        @click="openTodayTab()">
+                    <span class="th-nav-avatar" style="--list-color:#10b981">
+                        <iconify-icon icon="solar:bolt-bold-duotone" width="20"></iconify-icon>
+                    </span>
+                    <span class="th-nav-copy">
+                        <span class="th-nav-label">Tâches du jour</span>
+                        <span class="th-nav-meta">Calendrier et charge de travail</span>
+                    </span>
+                    <span class="th-nav-badge" x-text="selectedOpenTasks.length"></span>
+                </button>
+
+                <div class="th-nav-section-head">
+                    <span>Mes listes</span>
+                    <button type="button" class="th-nav-add" @click="openListModal()" title="Créer une liste" aria-label="Créer une liste">
+                        <iconify-icon icon="solar:add-circle-bold" width="17"></iconify-icon>
+                    </button>
+                </div>
+
+                <template x-for="list in myLists" :key="list.listId || list.id">
+                    <button type="button"
+                            class="th-nav-item"
+                            :class="{ 'active': hubTab === 'lists' && selectedMyListId === String(list.listId || list.id || '') }"
+                            :style="'--list-color:' + (list.color || '#6366f1')"
+                            @click="selectMyList(list)">
+                        <span class="th-nav-avatar">
+                            <iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="20"></iconify-icon>
+                        </span>
+                        <span class="th-nav-copy">
+                            <span class="th-nav-label" x-text="list.label"></span>
+                            <span class="th-nav-meta" x-text="listSubtitle(list)"></span>
+                        </span>
+                        <span class="th-nav-badge" x-text="list.totalTasks || 0"></span>
+                    </button>
+                </template>
+
+                <template x-if="myLists.length === 0 && !sideLoading">
+                    <div class="th-nav-empty">Aucune liste. Utilisez le bouton + pour en créer une.</div>
+                </template>
+            </div>
+        </aside>
+
+        <main class="th-detail-pane">
+        <div class="th-detail-scroll" x-show="hubTab === 'today'">
+        <div class="th-simple-grid">
             <aside class="th-side-stack">
                 <section class="th-panel">
                     <div class="th-panel-head">
@@ -475,7 +557,7 @@ window.addEventListener('pagehide', () => {
                 </section>
             </aside>
 
-            <main class="th-center">
+            <div class="th-center">
                 <section class="th-today-card">
                     <div class="th-today-header">
                         <div class="th-today-title">
@@ -610,40 +692,13 @@ window.addEventListener('pagehide', () => {
                         </aside>
                     </div>
                 </section>
-            </main>
+            </div>
         </div>
 
-        <div class="th-my-view" x-show="hubTab === 'lists'" x-cloak>
-            <section class="th-my-list-stack">
-                <button type="button" class="th-create-list-btn" @click="openListModal()">
-                    <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
-                    Créer une liste
-                </button>
+        </div>
 
-                <template x-for="list in myLists" :key="list.listId || list.id">
-                    <button type="button"
-                            class="th-my-list-card"
-                            :class="{ 'active': selectedMyListId === String(list.listId || list.id || '') }"
-                            :style="'--list-color:' + (list.color || '#6366f1')"
-                            @click="selectMyList(list)">
-                        <span class="th-my-list-icon">
-                            <iconify-icon :icon="list.icon || 'solar:list-check-bold-duotone'" width="18"></iconify-icon>
-                        </span>
-                        <span style="min-width:0">
-                            <span class="th-my-list-title" x-text="list.label"></span>
-                            <span class="th-my-list-meta" x-text="listSubtitle(list)"></span>
-                            <span class="th-my-list-progress">
-                                <span :style="'width:' + listProgress(list) + '%'"></span>
-                            </span>
-                        </span>
-                        <span class="th-my-list-badge" x-text="list.badge || list.entityName || 'Liste'"></span>
-                    </button>
-                </template>
-                <template x-if="myLists.length === 0 && !sideLoading">
-                    <div class="th-empty-simple">Aucune liste ajoutée pour le moment</div>
-                </template>
-            </section>
-
+        <div class="th-detail-scroll" x-show="hubTab === 'lists'" x-cloak>
+        <div class="th-list-view">
             <section class="th-list-task-card">
                 <div class="th-list-task-head">
                     <div class="th-list-task-title">
@@ -653,29 +708,6 @@ window.addEventListener('pagehide', () => {
                         <div style="min-width:0">
                             <h2 x-text="selectedMyList?.label || 'Mes listes'"></h2>
                             <p x-text="selectedMyList ? listSubtitle(selectedMyList) : 'Choisissez une liste'"></p>
-                            <div class="th-today-title" x-show="selectedMyList && selectedListDayMode" style="margin-top:7px;font-size:12px">
-                                <button type="button"
-                                        class="th-day-nav"
-                                        x-show="!selectedListIsToday"
-                                        @click="selectListToday()">
-                                    Aujourd'hui
-                                </button>
-                                <button type="button"
-                                        class="th-day-nav"
-                                        :class="{ 'is-active': selectedListIsTomorrow }"
-                                        @click="selectListTomorrow()">
-                                    Demain
-                                </button>
-                                <label class="th-day-calendar-btn th-date-inline-picker"
-                                       :class="{ 'is-active': selectedListHasCustomDate }"
-                                       title="Choisir une date">
-                                    <iconify-icon icon="solar:calendar-linear" width="13"></iconify-icon>
-                                    <span x-show="selectedListHasCustomDate" x-text="selectedListShortLabel"></span>
-                                    <input type="date"
-                                           :value="selectedListDateKey"
-                                           @change="selectListDate($event.target.value || todayKey())">
-                                </label>
-                            </div>
                         </div>
                     </div>
                     <div class="th-list-head-actions" x-show="selectedMyList">
@@ -783,6 +815,8 @@ window.addEventListener('pagehide', () => {
                 </div>
             </section>
         </div>
+        </div>
+        </main>
     </div>
 
     <div class="th-list-modal-backdrop"
@@ -848,17 +882,6 @@ window.addEventListener('pagehide', () => {
                         </template>
                         <input class="th-list-color-custom" type="color" x-model="newListDraft.color" :disabled="creatingList" title="Couleur personnalisée">
                     </div>
-                </div>
-
-                <div class="th-list-config-section">
-                    <div class="th-list-config-section-head">
-                        <iconify-icon icon="solar:calendar-mark-bold-duotone" width="15"></iconify-icon>
-                        Comportement
-                    </div>
-                    <button type="button" class="th-list-toggle" @click="newListDraft.displayOptions.dayMode = !newListDraft.displayOptions.dayMode">
-                        <span>Activer tâches du jour</span>
-                        <span class="th-list-toggle-switch" :class="{ 'is-on': newListDraft.displayOptions.dayMode === true }"></span>
-                    </button>
                 </div>
 
                 <div class="th-list-config-section">
@@ -1425,6 +1448,7 @@ document.addEventListener('alpine:init', () => {
         selectMyList(list = {}) {
             const listId = String(list.listId || list.id || '');
             if (!listId) return;
+            this.hubTab = 'lists';
             this.selectedMyListId = listId;
             if (!this.selectedListDateKey) this.selectedListDateKey = this.todayKey();
             this.addError = '';
@@ -1475,7 +1499,7 @@ document.addEventListener('alpine:init', () => {
                 });
         },
         get selectedListDayMode() {
-            return this.selectedListDisplayOption('dayMode', false);
+            return false;
         },
         get selectedMyListTasks() {
             const tasks = this.selectedMyListAllTasks.filter(task => !this.isDone(task));
@@ -2360,6 +2384,7 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Suppression impossible');
                 await this.loadHub();
                 this.selectedMyListId = this.myLists[0]?.listId || '';
+                if (!this.selectedMyListId) this.openTodayTab();
                 this.listModalOpen = false;
                 this.listModalMode = 'create';
                 this.editingListId = '';

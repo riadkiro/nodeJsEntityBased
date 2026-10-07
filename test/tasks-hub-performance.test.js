@@ -127,8 +127,8 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
         return {
             controlPainted: document.querySelector('.toggle-open').classList.contains('is-checked'),
             controlDisabled: document.querySelector('.toggle-open').disabled,
-            pending: state.pendingTaskToggles[taskId] === true,
-            optimisticStatus: state.optimisticTaskPatches[taskId]?.status || null,
+            pending: state.findTaskById(taskId)?.task?._togglePending === true,
+            localStatus: state.findTaskById(taskId)?.task?.status || null,
             requestStarted: window.__statusRequestStarted,
             requestResolved: window.__statusRequestResolved,
         };
@@ -137,9 +137,9 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
     assert.deepEqual(immediateState, {
         controlPainted: true,
         controlDisabled: true,
-        pending: false,
-        optimisticStatus: null,
-        requestStarted: false,
+        pending: true,
+        localStatus: 'Terminé',
+        requestStarted: true,
         requestResolved: false,
     });
 
@@ -148,8 +148,8 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
         const root = document.querySelector('[x-data="tasksHubApp"]');
         const state = window.Alpine.$data(root);
         return window.__statusRequestStarted
-            && state.pendingTaskToggles['64b64c0f0000000000000001'] === true
-            && state.optimisticTaskPatches['64b64c0f0000000000000001']?.status === 'Terminé';
+            && state.findTaskById('64b64c0f0000000000000001')?.task?._togglePending === true
+            && state.findTaskById('64b64c0f0000000000000001')?.task?.status === 'Terminé';
     });
     await page.waitForFunction(() => (
         document.querySelector('#open-count')?.textContent === '498'
@@ -161,21 +161,24 @@ test('task completion renders before a slow API response', { timeout: 15_000 }, 
     await page.waitForFunction(() => {
         const root = document.querySelector('[x-data="tasksHubApp"]');
         const state = window.Alpine.$data(root);
-        return window.__statusRequestResolved && !state.pendingTaskToggles['64b64c0f0000000000000001'];
+        return window.__statusRequestResolved
+            && !state.findTaskById('64b64c0f0000000000000001')?.task?._togglePending;
     });
 
     const settledState = await page.evaluate(() => {
         const root = document.querySelector('[x-data="tasksHubApp"]');
         const state = window.Alpine.$data(root);
         return {
-            optimisticPatch: state.optimisticTaskPatches['64b64c0f0000000000000001'] || null,
+            pending: state.findTaskById('64b64c0f0000000000000001')?.task?._togglePending || false,
+            cachedStatus: state.findTaskById('64b64c0f0000000000000001')?.task?.status,
             persistedStatus: state.entities[0].records[0].tasks[0].status,
             requestCount: window.__statusRequestCount,
             nullTaskTags: state.taskTagOptions(null),
         };
     });
     assert.deepEqual(settledState, {
-        optimisticPatch: null,
+        pending: false,
+        cachedStatus: 'Terminé',
         persistedStatus: 'Terminé',
         requestCount: 1,
         nullTaskTags: [],

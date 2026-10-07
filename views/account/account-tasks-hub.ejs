@@ -1174,6 +1174,10 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.data('tasksHubApp', () => ({
         entities: [],
+        recordItems: [],
+        taskItems: [],
+        taskIndexById: {},
+        taskSourceById: {},
         myLists: [],
         sideLoading: true,
         hubTab: 'today',
@@ -1191,8 +1195,6 @@ document.addEventListener('alpine:init', () => {
         calendarCursor: '',
         todaySortable: null,
         taskMenu: null,
-        optimisticTaskPatches: {},
-        pendingTaskToggles: {},
         priorityFilter: 'all',
         sortMode: 'all',
         ctxTaskId: null,
@@ -1297,6 +1299,7 @@ document.addEventListener('alpine:init', () => {
                         id: String(list.id || list.listId || ''),
                         listId: String(list.listId || list.id || '')
                     })).filter(list => list.listId);
+                    this.rebuildTaskItems();
                     if (this.hubTab === 'lists' && !this.selectedMyList && this.myLists.length) {
                         this.selectedMyListId = this.myLists[0].listId;
                     }
@@ -1308,18 +1311,68 @@ document.addEventListener('alpine:init', () => {
         },
 
         get allRecords() {
+            if (this.recordItems.length) return this.recordItems;
+            return this.fallbackRecords;
+        },
+
+        rebuildTaskItems() {
             const records = [];
             (this.entities || []).forEach(entity => {
                 (entity.records || []).forEach(record => {
                     const scope = this.classifyRecord(record, entity);
                     const normalized = { ...record, entityName: record.entityName || entity.entityName, entitySlug: record.entitySlug || entity.entitySlug, entityIcon: record.entityIcon || entity.entityIcon, entityColor: record.entityColor || entity.entityColor, scope };
                     normalized.lists = (record.lists || []).map(list => ({ ...list, id: String(list.id || list.listId || ''), listId: String(list.listId || list.id || ''), icon: list.icon || 'solar:checklist-bold-duotone', color: list.color || record.recordColor || entity.entityColor || '#6366f1' })).filter(list => list.id);
-                    normalized.tasks = (record.tasks || []).map(task => ({ ...task, scope }));
+                    normalized.tasks = (record.tasks || []).map(task => {
+                        const taskListId = String(task.listId || task.taskListId || '');
+                        const fallbackList = normalized.lists.find(list => String(list.id || list.listId || '') === taskListId) || normalized.lists[0] || {};
+                        const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
+                        return {
+                            ...task,
+                            recordId: task.recordId || record.recordId,
+                            listId,
+                            taskListId: listId,
+                            listLabel: task.listLabel || fallbackList.label || 'Liste des tâches',
+                            listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone',
+                            listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1',
+                            tags: this.normalizeTaskTags(task.tags || [], fallbackList.tags || []),
+                            tagOptions: this.normalizeListTags(task.tagOptions || fallbackList.tags || []),
+                            displayOptions: { ...this.defaultListDisplayOptions, ...(fallbackList.displayOptions || {}) },
+                            statuses: task.statuses || fallbackList.statuses || [],
+                            priorities: task.priorities || fallbackList.priorities || [],
+                            recordTitle: task.recordTitle || record.recordTitle,
+                            recordIcon: task.recordIcon || record.recordIcon,
+                            recordColor: task.recordColor || record.recordColor,
+                            entityName: task.entityName || normalized.entityName,
+                            entityIcon: task.entityIcon || normalized.entityIcon,
+                            entityColor: task.entityColor || normalized.entityColor,
+                            scope
+                        };
+                    });
                     records.push(normalized);
                 });
             });
-            if (!records.length) return this.fallbackRecords;
-            return records;
+            const sourceRecords = records.length ? records : this.fallbackRecords;
+            const taskItems = sourceRecords.flatMap(record => record.tasks || []);
+            const taskIndexById = {};
+            const taskSourceById = {};
+            (this.entities || []).forEach(entity => {
+                (entity.records || []).forEach(record => {
+                    (record.tasks || []).forEach(task => {
+                        const id = this.taskId(task);
+                        if (id) taskSourceById[id] = task;
+                    });
+                });
+            });
+            taskItems.forEach((task, index) => {
+                const id = this.taskId(task);
+                if (!id) return;
+                taskIndexById[id] = index;
+                if (!taskSourceById[id]) taskSourceById[id] = task;
+            });
+            this.recordItems = sourceRecords;
+            this.taskItems = taskItems;
+            this.taskIndexById = taskIndexById;
+            this.taskSourceById = taskSourceById;
         },
 
         get fallbackRecords() {
@@ -1404,66 +1457,17 @@ document.addEventListener('alpine:init', () => {
             return (this.activeRecord?.lists || []).find(list => String(list.id || list.listId || '') === this.activeListId) || null;
         },
         get rawVisibleTasks() {
-            return this.activeRecords.flatMap(record => (record.tasks || [])
-                .filter(task => !this.activeListId || String(task.listId || task.taskListId || '') === this.activeListId)
-                .map(task => {
-                    const taskId = this.taskId(task);
-                    const taskListId = String(task.listId || task.taskListId || '');
-                    const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === taskListId) || (record.lists || [])[0] || {};
-                    const listId = taskListId || String(fallbackList.id || fallbackList.listId || '');
-                    return Object.assign(task, {
-                        recordId: task.recordId || record.recordId,
-                        listId,
-                        taskListId: listId,
-                        listLabel: task.listLabel || fallbackList.label || 'Liste des tâches',
-                        listIcon: task.listIcon || fallbackList.icon || 'solar:checklist-bold-duotone',
-                        listColor: task.listColor || fallbackList.color || record.recordColor || record.entityColor || '#6366f1',
-                        tags: this.normalizeTaskTags(task.tags || [], fallbackList.tags || []),
-                        tagOptions: this.normalizeListTags(task.tagOptions || fallbackList.tags || []),
-                        displayOptions: { ...this.defaultListDisplayOptions, ...(fallbackList.displayOptions || {}) },
-                        statuses: task.statuses || fallbackList.statuses || [],
-                        priorities: task.priorities || fallbackList.priorities || [],
-                        recordTitle: task.recordTitle || record.recordTitle,
-                        recordIcon: task.recordIcon || record.recordIcon,
-                        recordColor: task.recordColor || record.recordColor,
-                        entityName: task.entityName || record.entityName,
-                        entityIcon: task.entityIcon || record.entityIcon,
-                        entityColor: task.entityColor || record.entityColor,
-                        scope: record.scope,
-                        ...(this.optimisticTaskPatches[taskId] || {})
-                    });
-                }));
+            return (this.taskItems || []).filter(task => {
+                if (this.activeRecordId && String(task.recordId || '') !== String(this.activeRecordId)) return false;
+                if (!this.activeRecordId && task.scope !== this.activeScope) return false;
+                return !this.activeListId || String(task.listId || task.taskListId || '') === this.activeListId;
+            });
         },
         get selectedMyListAllTasks() {
             const id = String(this.selectedMyListId || '');
             if (!id) return [];
-            return this.allRecords.flatMap(record => (record.tasks || [])
+            return (this.taskItems || [])
                 .filter(task => String(task.listId || task.taskListId || '') === id)
-                .map(task => {
-                    const taskId = this.taskId(task);
-                    const fallbackList = (record.lists || []).find(list => String(list.id || list.listId || '') === id) || {};
-                    return {
-                        ...task,
-                        recordId: task.recordId || record.recordId,
-                        listId: id,
-                        taskListId: id,
-                        listLabel: task.listLabel || fallbackList.label || this.selectedMyList?.label || 'Liste',
-                        listIcon: task.listIcon || fallbackList.icon || this.selectedMyList?.icon || 'solar:list-check-bold-duotone',
-                        listColor: task.listColor || fallbackList.color || this.selectedMyList?.color || '#6366f1',
-                        tags: this.normalizeTaskTags(task.tags || [], this.selectedMyList?.tags || fallbackList.tags || []),
-                        tagOptions: this.normalizeListTags(task.tagOptions || this.selectedMyList?.tags || fallbackList.tags || []),
-                        statuses: task.statuses || fallbackList.statuses || [],
-                        priorities: task.priorities || fallbackList.priorities || [],
-                        recordTitle: task.recordTitle || record.recordTitle,
-                        recordIcon: task.recordIcon || record.recordIcon,
-                        recordColor: task.recordColor || record.recordColor,
-                        entityName: task.entityName || record.entityName,
-                        entityIcon: task.entityIcon || record.entityIcon,
-                        entityColor: task.entityColor || record.entityColor,
-                        scope: record.scope,
-                        ...(this.optimisticTaskPatches[taskId] || {})
-                    };
-                }))
                 .sort((a, b) => {
                     const doneDelta = Number(this.isDone(a)) - Number(this.isDone(b));
                     if (doneDelta !== 0) return doneDelta;
@@ -1654,53 +1658,28 @@ document.addEventListener('alpine:init', () => {
             task = task || {};
             return String(task._id || task.id || '');
         },
-        setOptimisticTaskPatch(taskId, patch = null) {
-            const id = String(taskId || '');
-            if (!id) return;
-            const next = { ...(this.optimisticTaskPatches || {}) };
-            if (patch && typeof patch === 'object') next[id] = { ...patch };
-            else delete next[id];
-            this.optimisticTaskPatches = next;
-        },
-        setTaskTogglePending(taskId, pending) {
-            const id = String(taskId || '');
-            if (!id) return;
-            const next = { ...(this.pendingTaskToggles || {}) };
-            if (pending) next[id] = true;
-            else delete next[id];
-            this.pendingTaskToggles = next;
-        },
         isTaskTogglePending(task = {}) {
-            return !!this.pendingTaskToggles[this.taskId(task)];
+            return !!task?._togglePending;
         },
         findTaskById(taskId) {
             const id = String(taskId || '');
             if (!id) return null;
-            for (const entity of this.entities || []) {
-                for (const record of entity.records || []) {
-                    const task = (record.tasks || []).find(item => this.taskId(item) === id);
-                    if (!task) continue;
-                    const listId = String(task.listId || task.taskListId || '');
-                    const list = (record.lists || []).find(item => String(item.id || item.listId || '') === listId) || null;
-                    return { task, record, list };
-                }
-            }
-            const fallback = (this.fallbackTasks || []).find(item => this.taskId(item) === id);
-            return fallback ? { task: fallback, record: null, list: null } : null;
+            const index = this.taskIndexById[id];
+            const task = Number.isInteger(index) ? this.taskItems[index] : null;
+            if (!task) return null;
+            const record = (this.recordItems || []).find(item => String(item.recordId || '') === String(task.recordId || '')) || null;
+            const listId = String(task.listId || task.taskListId || '');
+            const list = (record?.lists || []).find(item => String(item.id || item.listId || '') === listId) || null;
+            return { task, record, list };
         },
         patchTaskEverywhere(taskId, patch = {}) {
             const id = String(taskId || '');
             if (!id) return;
-            (this.entities || []).forEach(entity => {
-                (entity.records || []).forEach(record => {
-                    (record.tasks || []).forEach(item => {
-                        if (this.taskId(item) === id) Object.assign(item, patch);
-                    });
-                });
-            });
-            (this.fallbackTasks || []).forEach(item => {
-                if (this.taskId(item) === id) Object.assign(item, patch);
-            });
+            const index = this.taskIndexById[id];
+            if (!Number.isInteger(index) || !this.taskItems[index]) return;
+            Object.assign(this.taskItems[index], patch);
+            const source = this.taskSourceById[id];
+            if (source && source !== this.taskItems[index]) Object.assign(source, patch);
         },
         patchListTagsEverywhere(listId, tags = []) {
             const id = String(listId || '');
@@ -1717,6 +1696,14 @@ document.addEventListener('alpine:init', () => {
                     (record.tasks || []).forEach(task => {
                         if (String(task.listId || task.taskListId || '') === id) task.tagOptions = normalizedTags;
                     });
+                });
+            });
+            (this.recordItems || []).forEach(record => {
+                (record.lists || []).forEach(list => {
+                    if (String(list.listId || list.id || '') === id) list.tags = normalizedTags;
+                });
+                (record.tasks || []).forEach(task => {
+                    if (String(task.listId || task.taskListId || '') === id) task.tagOptions = normalizedTags;
                 });
             });
             (this.fallbackTasks || []).forEach(task => {
@@ -1737,6 +1724,7 @@ document.addEventListener('alpine:init', () => {
                 });
             });
             this.fallbackTasks = (this.fallbackTasks || []).filter(item => this.taskId(item) !== id);
+            this.rebuildTaskItems();
         },
         paintTaskToggleControl(control, completed) {
             if (!control?.classList) return;
@@ -1745,35 +1733,29 @@ document.addEventListener('alpine:init', () => {
             control.disabled = true;
             control.setAttribute('aria-pressed', completed ? 'true' : 'false');
         },
-        waitForTaskTogglePaint() {
-            return new Promise(resolve => {
-                let settled = false;
-                const finish = () => {
-                    if (settled) return;
-                    settled = true;
-                    window.clearTimeout(fallback);
-                    resolve();
-                };
-                const fallback = window.setTimeout(finish, 80);
-                if (typeof window.requestAnimationFrame !== 'function') return;
-                window.requestAnimationFrame(() => window.requestAnimationFrame(finish));
-            });
-        },
-        async toggleTaskStatus(task, control = null) {
+        toggleTaskStatus(task, control = null) {
             const id = this.taskId(task);
-            if (!id || this.pendingTaskToggles[id]) return;
+            if (!id || task?._togglePending) return;
             const newStatus = this.isDone(task) ? 'À faire' : 'Terminé';
+            const previous = {
+                status: task.status,
+                statusColor: task.statusColor,
+                completedAt: task.completedAt || null,
+                updatedAt: task.updatedAt
+            };
             const optimistic = {
                 status: newStatus,
                 statusColor: newStatus === 'Terminé' ? '#22c55e' : '#9ca3af',
                 completedAt: newStatus === 'Terminé' ? new Date().toISOString() : null,
-                updatedAt: new Date().toISOString()
+                updatedAt: new Date().toISOString(),
+                _togglePending: true
             };
             this.paintTaskToggleControl(control, newStatus === 'Terminé');
-            await this.waitForTaskTogglePaint();
-            this.setOptimisticTaskPatch(id, optimistic);
-            this.setTaskTogglePending(id, true);
+            this.patchTaskEverywhere(id, optimistic);
             this.$nextTick(() => this.refreshTodaySortable());
+            this.syncTaskStatus(id, newStatus, previous, optimistic);
+        },
+        async syncTaskStatus(id, newStatus, previous, optimistic) {
             try {
                 const res = await fetch(API + '/api/record-tasks/' + id, {
                     method: 'PUT',
@@ -1783,17 +1765,14 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
-                this.patchTaskEverywhere(id, data.task || optimistic);
-                this.setOptimisticTaskPatch(id, null);
+                this.patchTaskEverywhere(id, { ...(data.task || optimistic), _togglePending: false });
                 this.$nextTick(() => this.refreshTodaySortable());
                 if (window.showMessage) window.showMessage(newStatus === 'Terminé' ? 'Tâche terminée' : 'Tâche rouverte', 'success');
             } catch (e) {
-                this.setOptimisticTaskPatch(id, null);
+                this.patchTaskEverywhere(id, { ...previous, _togglePending: false });
                 this.$nextTick(() => this.refreshTodaySortable());
                 console.error('[TasksHub] Toggle error:', e);
                 if (window.showMessage) window.showMessage(e.message || 'Erreur', 'danger');
-            } finally {
-                this.setTaskTogglePending(id, false);
             }
         },
         toDateInputValue(value) {
@@ -2808,6 +2787,7 @@ document.addEventListener('alpine:init', () => {
             } catch (e) {
                 this.entities = previousEntities;
                 this.fallbackTasks = previousFallback;
+                this.rebuildTaskItems();
                 if (window.showMessage) window.showMessage(e.message || 'Suppression impossible', 'danger');
             }
         },

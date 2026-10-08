@@ -251,5 +251,33 @@ test('task completion and reorder stay local while APIs are slow', { timeout: 15
         (await page.evaluate(() => window.__reorderTaskIds.slice(0, 2))),
         ['000000000000000000000003', '000000000000000000000002'],
     );
+
+    const titlePatchState = await page.evaluate(async () => {
+        window.Alpine.store('taskModal', {
+            open(task, options) {
+                window.__taskModalOptions = options;
+            },
+        });
+        const root = document.querySelector('[x-data="tasksHubApp"]');
+        const state = window.Alpine.$data(root);
+        const taskId = '64b64c0f0000000000000001';
+        const task = state.findTaskById(taskId).task;
+        await state.openTask(task);
+        window.__taskModalOptions.onUpdate(taskId, 'title', 'Titre mis a jour', {
+            ...task,
+            title: 'Titre mis a jour',
+        });
+        await new Promise(resolve => window.Alpine.nextTick(resolve));
+        return {
+            cachedTitle: state.findTaskById(taskId).task.title,
+            persistedTitle: state.entities[0].records[0].tasks[0].title,
+            hubRequestCount: window.__hubRequestCount,
+        };
+    });
+    assert.deepEqual(titlePatchState, {
+        cachedTitle: 'Titre mis a jour',
+        persistedTitle: 'Titre mis a jour',
+        hubRequestCount: 1,
+    });
     assert.deepEqual(pageErrors, []);
 });

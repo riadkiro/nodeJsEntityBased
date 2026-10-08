@@ -368,7 +368,14 @@
 
                     <div class="tdm-body">
                         <div class="tdm-main">
-                            <input type="text" class="tdm-title-input" placeholder="Titre de la tâche..." x-model="$store.taskModal.task.title" @change="$store.taskModal.updateField('title', $store.taskModal.task.title)">
+                            <input type="text"
+                                   class="tdm-title-input"
+                                   placeholder="Titre de la tâche..."
+                                   x-model="$store.taskModal.task.title"
+                                   @input="$store.taskModal.markFieldEdited('title')"
+                                   @click.stop
+                                   @keydown.enter.prevent="$event.target.blur()"
+                                   @blur.stop="$store.taskModal.saveTitle($event.target.value)">
 
                             <div class="tdm-subtasks">
                                 <div class="tdm-section-row">
@@ -1036,6 +1043,9 @@ document.addEventListener('alpine:init', () => {
 			        reminderSaving: false,
 			        newSubtaskTitle: '',
 			        _openSeq: 0,
+		        _fieldRevision: 0,
+		        _fieldRevisions: {},
+		        _savedTitle: '',
 		        _reminderEditSeq: 0,
 		        _onUpdate: null,
 		        _onDelete: null,
@@ -1067,6 +1077,10 @@ document.addEventListener('alpine:init', () => {
 		        async open(taskObj, { onUpdate, onDelete, layoutMode = 'modal' } = {}) {
 		            const openSeq = ++this._openSeq;
 		            const taskId = String(taskObj?._id || '');
+		            this._fieldRevision = 0;
+		            this._fieldRevisions = {};
+		            this._savedTitle = String(taskObj?.title || '').trim();
+		            const openFieldRevisions = this.captureFieldRevisions();
 		            this.layoutMode = layoutMode === 'hyperfocus' ? 'hyperfocus' : 'modal';
 		            window.dispatchEvent(new CustomEvent('close-home-task-menu'));
 		            this.closeMenus();
@@ -1113,7 +1127,9 @@ document.addEventListener('alpine:init', () => {
                         const comments = this.task?._comments || [];
                         const keepLocalReminder = this._reminderEditSeq !== reminderFetchSeq || this.reminderDraft.dirty || this.reminderSaving;
                         const localReminder = this.task?.reminder || null;
-                        this.task = { ...this.task, ...taskData.task, _comments: comments };
+	                        const preserveTitle = this.fieldWasEditedSince('title', openFieldRevisions);
+	                        this.task = { ...this.mergeServerTask(taskData.task, openFieldRevisions), _comments: comments };
+	                        if (!preserveTitle) this._savedTitle = String(this.task.title || '').trim();
                         if (keepLocalReminder) {
                             this.task.reminder = localReminder;
                         } else {
@@ -1188,6 +1204,9 @@ document.addEventListener('alpine:init', () => {
 		            if (this._descriptionSaveTimer) clearTimeout(this._descriptionSaveTimer);
 		            this._descriptionSaveTimer = null;
 		            this._descriptionSavedHtml = '';
+		            this._fieldRevision = 0;
+		            this._fieldRevisions = {};
+		            this._savedTitle = '';
 		            if (this.descriptionEditorInstance) this.descriptionEditorInstance.destroy();
 		            this.descriptionEditorInstance = null;
 		            this.clearChatFiles();
@@ -1861,10 +1880,68 @@ document.addEventListener('alpine:init', () => {
 	            }
 	        },
 
-        async updateFields(updates = {}, options = {}) {
+	        markFieldEdited(field) {
+	            const key = String(field || '').trim();
+	            if (!key) return 0;
+	            this._fieldRevision = Number(this._fieldRevision || 0) + 1;
+	            this._fieldRevisions = { ...(this._fieldRevisions || {}), [key]: this._fieldRevision };
+	            return this._fieldRevision;
+	        },
+
+	        captureFieldRevisions() {
+	            return { ...(this._fieldRevisions || {}) };
+	        },
+
+	        fieldWasEditedSince(field, revisions = {}) {
+	            const key = String(field || '').trim();
+	            return Number(this._fieldRevisions?.[key] || 0) > Number(revisions?.[key] || 0);
+	        },
+
+	        mergeServerTask(serverTask = {}, revisions = {}) {
+	            const localTask = this.task || {};
+	            const merged = { ...localTask, ...(serverTask || {}) };
+	            Object.keys(this._fieldRevisions || {}).forEach(field => {
+	                if (this.fieldWasEditedSince(field, revisions)) merged[field] = localTask[field];
+	            });
+	            return merged;
+	        },
+
+	        async saveTitle(value) {
+	            if (!this.task?._id) return false;
+	            const taskId = String(this.task._id);
+	            const openSeq = this._openSeq;
+	            const nextTitle = String(value || '').trim();
+	            const previousTitle = String(this._savedTitle || '').trim();
+	            if (!nextTitle) {
+	                this.task.title = previousTitle;
+	                if (window.showMessage) window.showMessage('Le titre est requis', 'warning');
+	                return false;
+	            }
+	            this.task.title = nextTitle;
+	            if (nextTitle === previousTitle) return true;
+	            const saved = await this.updateField('title', nextTitle, { silent: true });
+	            if (saved) {
+	                if (openSeq === this._openSeq && String(this.task?._id || '') === taskId) {
+	                    this._savedTitle = String(this.task?.title || nextTitle).trim();
+	                }
+	                return true;
+	            }
+	            if (openSeq === this._openSeq && String(this.task?._id || '') === taskId && String(this.task.title || '').trim() === nextTitle) {
+	                this.task.title = previousTitle;
+	            }
+	            return false;
+	        },
+
+	        async updateFields(updates = {}, options = {}) {
             if (!this.task?._id || !updates || typeof updates !== 'object' || !Object.keys(updates).length) return false;
+	            const requestTask = { ...this.task };
+	            const requestTaskId = String(requestTask._id || '');
+	            const requestOpenSeq = this._openSeq;
+	            const updateCallback = this._onUpdate;
+	            Object.keys(updates).forEach(field => this.markFieldEdited(field));
+	            const requestFieldRevisions = this.captureFieldRevisions();
             try {
-                const res = await fetch(API + '/api/record-tasks/' + this.task._id, {
+                const res = await fetch(API + '/api/record-tasks/' + requestTaskId, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
@@ -1872,22 +1949,27 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok || data.success === false) throw new Error(data.error || 'Mise à jour impossible');
-                const currentListOptions = this.listOptions || this.task.listOptions || [];
-	                const updatedTask = data.task ? { ...this.task, ...data.task } : { ...this.task, ...updates };
-	                this.task = updatedTask;
-	                if (Array.isArray(updatedTask.statuses)) this.statusOptions = this.normalizeOptions(updatedTask.statuses, this.defaults.statuses);
-	                if (Array.isArray(updatedTask.priorities)) this.priorityOptions = this.normalizeOptions(updatedTask.priorities, this.defaults.priorities);
-	                if (Array.isArray(updatedTask.tagOptions)) {
-	                    this.tagOptions = this.normalizeOptions(updatedTask.tagOptions, []);
-	                    this.task.tagOptions = this.tagOptions;
+	                const isCurrentTask = requestOpenSeq === this._openSeq && String(this.task?._id || '') === requestTaskId;
+	                const currentListOptions = isCurrentTask ? (this.listOptions || this.task.listOptions || []) : (requestTask.listOptions || []);
+	                const updatedTask = data.task
+	                    ? (isCurrentTask ? this.mergeServerTask(data.task, requestFieldRevisions) : { ...requestTask, ...data.task })
+	                    : { ...(isCurrentTask ? this.task : requestTask), ...updates };
+	                if (isCurrentTask) {
+	                    this.task = updatedTask;
+	                    if (Array.isArray(updatedTask.statuses)) this.statusOptions = this.normalizeOptions(updatedTask.statuses, this.defaults.statuses);
+	                    if (Array.isArray(updatedTask.priorities)) this.priorityOptions = this.normalizeOptions(updatedTask.priorities, this.defaults.priorities);
+	                    if (Array.isArray(updatedTask.tagOptions)) {
+	                        this.tagOptions = this.normalizeOptions(updatedTask.tagOptions, []);
+	                        this.task.tagOptions = this.tagOptions;
+	                    }
+	                    this.listOptions = this.normalizeListOptions(updatedTask.listOptions || currentListOptions);
+	                    this.task.listOptions = this.listOptions;
+	                    if (Array.isArray(updatedTask.tags)) this.task.tags = this.normalizeTaskTags(updatedTask.tags, this.tagOptions);
+	                    if (Array.isArray(updatedTask.subtasks)) this.task.subtasks = this.normalizeSubtasks(updatedTask.subtasks);
 	                }
-	                this.listOptions = this.normalizeListOptions(updatedTask.listOptions || currentListOptions);
-	                this.task.listOptions = this.listOptions;
-	                if (Array.isArray(updatedTask.tags)) this.task.tags = this.normalizeTaskTags(updatedTask.tags, this.tagOptions);
-	                if (Array.isArray(updatedTask.subtasks)) this.task.subtasks = this.normalizeSubtasks(updatedTask.subtasks);
-	                if (this._onUpdate) {
+	                if (updateCallback) {
 	                    Object.entries(updates).forEach(([field, value]) => {
-	                        this._onUpdate(this.task._id, field, updatedTask[field] ?? value, updatedTask);
+	                        updateCallback(requestTaskId, field, updatedTask[field] ?? value, updatedTask);
 	                    });
 	                }
                 if (!options.silent && window.showMessage) window.showMessage('Tâche mise à jour', 'success');

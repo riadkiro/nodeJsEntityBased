@@ -1703,7 +1703,14 @@ document.addEventListener('alpine:init', () => {
         async openTask(task) {
             const self = this;
             Alpine.store('taskModal').open(task, {
-                onUpdate: () => self.loadHub(),
+                onUpdate: (taskId, field, value, updatedTask) => {
+                    const patch = updatedTask && typeof updatedTask === 'object'
+                        ? { ...updatedTask }
+                        : { [field]: value };
+                    delete patch._comments;
+                    self.patchTaskEverywhere(taskId, patch);
+                    self.$nextTick(() => self.refreshTodaySortable());
+                },
                 onDelete: () => self.loadHub(),
 				layoutMode: 'hyperfocus',
             });

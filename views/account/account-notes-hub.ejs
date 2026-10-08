@@ -2,6 +2,9 @@
 <% const _apiBase = '/account/' + account_number; %>
 <% const _userId = typeof user !== 'undefined' && user ? user._id : ''; %>
 
+<link rel="stylesheet" href="/css/app/rich-text-editor.css">
+<script src="/js/rich-text-editor.js"></script>
+
 <style>
 /* ═══ Notes Hub ═══ */
 .nh-page { width:100%; height:calc(100vh - 86px); min-height:540px; margin:0; }
@@ -37,19 +40,71 @@
 .nh-sidebar-empty { padding:42px 20px; text-align:center; color:#94a3b8; font-size:12px; }
 .nh-sidebar-empty iconify-icon { opacity:.35; margin-bottom:8px; }
 
-/* Note viewer */
+/* Note editor */
 .nh-detail { min-width:0; min-height:0; overflow:hidden; background:#fff; }
-.nh-viewer { height:100%; min-height:0; display:grid; grid-template-rows:auto 1fr; overflow:hidden; background:#fff; }
+.nh-viewer { height:100%; min-height:0; display:grid; grid-template-rows:auto auto minmax(0,1fr); overflow:hidden; background:#fff; position:relative; }
 .nh-viewer-header { min-width:0; padding:14px 20px; border-bottom:1px solid #e0e6ed; display:flex; align-items:center; gap:11px; background:#f8fafc; }
 .nh-viewer-heading { min-width:0; flex:1; }
-.nh-viewer-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:15px; font-weight:800; color:#0e1726; }
+.nh-title-input { width:100%; min-width:0; padding:0; border:0; outline:0; background:transparent; color:#0e1726; font:inherit; font-size:17px; font-weight:800; }
+.nh-title-input::placeholder { color:#cbd5e1; }
 .nh-viewer-subtitle { display:flex; align-items:center; gap:5px; min-width:0; margin-top:3px; color:#94a3b8; font-size:10px; }
 .nh-viewer-subtitle span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.nh-save-status { min-width:92px; display:flex; align-items:center; justify-content:flex-end; gap:4px; color:#94a3b8; font-size:10px; font-weight:700; white-space:nowrap; }
+.nh-save-status.saving { color:#f59e0b; }
+.nh-save-status.saved { color:#10b981; }
+.nh-save-status.error { color:#ef4444; }
 .nh-record-link { flex-shrink:0; display:inline-flex; align-items:center; gap:5px; padding:7px 12px; border-radius:9px; color:#8b5cf6; background:#8b5cf608; border:1px solid #8b5cf620; text-decoration:none; font-size:11px; font-weight:700; transition:all .15s; }
 .nh-record-link:hover { background:#8b5cf615; }
-.nh-viewer-body { min-height:0; padding:28px 32px; overflow-y:auto; font-size:14px; line-height:1.75; color:#334155; }
-.nh-viewer-body:empty::after { content:'Cette note est vide'; color:#bfc9d4; font-style:italic; }
-.nh-viewer-body img { max-width:100%; height:auto; }
+.nh-toolbar { min-width:0; min-height:45px; display:flex; align-items:center; gap:2px; padding:6px 16px; border-bottom:1px solid #f1f3f5; flex-wrap:wrap; overflow:visible; background:#fafbfc; position:relative; z-index:30; }
+.nh-toolbar > button, .nh-toolbar-dropdown > button { width:32px; height:32px; flex:0 0 auto; border:0; border-radius:8px; background:transparent; color:#64748b; display:flex; align-items:center; justify-content:center; cursor:pointer; font:inherit; font-size:13px; font-weight:700; transition:all .12s; }
+.nh-toolbar > button:hover, .nh-toolbar-dropdown > button:hover { color:#0e1726; background:#e2e8f0; }
+.nh-toolbar > button.active, .nh-toolbar-dropdown > button.active { color:#8b5cf6; background:#8b5cf615; }
+.nh-toolbar-sep { width:1px; height:20px; flex:0 0 auto; margin:0 4px; background:#e0e6ed; }
+.nh-toolbar-dropdown { position:relative; flex:0 0 auto; }
+.nh-toolbar-dropdown > .nh-toolbar-dropdown-btn { width:auto; min-width:64px; padding:0 10px; gap:4px; font-size:12px; font-weight:600; white-space:nowrap; }
+.nh-toolbar-menu { position:absolute; top:100%; left:0; z-index:1100; min-width:150px; margin-top:4px; padding:4px; border:1px solid #e0e6ed; border-radius:10px; background:#fff; box-shadow:0 8px 24px rgba(15,23,42,.12); }
+.nh-toolbar-menu button { width:100%; min-height:34px; padding:7px 12px; border:0; border-radius:7px; background:transparent; color:#64748b; display:flex; align-items:center; justify-content:flex-start; gap:8px; cursor:pointer; font:inherit; font-size:13px; }
+.nh-toolbar-menu button:hover { background:#f1f5f9; }
+.nh-toolbar-menu button.active { color:#8b5cf6; background:#8b5cf610; }
+.nh-highlight-menu { min-width:auto; padding:10px 12px; }
+.nh-highlight-row { display:flex; align-items:center; gap:8px; }
+.nh-highlight-dot { width:20px; height:20px; border:2px solid #fff; border-radius:50%; box-shadow:0 0 0 1px #d7dee8; cursor:pointer; transition:transform .12s; }
+.nh-toolbar-menu .nh-highlight-dot { width:20px; min-width:20px; min-height:20px; padding:0; justify-content:center; }
+.nh-highlight-dot:hover { transform:scale(1.16); }
+.nh-editor-content { min-height:0; padding:26px 30px; overflow-y:auto; outline:0; color:#0e1726; font-size:14px; line-height:1.8; }
+.nh-editor-content:empty::before { content:attr(data-placeholder); color:#cbd5e1; pointer-events:none; }
+.nh-editor-content ul, .nh-editor-content ol { padding-left:24px; }
+.nh-editor-content ul { list-style-type:disc; }
+.nh-editor-content ol { list-style-type:decimal; }
+.nh-editor-content li { display:list-item; margin:2px 0; }
+.nh-editor-content blockquote { margin:8px 0; padding-left:14px; border-left:3px solid #8b5cf6; color:#64748b; font-style:italic; }
+.nh-editor-content h1 { margin:16px 0 8px; font-size:24px; font-weight:700; }
+.nh-editor-content h2 { margin:14px 0 6px; font-size:20px; font-weight:700; }
+.nh-editor-content h3 { margin:12px 0 4px; font-size:16px; font-weight:700; }
+.nh-editor-content a { color:#8b5cf6; text-decoration:underline; text-underline-offset:2px; }
+.nh-editor-content img { max-width:100%; height:auto; margin:8px 0; border-radius:8px; cursor:pointer; }
+.nh-editor-content img:hover, .nh-editor-content img.ne-img-selected { outline:2px solid #8b5cf6; outline-offset:2px; }
+.nh-image-toolbar { position:absolute; z-index:80; display:flex; align-items:center; gap:2px; padding:4px; border:1px solid #e0e6ed; border-radius:10px; background:#fff; box-shadow:0 6px 20px rgba(0,0,0,.12); }
+.nh-image-toolbar button { height:30px; padding:0 10px; border:0; border-radius:7px; background:transparent; color:#64748b; cursor:pointer; font:inherit; font-size:11px; font-weight:700; }
+.nh-image-toolbar button:hover, .nh-image-toolbar button.active { color:#8b5cf6; background:#8b5cf610; }
+.nh-image-toolbar .delete-btn { color:#ef4444; }
+.nh-image-toolbar .delete-btn:hover { color:#dc2626; background:#fef2f2; }
+.note-checklist-item { display:flex; align-items:flex-start; gap:8px; margin:4px 0; line-height:1.6; position:relative; }
+.note-checklist-item input[type="checkbox"] { width:16px; height:16px; margin-top:3px; flex:0 0 auto; accent-color:#8b5cf6; cursor:pointer; }
+.note-checklist-item .note-checklist-text { min-width:0; flex:1; outline:0; }
+.note-checklist-item .note-checklist-delete { width:18px; height:18px; margin-top:2px; padding:0; border:0; border-radius:4px; background:transparent; color:#cbd5e1; cursor:pointer; }
+.note-checklist-item .note-checklist-delete:hover { color:#ef4444; background:#fef2f2; }
+.nh-inline-overlay { position:fixed; inset:0; z-index:10000; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(15,23,42,.38); backdrop-filter:blur(3px); }
+.nh-inline-modal { width:410px; max-width:100%; overflow:hidden; border:1px solid #e0e6ed; border-radius:14px; background:#fff; box-shadow:0 20px 60px rgba(15,23,42,.2); }
+.nh-inline-header { padding:16px 18px; border-bottom:1px solid #edf1f6; display:flex; align-items:center; gap:8px; color:#172033; font-size:14px; font-weight:800; }
+.nh-inline-body { padding:18px; display:grid; gap:7px; }
+.nh-inline-body label { margin-top:5px; color:#64748b; font-size:11px; font-weight:700; }
+.nh-inline-body input { height:40px; padding:0 11px; border:1px solid #dfe5ed; border-radius:9px; outline:0; color:#172033; font:inherit; font-size:13px; }
+.nh-inline-body input:focus { border-color:#8b5cf6; box-shadow:0 0 0 3px #8b5cf610; }
+.nh-inline-footer { padding:12px 18px; border-top:1px solid #edf1f6; display:flex; justify-content:flex-end; gap:8px; }
+.nh-inline-footer button { padding:8px 14px; border:0; border-radius:8px; cursor:pointer; font:inherit; font-size:12px; font-weight:700; }
+.nh-inline-cancel { color:#64748b; background:#f1f5f9; }
+.nh-inline-insert { color:#fff; background:linear-gradient(135deg,#8b5cf6,#7c3aed); }
 .nh-detail-empty { height:100%; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:32px; text-align:center; color:#94a3b8; }
 .nh-detail-empty-icon { width:72px; height:72px; display:flex; align-items:center; justify-content:center; border-radius:22px; margin-bottom:16px; color:#8b5cf6; background:linear-gradient(135deg,#8b5cf618,#8b5cf608); }
 .nh-detail-empty h3 { margin:0 0 5px; color:#334155; font-size:16px; font-weight:800; }
@@ -95,8 +150,15 @@
 [data-theme="dark"] .nh-note-list-item--active, .dark .nh-note-list-item--active { background:#201a3b; }
 [data-theme="dark"] .nh-note-avatar, .dark .nh-note-avatar { background:#241d40; }
 [data-theme="dark"] .nh-viewer-header, .dark .nh-viewer-header { border-color:#253b5c; background:#111d30; }
-[data-theme="dark"] .nh-viewer-title, .dark .nh-viewer-title { color:#e0e6ed; }
-[data-theme="dark"] .nh-viewer-body, .dark .nh-viewer-body { color:#cbd5e1; }
+[data-theme="dark"] .nh-title-input, .dark .nh-title-input,
+[data-theme="dark"] .nh-editor-content, .dark .nh-editor-content { color:#e0e6ed; }
+[data-theme="dark"] .nh-toolbar, .dark .nh-toolbar { border-color:#253b5c; background:#111d30; }
+[data-theme="dark"] .nh-toolbar-menu, .dark .nh-toolbar-menu,
+[data-theme="dark"] .nh-image-toolbar, .dark .nh-image-toolbar,
+[data-theme="dark"] .nh-inline-modal, .dark .nh-inline-modal { border-color:#253b5c; background:#0e1726; }
+[data-theme="dark"] .nh-toolbar-menu button:hover, .dark .nh-toolbar-menu button:hover { background:#1b2e4b; }
+[data-theme="dark"] .nh-inline-header, .dark .nh-inline-header { color:#e0e6ed; border-color:#253b5c; }
+[data-theme="dark"] .nh-inline-body input, .dark .nh-inline-body input { color:#e0e6ed; border-color:#253b5c; background:#111d30; }
 [data-theme="dark"] .nh-detail-empty h3, .dark .nh-detail-empty h3 { color:#e0e6ed; }
 [data-theme="dark"] .nh-pin-modal, .dark .nh-pin-modal { background:#0e1726; border:1px solid #253b5c; }
 [data-theme="dark"] .nh-pin-title, .dark .nh-pin-title { color:#e0e6ed; }
@@ -117,7 +179,10 @@
     .nh-detail { min-height:420px; }
     .nh-viewer-header { align-items:flex-start; padding:14px; }
     .nh-record-link span { display:none; }
-    .nh-viewer-body { padding:20px 18px; }
+    .nh-editor-content { padding:20px 18px; }
+    .nh-save-status { min-width:auto; }
+    .nh-save-status span { font-size:0; }
+    .nh-save-status iconify-icon { font-size:12px; }
 }
 </style>
 
@@ -189,19 +254,111 @@
                                 <iconify-icon :icon="activeNote.isProtected ? 'solar:lock-keyhole-bold-duotone' : (activeNote.icon || 'solar:notebook-bold-duotone')" width="18" :style="'color:' + (activeNote.color || '#8b5cf6')"></iconify-icon>
                             </div>
                             <div class="nh-viewer-heading">
-                                <div class="nh-viewer-title" x-text="activeNote.title || 'Sans titre'"></div>
+                                <input type="text" class="nh-title-input" :value="activeNote.title"
+                                       @input="activeNote.title = $event.target.value; syncActiveTitle(); scheduleAutosave('title')"
+                                       placeholder="Titre de la note..." aria-label="Titre de la note">
                                 <div class="nh-viewer-subtitle">
                                     <span x-text="(activeNote.entityName || 'Inconnu') + ' · ' + (activeNote.recordTitle || 'Sans titre')"></span>
                                     <span>•</span>
                                     <span x-text="activityLabel(activeNote)"></span>
                                 </div>
                             </div>
-                            <a class="nh-record-link" :href="getNoteRecordLink()" x-show="getNoteRecordLink() !== '#'">
+                            <div class="nh-save-status" :class="saveStatus" aria-live="polite">
+                                <template x-if="saveStatus === 'saving'">
+                                    <span><iconify-icon icon="line-md:loading-twotone-loop" width="13"></iconify-icon> Sauvegarde...</span>
+                                </template>
+                                <template x-if="saveStatus === 'saved'">
+                                    <span><iconify-icon icon="solar:check-circle-bold" width="13"></iconify-icon> Sauvegardé</span>
+                                </template>
+                                <template x-if="saveStatus === 'error'">
+                                    <span><iconify-icon icon="solar:danger-circle-bold" width="13"></iconify-icon> Erreur</span>
+                                </template>
+                            </div>
+                            <a class="nh-record-link" :href="getNoteRecordLink()" x-show="getNoteRecordLink() !== '#'" @click="saveCurrentNote()">
                                 <iconify-icon icon="solar:arrow-right-linear" width="13"></iconify-icon>
                                 <span>Ouvrir la fiche</span>
                             </a>
                         </div>
-                        <div class="nh-viewer-body" x-html="activeNoteContent"></div>
+
+                        <div class="nh-toolbar" role="toolbar" aria-label="Mise en forme de la note">
+                            <div class="nh-toolbar-dropdown" @click.away="showFormatMenu = false">
+                                <button type="button" class="nh-toolbar-dropdown-btn" @mousedown.prevent="showFormatMenu = !showFormatMenu" title="Format du texte">
+                                    <span x-text="formatLabel"></span>
+                                    <iconify-icon icon="solar:alt-arrow-down-linear" width="12"></iconify-icon>
+                                </button>
+                                <div class="nh-toolbar-menu" x-show="showFormatMenu" x-transition @click="showFormatMenu = false">
+                                    <button type="button" @mousedown.prevent="setFormat('div')" :class="{ 'active': activeFormats.formatBlock === 'div' || activeFormats.formatBlock === '' }">Paragraphe</button>
+                                    <button type="button" @mousedown.prevent="setFormat('h1')" :class="{ 'active': activeFormats.formatBlock === 'h1' }"><strong style="font-size:18px">Titre 1</strong></button>
+                                    <button type="button" @mousedown.prevent="setFormat('h2')" :class="{ 'active': activeFormats.formatBlock === 'h2' }"><strong style="font-size:16px">Titre 2</strong></button>
+                                    <button type="button" @mousedown.prevent="setFormat('h3')" :class="{ 'active': activeFormats.formatBlock === 'h3' }"><strong style="font-size:14px">Titre 3</strong></button>
+                                </div>
+                            </div>
+                            <span class="nh-toolbar-sep"></span>
+                            <div class="nh-toolbar-dropdown" @click.away="showSizeMenu = false">
+                                <button type="button" class="nh-toolbar-dropdown-btn" @mousedown.prevent="showSizeMenu = !showSizeMenu" title="Taille du texte">
+                                    <iconify-icon icon="solar:text-field-bold-duotone" width="14"></iconify-icon>
+                                    <span x-text="sizeLabel"></span>
+                                    <iconify-icon icon="solar:alt-arrow-down-linear" width="12"></iconify-icon>
+                                </button>
+                                <div class="nh-toolbar-menu" x-show="showSizeMenu" x-transition @click="showSizeMenu = false">
+                                    <button type="button" @mousedown.prevent="setFontSize(1)" :class="{ 'active': activeFormats.fontSize === '1' }"><span style="font-size:11px">Petit</span></button>
+                                    <button type="button" @mousedown.prevent="setFontSize(3)" :class="{ 'active': activeFormats.fontSize === '3' || activeFormats.fontSize === '' }">Normal</button>
+                                    <button type="button" @mousedown.prevent="setFontSize(5)" :class="{ 'active': activeFormats.fontSize === '5' }"><span style="font-size:16px">Grand</span></button>
+                                    <button type="button" @mousedown.prevent="setFontSize(7)" :class="{ 'active': activeFormats.fontSize === '7' }"><span style="font-size:20px">Très grand</span></button>
+                                </div>
+                            </div>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" @mousedown.prevent="exec('bold')" :class="{ 'active': activeFormats.bold }" title="Gras (Ctrl+B)"><b>B</b></button>
+                            <button type="button" @mousedown.prevent="exec('italic')" :class="{ 'active': activeFormats.italic }" title="Italique (Ctrl+I)"><i>I</i></button>
+                            <button type="button" @mousedown.prevent="exec('underline')" :class="{ 'active': activeFormats.underline }" title="Souligné (Ctrl+U)"><u>U</u></button>
+                            <button type="button" @mousedown.prevent="exec('strikeThrough')" :class="{ 'active': activeFormats.strikeThrough }" title="Barré"><s>S</s></button>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" @mousedown.prevent="exec('justifyLeft')" :class="{ 'active': activeFormats.justifyLeft }" title="Aligner à gauche"><iconify-icon icon="solar:align-left-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="exec('justifyCenter')" :class="{ 'active': activeFormats.justifyCenter }" title="Centrer"><iconify-icon icon="solar:align-horizonta-spacing-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="exec('justifyRight')" :class="{ 'active': activeFormats.justifyRight }" title="Aligner à droite"><iconify-icon icon="solar:align-right-bold-duotone" width="16"></iconify-icon></button>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" @mousedown.prevent="exec('insertUnorderedList')" :class="{ 'active': activeFormats.insertUnorderedList }" title="Liste à puces"><iconify-icon icon="solar:list-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="exec('insertOrderedList')" :class="{ 'active': activeFormats.insertOrderedList }" title="Liste numérotée"><iconify-icon icon="solar:list-check-bold-duotone" width="16"></iconify-icon></button>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" @mousedown.prevent="exec('formatBlock', '<blockquote>')" :class="{ 'active': activeFormats.blockquote }" title="Citation"><iconify-icon icon="solar:chat-square-like-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="insertCheckbox()" title="Checklist"><iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="16"></iconify-icon></button>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" @mousedown.prevent="openLinkModal()" title="Insérer un lien"><iconify-icon icon="solar:link-round-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="insertImageFromPicker()" title="Insérer une image"><iconify-icon icon="solar:gallery-bold-duotone" width="16"></iconify-icon></button>
+                            <button type="button" @mousedown.prevent="clearFormatting()" title="Effacer le formatage"><iconify-icon icon="solar:eraser-bold-duotone" width="16"></iconify-icon></button>
+                            <span class="nh-toolbar-sep"></span>
+                            <div class="nh-toolbar-dropdown" @click.away="showColorMenu = false">
+                                <button type="button" @mousedown.prevent="showColorMenu = !showColorMenu" title="Surlignage"><iconify-icon icon="solar:pen-2-bold-duotone" width="16"></iconify-icon></button>
+                                <div class="nh-toolbar-menu nh-highlight-menu" x-show="showColorMenu" x-transition>
+                                    <div class="nh-highlight-row">
+                                        <button type="button" class="nh-highlight-dot" style="background:#fef08a" @mousedown.prevent="highlight('#fef08a')" title="Jaune"></button>
+                                        <button type="button" class="nh-highlight-dot" style="background:#bbf7d0" @mousedown.prevent="highlight('#bbf7d0')" title="Vert"></button>
+                                        <button type="button" class="nh-highlight-dot" style="background:#bfdbfe" @mousedown.prevent="highlight('#bfdbfe')" title="Bleu"></button>
+                                        <button type="button" class="nh-highlight-dot" style="background:#fecaca" @mousedown.prevent="highlight('#fecaca')" title="Rouge"></button>
+                                        <button type="button" class="nh-highlight-dot" style="background:#e9d5ff" @mousedown.prevent="highlight('#e9d5ff')" title="Violet"></button>
+                                        <button type="button" class="nh-highlight-dot" style="background:#fff;color:#ef4444" @mousedown.prevent="highlight('transparent')" title="Effacer"><iconify-icon icon="solar:close-circle-bold" width="14"></iconify-icon></button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="nh-editor-content" contenteditable="true" x-ref="editorContent"
+                             x-init="hydrateMountedEditor($el)" data-placeholder="Commencez à écrire..."
+                             @input="scheduleAutosave('content')" @change="scheduleAutosave('content')"
+                             @keyup="updateFormats()" @mouseup="updateFormats()"
+                             @click="handleContentClick($event)"
+                             @keydown.enter="handleEditorEnter($event)"
+                             @keydown.backspace="handleEditorBackspace($event)"></div>
+
+                        <div class="nh-image-toolbar" x-show="selectedImage" x-ref="imageToolbar" x-transition
+                             :style="imageToolbarStyle" @click.outside="clearSelectedImage()">
+                            <button type="button" @click="resizeImage('25%')" :class="{ 'active': selectedImageSize === '25%' }">25%</button>
+                            <button type="button" @click="resizeImage('50%')" :class="{ 'active': selectedImageSize === '50%' }">50%</button>
+                            <button type="button" @click="resizeImage('75%')" :class="{ 'active': selectedImageSize === '75%' }">75%</button>
+                            <button type="button" @click="resizeImage('100%')" :class="{ 'active': selectedImageSize === '100%' }">100%</button>
+                            <span class="nh-toolbar-sep"></span>
+                            <button type="button" class="delete-btn" @click="deleteImage()" title="Supprimer l'image"><iconify-icon icon="solar:trash-bin-trash-bold" width="14"></iconify-icon></button>
+                        </div>
                     </div>
                 </template>
                 <template x-if="!activeNote">
@@ -237,6 +394,27 @@
             </div>
         </div>
     </template>
+
+    <template x-if="showLinkModal">
+        <div class="nh-inline-overlay" @click.self="showLinkModal = false" @keydown.escape.window="showLinkModal = false">
+            <div class="nh-inline-modal" @click.stop>
+                <div class="nh-inline-header">
+                    <iconify-icon icon="solar:link-round-bold-duotone" width="18" style="color:#8b5cf6"></iconify-icon>
+                    Insérer un lien
+                </div>
+                <div class="nh-inline-body">
+                    <label for="nh-link-text">Texte du lien</label>
+                    <input id="nh-link-text" type="text" x-model="linkText" placeholder="Texte à afficher..." x-ref="linkTextInput">
+                    <label for="nh-link-url">URL</label>
+                    <input id="nh-link-url" type="url" x-model="linkUrl" placeholder="https://..." @keydown.enter="insertLink()">
+                </div>
+                <div class="nh-inline-footer">
+                    <button type="button" class="nh-inline-cancel" @click="showLinkModal = false">Annuler</button>
+                    <button type="button" class="nh-inline-insert" @click="insertLink()">Insérer</button>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
 <script>
@@ -256,15 +434,37 @@ document.addEventListener('alpine:init', () => {
         totalNotes: 0,
         searchQuery: '',
         activeNote: null,
-        activeNoteContent: '',
-        unlockedNoteContent: {},
+        editorNoteId: null,
+        isHydratingEditor: false,
+        contentDirtyNoteId: null,
+        titleDirtyNoteId: null,
+        autosaveTimer: null,
+        saveStatusTimer: null,
+        saveStatus: '',
+        unlockedNotes: {},
 
-        // PIN
         showPinModal: false,
         pinTarget: null,
         pinValue: '',
         pinError: '',
         pinLoading: false,
+
+        activeFormats: {
+            bold: false, italic: false, underline: false, strikeThrough: false,
+            justifyLeft: false, justifyCenter: false, justifyRight: false,
+            insertUnorderedList: false, insertOrderedList: false,
+            formatBlock: '', fontSize: '', blockquote: false
+        },
+        showFormatMenu: false,
+        showSizeMenu: false,
+        showColorMenu: false,
+        showLinkModal: false,
+        linkText: '',
+        linkUrl: '',
+        savedSelection: null,
+        selectedImage: null,
+        selectedImageSize: '',
+        imageToolbarStyle: '',
 
         get filteredNotes() {
             const query = this.searchQuery.trim().toLowerCase();
@@ -272,15 +472,35 @@ document.addEventListener('alpine:init', () => {
             return this.notes.filter(note => {
                 const preview = note.isProtected ? '' : this.stripHtml(note.content || '');
                 return [note.title, note.entityName, note.recordTitle, preview]
-                    .filter(Boolean)
-                    .join(' ')
-                    .toLowerCase()
-                    .includes(query);
+                    .filter(Boolean).join(' ').toLowerCase().includes(query);
             });
+        },
+
+        get formatLabel() {
+            const block = this.activeFormats.formatBlock;
+            if (block === 'h1') return 'Titre 1';
+            if (block === 'h2') return 'Titre 2';
+            if (block === 'h3') return 'Titre 3';
+            return 'Paragraphe';
+        },
+
+        get sizeLabel() {
+            const size = this.activeFormats.fontSize;
+            if (size === '1') return 'Petit';
+            if (size === '5') return 'Grand';
+            if (size === '7') return 'Très grand';
+            return 'Taille';
         },
 
         async init() {
             await this.loadHub();
+            document.addEventListener('selectionchange', () => {
+                const editor = this.$refs.editorContent;
+                if (editor && (document.activeElement === editor || editor.contains(document.activeElement))) {
+                    this.updateFormats();
+                }
+            });
+            window.addEventListener('pagehide', () => this.saveCurrentNote(true), { once: true });
         },
 
         async loadHub() {
@@ -304,13 +524,8 @@ document.addEventListener('alpine:init', () => {
         selectInitialNote() {
             if (this.activeNote || this.notes.length === 0) return;
             const requestedId = new URLSearchParams(window.location.search).get('noteId') || '';
-            const requestedNote = requestedId
-                ? this.notes.find(note => this.noteId(note) === requestedId)
-                : null;
-            if (requestedNote) {
-                this.openNote(requestedNote);
-                return;
-            }
+            const requestedNote = requestedId ? this.notes.find(note => this.noteId(note) === requestedId) : null;
+            if (requestedNote) return this.openNote(requestedNote);
             const firstReadableNote = this.notes.find(note =>
                 !note.isProtected && this.stripHtml(note.content || '').trim()
             ) || this.notes.find(note => !note.isProtected);
@@ -332,21 +547,198 @@ document.addEventListener('alpine:init', () => {
 
         openNote(note) {
             const id = this.noteId(note);
+            if (!id) return;
+            if (this.activeNote && this.noteId(this.activeNote) !== id) this.saveCurrentNote();
+
             if (note.isProtected) {
-                if (Object.prototype.hasOwnProperty.call(this.unlockedNoteContent, id)) {
-                    this.activeNote = note;
-                    this.activeNoteContent = this.unlockedNoteContent[id];
-                    return;
-                }
+                const unlocked = this.unlockedNotes[id];
+                if (unlocked) return this.showNoteInEditor({ ...note, ...unlocked });
                 this.pinTarget = note;
                 this.pinValue = '';
                 this.pinError = '';
                 this.showPinModal = true;
-                this.$nextTick(() => { if (this.$refs.pinInput) this.$refs.pinInput.focus(); });
+                this.$nextTick(() => this.$refs.pinInput?.focus());
                 return;
             }
-            this.activeNote = note;
-            this.activeNoteContent = note.content || '';
+            this.showNoteInEditor(note);
+        },
+
+        showNoteInEditor(note) {
+            this.activeNote = { ...note };
+            this.editorNoteId = null;
+            this.contentDirtyNoteId = null;
+            this.titleDirtyNoteId = null;
+            this.saveStatus = '';
+            this.clearSelectedImage();
+            this.hydrateEditorContent(this.noteId(note), note.content || '');
+        },
+
+        hydrateMountedEditor(el) {
+            if (!this.activeNote || !el) return;
+            const id = this.noteId(this.activeNote);
+            this.isHydratingEditor = true;
+            el.innerHTML = this.activeNote.content || '';
+            this.editorNoteId = id;
+            this.isHydratingEditor = false;
+            this.updateFormats();
+        },
+
+        hydrateEditorContent(noteId, html, attempt = 0) {
+            this.isHydratingEditor = true;
+            this.$nextTick(() => {
+                const editor = this.$refs.editorContent;
+                if (editor && this.activeNote && this.noteId(this.activeNote) === String(noteId)) {
+                    editor.innerHTML = html || '';
+                    this.editorNoteId = String(noteId);
+                    this.isHydratingEditor = false;
+                    this.updateFormats();
+                    return;
+                }
+                if (attempt < 12 && this.activeNote && this.noteId(this.activeNote) === String(noteId)) {
+                    requestAnimationFrame(() => this.hydrateEditorContent(noteId, html, attempt + 1));
+                    return;
+                }
+                this.isHydratingEditor = false;
+            });
+        },
+
+        syncActiveTitle() {
+            if (!this.activeNote) return;
+            const index = this.notes.findIndex(note => this.noteId(note) === this.noteId(this.activeNote));
+            if (index !== -1) this.notes[index].title = this.activeNote.title;
+        },
+
+        currentEditorHtml() {
+            const editor = this.$refs.editorContent;
+            if (!editor) return '';
+            if (window.DexRichTextEditor) window.DexRichTextEditor.syncCheckboxAttributes(editor);
+            return editor.innerHTML;
+        },
+
+        scheduleAutosave(source = 'content') {
+            if (this.isHydratingEditor || !this.activeNote) return;
+            const id = this.noteId(this.activeNote);
+            if (source === 'content') this.contentDirtyNoteId = id;
+            if (source === 'title') this.titleDirtyNoteId = id;
+            clearTimeout(this.autosaveTimer);
+            clearTimeout(this.saveStatusTimer);
+            this.saveStatus = '';
+            this.autosaveTimer = setTimeout(() => this.doAutosave(), 1200);
+        },
+
+        hasPendingChanges(noteId) {
+            return String(this.contentDirtyNoteId || '') === String(noteId) ||
+                String(this.titleDirtyNoteId || '') === String(noteId);
+        },
+
+        noteSavePayload(note, content, includeTitle, includeContent) {
+            const payload = {};
+            if (includeTitle) payload.title = note.title;
+            if (includeContent) {
+                payload.content = content;
+                if (note.isProtected) {
+                    payload.contentEditToken = note._contentEditToken || '';
+                    payload.contentBaseHash = note._contentHash || '';
+                }
+            }
+            return payload;
+        },
+
+        saveCurrentNote(keepalive = false) {
+            if (!this.activeNote) return Promise.resolve();
+            clearTimeout(this.autosaveTimer);
+            const id = this.noteId(this.activeNote);
+            if (!this.hasPendingChanges(id)) return Promise.resolve();
+            return this.persistNote({ keepalive, background: true });
+        },
+
+        async doAutosave() {
+            if (!this.activeNote) return;
+            const id = this.noteId(this.activeNote);
+            if (!this.hasPendingChanges(id)) return;
+            await this.persistNote({ keepalive: false, background: false });
+        },
+
+        async persistNote({ keepalive = false, background = false } = {}) {
+            if (!this.activeNote) return;
+            const id = this.noteId(this.activeNote);
+            const recordId = String(this.activeNote.recordId || '');
+            if (!id || !recordId) return;
+
+            const includeTitle = String(this.titleDirtyNoteId || '') === id;
+            const includeContent = String(this.contentDirtyNoteId || '') === id && String(this.editorNoteId || '') === id;
+            if (!includeTitle && !includeContent) return;
+
+            const title = this.activeNote.title || '';
+            const content = includeContent ? this.currentEditorHtml() : '';
+            const payload = this.noteSavePayload(this.activeNote, content, includeTitle, includeContent);
+            const localIndex = this.notes.findIndex(note => this.noteId(note) === id);
+            if (localIndex !== -1) {
+                if (includeTitle) this.notes[localIndex].title = title;
+                if (includeContent && !this.notes[localIndex].isProtected) this.notes[localIndex].content = content;
+            }
+            if (this.unlockedNotes[id]) {
+                this.unlockedNotes = {
+                    ...this.unlockedNotes,
+                    [id]: {
+                        ...this.unlockedNotes[id],
+                        ...(includeTitle ? { title } : {}),
+                        ...(includeContent ? { content } : {})
+                    }
+                };
+            }
+            if (!background || this.noteId(this.activeNote) === id) this.saveStatus = 'saving';
+
+            try {
+                const res = await fetch(_apiBase + '/api/record/' + recordId + '/notes/' + id, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    keepalive,
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => null);
+                if (!res.ok || !data?.success || (includeContent && data.contentIgnored)) {
+                    throw new Error(data?.error || 'Sauvegarde impossible');
+                }
+
+                const savedAt = data.note?.updatedAt || new Date().toISOString();
+                const index = this.notes.findIndex(note => this.noteId(note) === id);
+                if (index !== -1) {
+                    this.notes[index].updatedAt = savedAt;
+                }
+
+                if (this.activeNote && this.noteId(this.activeNote) === id) {
+                    this.activeNote.updatedAt = savedAt;
+                    this.activeNote._contentHash = data.note?._contentHash || this.activeNote._contentHash;
+                    this.activeNote._contentEditToken = data.note?._contentEditToken || this.activeNote._contentEditToken;
+                    if (includeTitle && this.activeNote.title === title) this.titleDirtyNoteId = null;
+                    if (includeContent && this.currentEditorHtml() === content) this.contentDirtyNoteId = null;
+                    this.saveStatus = 'saved';
+                    clearTimeout(this.saveStatusTimer);
+                    this.saveStatusTimer = setTimeout(() => {
+                        if (this.saveStatus === 'saved') this.saveStatus = '';
+                    }, 2000);
+                }
+
+                if (this.unlockedNotes[id]) {
+                    this.unlockedNotes = {
+                        ...this.unlockedNotes,
+                        [id]: {
+                            ...this.unlockedNotes[id],
+                            ...(includeTitle ? { title } : {}),
+                            ...(includeContent ? { content } : {}),
+                            updatedAt: savedAt,
+                            _contentHash: data.note?._contentHash || this.unlockedNotes[id]._contentHash,
+                            _contentEditToken: data.note?._contentEditToken || this.unlockedNotes[id]._contentEditToken
+                        }
+                    };
+                }
+                this.notes = this.sortNotesByActivity(this.notes);
+            } catch (error) {
+                console.error('[NotesHub] Autosave error:', error);
+                if (this.activeNote && this.noteId(this.activeNote) === id) this.saveStatus = 'error';
+            }
         },
 
         closePinModal() {
@@ -374,17 +766,18 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json();
                 if (data.success) {
-                    this.activeNote = { ...note, ...(data.note || {}) };
-                    this.activeNoteContent = data.content || data.note?.content || '';
-                    this.unlockedNoteContent = {
-                        ...this.unlockedNoteContent,
-                        [id]: this.activeNoteContent
+                    const unlocked = {
+                        ...note,
+                        ...(data.note || {}),
+                        content: data.content ?? data.note?.content ?? ''
                     };
+                    this.unlockedNotes = { ...this.unlockedNotes, [id]: unlocked };
                     this.closePinModal();
+                    this.showNoteInEditor(unlocked);
                 } else {
                     this.pinError = data.error || 'PIN incorrect';
                     this.pinValue = '';
-                    if (this.$refs.pinInput) this.$refs.pinInput.focus();
+                    this.$refs.pinInput?.focus();
                 }
             } catch (e) {
                 this.pinError = 'Erreur réseau';
@@ -392,11 +785,242 @@ document.addEventListener('alpine:init', () => {
             this.pinLoading = false;
         },
 
+        exec(command, value = null) {
+            document.execCommand(command, false, value);
+            this.updateFormats();
+            this.scheduleAutosave('content');
+        },
+
+        updateFormats() {
+            const editor = this.$refs.editorContent;
+            if (!editor) return;
+            const commands = ['bold', 'italic', 'underline', 'strikeThrough', 'justifyLeft', 'justifyCenter', 'justifyRight', 'insertUnorderedList', 'insertOrderedList'];
+            commands.forEach(command => {
+                try { this.activeFormats[command] = document.queryCommandState(command); } catch (e) {}
+            });
+            try {
+                const value = String(document.queryCommandValue('formatBlock') || '').toLowerCase().replace(/[<>]/g, '');
+                this.activeFormats.formatBlock = value;
+                this.activeFormats.blockquote = value === 'blockquote';
+            } catch (e) {}
+            try { this.activeFormats.fontSize = String(document.queryCommandValue('fontSize') || ''); } catch (e) {}
+        },
+
+        setFormat(tag) {
+            document.execCommand('formatBlock', false, '<' + tag + '>');
+            this.updateFormats();
+            this.scheduleAutosave('content');
+        },
+
+        setFontSize(size) {
+            document.execCommand('fontSize', false, size);
+            this.updateFormats();
+            this.scheduleAutosave('content');
+        },
+
+        clearFormatting() {
+            document.execCommand('removeFormat', false, null);
+            document.execCommand('unlink', false, null);
+            this.updateFormats();
+            this.scheduleAutosave('content');
+        },
+
+        saveSelection() {
+            const selection = window.getSelection();
+            if (selection?.rangeCount) this.savedSelection = selection.getRangeAt(0).cloneRange();
+        },
+
+        restoreSelection() {
+            if (!this.savedSelection) return;
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(this.savedSelection);
+            this.savedSelection = null;
+        },
+
+        openLinkModal() {
+            this.saveSelection();
+            this.linkText = String(window.getSelection?.() || '');
+            this.linkUrl = '';
+            this.showLinkModal = true;
+            this.$nextTick(() => this.$refs.linkTextInput?.focus());
+        },
+
+        insertLink() {
+            const url = this.linkUrl.trim();
+            const isSafe = window.DexRichTextEditor
+                ? window.DexRichTextEditor.isSafeUrl(url)
+                : /^(https?:\/\/|mailto:|tel:)/i.test(url);
+            if (!url || !isSafe) return;
+            const text = this.linkText.trim() || url;
+            const escape = window.DexRichTextEditor?.escapeHtml || (value => String(value).replace(/[&<>\"]/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '\"':'&quot;' }[char])));
+            this.showLinkModal = false;
+            this.$refs.editorContent?.focus();
+            this.restoreSelection();
+            document.execCommand('insertHTML', false, '<a href="' + escape(url) + '" target="_blank" rel="noopener noreferrer">' + escape(text) + '</a>&nbsp;');
+            this.scheduleAutosave('content');
+        },
+
+        insertImageFromPicker() {
+            if (!this.activeNote || !Alpine.store('imagePicker')) return;
+            this.saveSelection();
+            Alpine.store('imagePicker').open({
+                accountNumber: _accountNumber,
+                recordId: this.activeNote.recordId,
+                onSelect: image => {
+                    this.$refs.editorContent?.focus();
+                    this.restoreSelection();
+                    const html = window.DexRichTextEditor
+                        ? window.DexRichTextEditor.imageHtml(image.url, image.alt || image.name || 'image', '100%')
+                        : '<div><img src="' + image.url + '" alt="image" style="max-width:100%"></div><div><br></div>';
+                    document.execCommand('insertHTML', false, html);
+                    this.scheduleAutosave('content');
+                }
+            });
+        },
+
+        handleContentClick(event) {
+            this.updateFormats();
+            if (event.target.closest?.('.note-checklist-delete')) {
+                event.target.closest('.note-checklist-item')?.remove();
+                this.scheduleAutosave('content');
+                return;
+            }
+            if (event.target.tagName === 'IMG') {
+                event.preventDefault();
+                this.clearSelectedImage();
+                event.target.classList.add('ne-img-selected');
+                this.selectedImage = event.target;
+                this.selectedImageSize = window.DexRichTextEditor
+                    ? window.DexRichTextEditor.getImageSize(event.target)
+                    : (event.target.style.width || '100%');
+                this.$nextTick(() => this.positionImageToolbar(event.target));
+                return;
+            }
+            if (event.target.tagName === 'A' && (event.ctrlKey || event.metaKey)) {
+                event.preventDefault();
+                const href = event.target.getAttribute('href');
+                if (href) window.open(href, '_blank', 'noopener');
+                return;
+            }
+            this.clearSelectedImage();
+        },
+
+        clearSelectedImage() {
+            this.selectedImage?.classList?.remove('ne-img-selected');
+            this.selectedImage = null;
+            this.selectedImageSize = '';
+        },
+
+        positionImageToolbar(image) {
+            const toolbar = this.$refs.imageToolbar;
+            const container = image?.closest('.nh-viewer');
+            if (!toolbar || !container || !image) return;
+            const containerRect = container.getBoundingClientRect();
+            const imageRect = image.getBoundingClientRect();
+            const toolbarWidth = toolbar.offsetWidth || 250;
+            let left = imageRect.left - containerRect.left + imageRect.width / 2 - toolbarWidth / 2;
+            let top = imageRect.top - containerRect.top - 44;
+            left = Math.max(4, Math.min(left, container.clientWidth - toolbarWidth - 4));
+            if (top < 4) top = imageRect.bottom - containerRect.top + 8;
+            this.imageToolbarStyle = 'left:' + left + 'px;top:' + top + 'px;';
+        },
+
+        resizeImage(size) {
+            if (!this.selectedImage) return;
+            if (window.DexRichTextEditor) window.DexRichTextEditor.applyImageSize(this.selectedImage, size);
+            else this.selectedImage.style.width = size;
+            this.selectedImageSize = size;
+            this.scheduleAutosave('content');
+            this.$nextTick(() => this.positionImageToolbar(this.selectedImage));
+        },
+
+        deleteImage() {
+            if (!this.selectedImage) return;
+            const parent = this.selectedImage.parentElement;
+            this.selectedImage.remove();
+            if (parent?.tagName === 'DIV' && !parent.textContent.trim() && !parent.querySelector('img')) parent.remove();
+            this.selectedImage = null;
+            this.scheduleAutosave('content');
+        },
+
+        highlight(color) {
+            if (color === 'transparent') document.execCommand('removeFormat', false, null);
+            else document.execCommand('hiliteColor', false, color);
+            this.showColorMenu = false;
+            this.scheduleAutosave('content');
+        },
+
+        insertCheckbox() {
+            const html = window.DexRichTextEditor
+                ? window.DexRichTextEditor.checklistHtml('Tache', { variant: 'note' })
+                : '<div class="note-checklist-item" contenteditable="false"><input type="checkbox"><span class="note-checklist-text" contenteditable="true">Tâche</span><button class="note-checklist-delete" contenteditable="false" title="Supprimer">×</button></div><div><br></div>';
+            document.execCommand('insertHTML', false, html);
+            this.scheduleAutosave('content');
+        },
+
+        handleEditorEnter(event) {
+            const selection = window.getSelection();
+            if (!selection?.anchorNode) return;
+            const node = selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode;
+            const item = node?.closest?.('.note-checklist-item');
+            if (!item) return;
+            event.preventDefault();
+            const text = item.querySelector('.note-checklist-text')?.textContent.replace(/\u200B/g, '').trim() || '';
+            if (!text) {
+                const paragraph = document.createElement('div');
+                paragraph.innerHTML = '<br>';
+                item.after(paragraph);
+                item.remove();
+                const range = document.createRange();
+                range.setStart(paragraph, 0);
+                range.collapse(true);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            } else {
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = window.DexRichTextEditor
+                    ? window.DexRichTextEditor.checklistHtml('', { variant: 'note' })
+                    : '<div class="note-checklist-item" contenteditable="false"><input type="checkbox"><span class="note-checklist-text" contenteditable="true">&#8203;</span><button class="note-checklist-delete" contenteditable="false" title="Supprimer">×</button></div>';
+                const next = wrapper.firstElementChild;
+                item.after(next);
+                const target = next.querySelector('.note-checklist-text');
+                const range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            this.scheduleAutosave('content');
+        },
+
+        handleEditorBackspace(event) {
+            const selection = window.getSelection();
+            if (!selection?.anchorNode) return;
+            const node = selection.anchorNode.nodeType === 3 ? selection.anchorNode.parentElement : selection.anchorNode;
+            const item = node?.closest?.('.note-checklist-item');
+            if (!item) return;
+            const text = item.querySelector('.note-checklist-text')?.textContent.replace(/\u200B/g, '').trim() || '';
+            if (text) return;
+            event.preventDefault();
+            const previous = item.previousElementSibling;
+            const target = previous?.querySelector?.('.note-checklist-text') || previous;
+            item.remove();
+            if (target) {
+                const range = document.createRange();
+                range.selectNodeContents(target);
+                range.collapse(false);
+                selection.removeAllRanges();
+                selection.addRange(range);
+            }
+            this.scheduleAutosave('content');
+        },
+
         getNoteRecordLink() {
             if (!this.activeNote) return '#';
             const entitySlug = this.activeNote.entitySlug || '';
             if (!entitySlug || !this.activeNote.recordId) return '#';
-            return _apiBase + '/record/' + entitySlug + '/' + this.activeNote.recordId + '/notes';
+            return _apiBase + '/record/' + entitySlug + '/' + this.activeNote.recordId + '/notes?noteId=' + encodeURIComponent(this.noteId(this.activeNote));
         },
 
         flattenNotes(entities) {
@@ -442,22 +1066,20 @@ document.addEventListener('alpine:init', () => {
 
         stripHtml(html) {
             if (!html) return '';
-            const tmp = document.createElement('div');
-            tmp.innerHTML = html;
-            return tmp.textContent || tmp.innerText || '';
+            const element = document.createElement('div');
+            element.innerHTML = html;
+            return element.textContent || element.innerText || '';
         },
 
         formatTime(dateStr) {
             if (!dateStr) return '';
-            const d = new Date(dateStr);
-            const now = new Date();
-            const diffMs = now - d;
-            const diffMins = Math.floor(diffMs / 60000);
-            if (diffMins < 1) return "à l'instant";
-            if (diffMins < 60) return diffMins + ' min';
-            const diffHrs = Math.floor(diffMins / 60);
-            if (diffHrs < 24) return diffHrs + 'h';
-            return d.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
+            const date = new Date(dateStr);
+            const minutes = Math.floor((new Date() - date) / 60000);
+            if (minutes < 1) return "à l'instant";
+            if (minutes < 60) return minutes + ' min';
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return hours + 'h';
+            return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' });
         }
     }));
 });

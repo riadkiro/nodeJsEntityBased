@@ -98,6 +98,10 @@ html.sidebar-collapsed-boot .main-container .main-content:where([dir="rtl"], [di
 }
 
 /* Distraction-free workspaces keep the global icon rail without the wide menu. */
+body.focus-workspace-mode {
+  --focus-sidebar-width: 350px;
+}
+
 body.focus-workspace-mode [data-island="ai-assistant"] {
   display: none !important;
 }

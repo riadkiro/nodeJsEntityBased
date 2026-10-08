@@ -49,7 +49,7 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         rootHeight: 814,
         bodyHeight: 812,
         sidebarHeight: 812,
-        sidebarWidth: 280,
+        sidebarWidth: 350,
         overflow: 'hidden'
     });
 });

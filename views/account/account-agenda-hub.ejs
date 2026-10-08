@@ -3,18 +3,11 @@
 
 <style>
 /* ═══ Agenda Hub — Full-Height App Layout ═══ */
-.ah-page { display:flex; flex-direction:column; height:calc(100vh - 70px); padding:0; overflow:hidden; }
-.ah-topbar {
-    display:flex; align-items:center; gap:12px; padding:12px 24px; flex-shrink:0;
-    border-bottom:1px solid #e8ecf1;
+.ah-page {
+    display:flex; flex-direction:column; width:100%; height:calc(100vh - 86px); min-height:540px;
+    padding:0; overflow:hidden; box-sizing:border-box; border:1px solid #dbe2ea;
+    border-radius:14px; background:#fff;
 }
-.ah-topbar-left { display:flex; align-items:center; gap:10px; }
-.ah-breadcrumb { display:flex; align-items:center; gap:6px; font-size:13px; }
-.ah-breadcrumb a { color:#888da8; text-decoration:none; transition:color .2s; }
-.ah-breadcrumb a:hover { color:#14b8a6; }
-.ah-breadcrumb .sep { color:#d1d5db; }
-.ah-breadcrumb .current { font-weight:700; color:#0e1726; }
-.ah-topbar-right { margin-left:auto; display:flex; align-items:center; gap:8px; }
 .ah-view-pills {
     display:flex; gap:2px; padding:3px; background:#f1f5f9; border-radius:10px; border:1px solid #e2e8f0;
 }
@@ -36,14 +29,17 @@
 /* ── Sidebar ── */
 .ah-sidebar {
     width:280px; flex-shrink:0; border-right:1px solid #e8ecf1;
-    display:flex; flex-direction:column; background:#fafbfc; overflow:hidden;
+    display:flex; flex-direction:column; background:#fafbfc; overflow:hidden; box-sizing:border-box;
 }
 .ah-sidebar-header {
     padding:14px 16px; border-bottom:1px solid #e8ecf1;
     font-size:12px; font-weight:700; color:#0e1726;
-    text-transform:uppercase; letter-spacing:.04em;
     display:flex; align-items:center; justify-content:space-between;
 }
+.ah-sidebar-title { display:flex; align-items:center; gap:7px; min-width:0; font-size:14px; font-weight:800; }
+.ah-sidebar-header .ah-count-badge { min-width:20px; height:20px; padding:0 5px; font-size:10px; }
+.ah-sidebar-header .ah-view-pills { flex-shrink:0; }
+.ah-sidebar-header .ah-vpill { padding:5px 8px; font-size:11px; }
 .ah-sidebar-search {
     margin:10px 12px; padding:7px 10px; border:1px solid #e2e8f0;
     border-radius:8px; font-size:12px; background:#fff; color:#0e1726;
@@ -239,8 +235,7 @@
 @keyframes ahSpin { to { transform:rotate(360deg); } }
 
 /* ═══ Dark Mode ═══ */
-.dark .ah-topbar { border-color:#253b5c; }
-.dark .ah-breadcrumb .current { color:#e0e6ed; }
+.dark .ah-page { background:#0e1726; border-color:#253b5c; }
 .dark .ah-view-pills { background:#1b2e4b; border-color:#253b5c; }
 .dark .ah-vpill { color:#888da8; }
 .dark .ah-vpill:hover { color:#e0e6ed; background:rgba(255,255,255,.04); }
@@ -273,12 +268,9 @@
 .dark .ah-list-table tr:hover { background:#1b2e4b; }
 .dark .ah-empty h3 { color:#e0e6ed; }
 @media(max-width:640px){
-    .ah-page { height:auto; min-height:calc(100vh - 70px); overflow:visible; }
-    .ah-topbar { align-items:flex-start; flex-direction:column; padding:12px 16px; }
-    .ah-topbar-left,
-    .ah-topbar-right { width:100%; min-width:0; }
-    .ah-topbar-right { margin-left:0; overflow-x:auto; padding-bottom:2px; }
-    .ah-view-pills { flex-wrap:nowrap; min-width:max-content; }
+    .ah-page { height:auto; min-height:calc(100vh - 78px); overflow:visible; }
+    .ah-sidebar-header { padding:12px 14px; }
+    .ah-sidebar-header .ah-view-pills { flex-wrap:nowrap; min-width:max-content; }
     .ah-body { flex-direction:column; overflow:visible; }
     .ah-sidebar {
         width:100%;
@@ -313,40 +305,32 @@
 }
 </style>
 
-<div class="ah-page" x-data="agendaHub()" x-cloak>
-    <!-- Top bar -->
-    <div class="ah-topbar">
-        <div class="ah-topbar-left">
-            <div class="ah-breadcrumb">
-                <a href="<%= _apiBase %>/dashboard">
-                    <iconify-icon icon="solar:home-2-bold-duotone" width="16"></iconify-icon>
-                </a>
-                <span class="sep">/</span>
-                <span class="current">
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#14b8a6;vertical-align:-3px"></iconify-icon>
-                    Agenda
-                </span>
-            </div>
-            <span class="ah-count-badge" x-text="filteredEvents.length" x-show="!loading"></span>
-        </div>
-        <div class="ah-topbar-right">
-            <div class="ah-view-pills">
-                <button class="ah-vpill" :class="viewMode==='calendar' && 'active'" @click="setView('calendar')">
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon> Calendrier
-                </button>
-                <button class="ah-vpill" :class="viewMode==='list' && 'active'" @click="setView('list')">
-                    <iconify-icon icon="solar:list-bold" width="14"></iconify-icon> Liste
-                </button>
-            </div>
-        </div>
-    </div>
+<script>
+document.body.classList.add('focus-workspace-mode', 'agenda-focus-mode');
+window.addEventListener('pagehide', () => {
+    document.body.classList.remove('focus-workspace-mode', 'agenda-focus-mode');
+}, { once:true });
+</script>
 
+<div class="ah-page" x-data="agendaHub()" x-cloak>
     <!-- Body -->
     <div class="ah-body">
         <!-- Sidebar -->
         <div class="ah-sidebar">
             <div class="ah-sidebar-header">
-                <span>Filtrer par enregistrement</span>
+                <span class="ah-sidebar-title">
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="17" style="color:#14b8a6"></iconify-icon>
+                    Agenda
+                    <span class="ah-count-badge" x-text="filteredEvents.length" x-show="!loading"></span>
+                </span>
+                <div class="ah-view-pills">
+                    <button class="ah-vpill" :class="viewMode==='calendar' && 'active'" @click="setView('calendar')" title="Calendrier">
+                        <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
+                    </button>
+                    <button class="ah-vpill" :class="viewMode==='list' && 'active'" @click="setView('list')" title="Liste">
+                        <iconify-icon icon="solar:list-bold" width="14"></iconify-icon>
+                    </button>
+                </div>
             </div>
             <input type="text" class="ah-sidebar-search" placeholder="Rechercher..."
                    x-model="search" @input="filterSearch()">

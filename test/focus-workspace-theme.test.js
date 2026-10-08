@@ -38,6 +38,9 @@ test('tasks, notes and agenda use the Flutter focus palette and button language'
             <button class="th-list-btn primary">Enregistrer</button>
             <button class="nh-inline-insert">Insérer</button>
             <button class="ah-modal-btn ah-modal-btn-primary">Modifier</button>
+            <div class="nh-sidebar"><div class="nh-sidebar-list"></div></div>
+            <div class="ah-sidebar"><div class="ah-sidebar-body"></div></div>
+            <div class="ah-calendar-container"><div class="fc"><h2 class="fc-toolbar-title">octobre 2026</h2><button class="fc-button fc-button-primary">Mois</button><button class="fc-button fc-button-primary fc-button-active">Jour</button></div></div>
         </body></html>`);
 
     const visual = await page.evaluate(() => {
@@ -51,6 +54,12 @@ test('tasks, notes and agenda use the Flutter focus palette and button language'
             taskButton: background('.th-list-btn.primary'),
             noteButton: background('.nh-inline-insert'),
             agendaButton: background('.ah-modal-btn-primary'),
+            noteSidebar: background('.nh-sidebar'),
+            agendaSidebar: background('.ah-sidebar'),
+            calendarButton: background('.ah-calendar-container .fc-button:not(.fc-button-active)'),
+            calendarButtonText: color('.ah-calendar-container .fc-button:not(.fc-button-active)'),
+            calendarActiveButton: background('.ah-calendar-container .fc-button-active'),
+            calendarTitleTransform: getComputedStyle(document.querySelector('.fc-toolbar-title')).textTransform,
             taskButtonText: color('.th-list-btn.primary'),
             noteButtonText: color('.nh-inline-insert'),
             agendaButtonText: color('.ah-modal-btn-primary')
@@ -65,6 +74,12 @@ test('tasks, notes and agenda use the Flutter focus palette and button language'
         taskButton: 'rgb(99, 78, 251)',
         noteButton: 'rgb(99, 78, 251)',
         agendaButton: 'rgb(99, 78, 251)',
+        noteSidebar: 'rgb(255, 255, 255)',
+        agendaSidebar: 'rgb(255, 255, 255)',
+        calendarButton: 'rgb(255, 255, 255)',
+        calendarButtonText: 'rgb(99, 78, 251)',
+        calendarActiveButton: 'rgb(99, 78, 251)',
+        calendarTitleTransform: 'capitalize',
         taskButtonText: 'rgb(255, 255, 255)',
         noteButtonText: 'rgb(255, 255, 255)',
         agendaButtonText: 'rgb(255, 255, 255)'

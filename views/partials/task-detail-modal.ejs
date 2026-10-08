@@ -235,28 +235,50 @@
 .tdm-chat-send:hover{background:#523BEF}
 .tdm-props{background:var(--tdm-surface);padding:22px 18px;display:flex;flex-direction:column}
 .tdm-quick-title{order:-2;margin:0 0 9px;color:var(--tdm-muted);font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.45px}
-.tdm-quick-actions{order:-1;display:grid;grid-template-columns:minmax(0,1fr);gap:7px;margin-bottom:13px;padding-bottom:14px;border-bottom:1px solid var(--tdm-border)}
+.tdm-quick-actions{order:-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-bottom:13px;padding-bottom:14px;border-bottom:1px solid var(--tdm-border)}
 .tdm-quick-action-wrap{position:relative;min-width:0}
-.tdm-quick-action-wrap.is-wide{grid-column:1/-1}
-.tdm-quick-action{width:100%;min-height:42px;border:1px solid var(--tdm-border);border-radius:14px;background:var(--tdm-surface);color:var(--tdm-text);padding:7px 9px;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:11.5px;font-weight:750;line-height:1.2;text-align:left;cursor:pointer;transition:transform .14s,box-shadow .14s,border-color .14s,background .14s,color .14s}
-.tdm-quick-action:hover{transform:translateY(-1px);box-shadow:0 7px 18px rgba(17,24,39,.07)}
-.tdm-quick-action:disabled{opacity:.55;cursor:wait;transform:none;box-shadow:none}
-.tdm-quick-action-icon{width:27px;height:27px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
+.tdm-quick-action{width:100%;height:100%;min-height:50px;border:1px solid var(--tdm-border);border-radius:12px;background:var(--tdm-surface);color:var(--tdm-text);padding:6px 7px;display:flex;align-items:center;gap:6px;font-family:inherit;font-size:11px;font-weight:750;line-height:1.15;text-align:left;cursor:pointer;transition:border-color .14s,background .14s,color .14s}
+.tdm-quick-action:hover{background:var(--tdm-page)}
+.tdm-quick-action:disabled{opacity:.55;cursor:wait}
+.tdm-quick-action-icon{width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex:0 0 auto}
 .tdm-quick-action-copy{min-width:0;display:flex;flex-direction:column;gap:1px}
-.tdm-quick-action-label{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tdm-quick-action-note{color:var(--tdm-muted);font-size:9.5px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tdm-quick-action-label{white-space:normal;overflow-wrap:anywhere}
+.tdm-quick-action-note{color:var(--tdm-muted);font-size:9px;font-weight:650;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tdm-quick-action.is-today{border-color:color-mix(in srgb,var(--tdm-success) 28%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-success) 7%,var(--tdm-surface))}
 .tdm-quick-action.is-today .tdm-quick-action-icon{background:color-mix(in srgb,var(--tdm-success) 14%,var(--tdm-surface));color:var(--tdm-success)}
-.tdm-quick-action.is-today.active{border-color:var(--tdm-success);box-shadow:0 0 0 3px color-mix(in srgb,var(--tdm-success) 11%,transparent)}
-.tdm-quick-action.is-tomorrow{border-color:color-mix(in srgb,var(--tdm-brand) 24%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-brand) 6%,var(--tdm-surface))}
-.tdm-quick-action.is-tomorrow .tdm-quick-action-icon{background:var(--tdm-brand-soft);color:var(--tdm-brand)}
-.tdm-quick-action.is-tomorrow.active{border-color:var(--tdm-brand);box-shadow:0 0 0 3px color-mix(in srgb,var(--tdm-brand) 11%,transparent)}
-.tdm-quick-action.is-assign{min-height:44px;border-color:color-mix(in srgb,var(--tdm-info) 24%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-info) 5%,var(--tdm-surface))}
+.tdm-quick-action.is-today.active{border-color:color-mix(in srgb,var(--tdm-success) 60%,var(--tdm-border))}
+.tdm-quick-action.is-today.is-remove{border-color:color-mix(in srgb,var(--tdm-danger) 30%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-danger) 6%,var(--tdm-surface))}
+.tdm-quick-action.is-today.is-remove .tdm-quick-action-icon{background:color-mix(in srgb,var(--tdm-danger) 12%,var(--tdm-surface));color:var(--tdm-danger)}
+.tdm-quick-action.is-schedule{border-color:color-mix(in srgb,var(--tdm-brand) 24%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-brand) 6%,var(--tdm-surface))}
+.tdm-quick-action.is-schedule .tdm-quick-action-icon{background:var(--tdm-brand-soft);color:var(--tdm-brand)}
+.tdm-quick-action.is-schedule.active{border-color:color-mix(in srgb,var(--tdm-brand) 62%,var(--tdm-border))}
+.tdm-quick-action.is-assign{border-color:color-mix(in srgb,var(--tdm-info) 24%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-info) 5%,var(--tdm-surface))}
 .tdm-quick-action.is-assign .tdm-quick-action-icon{background:color-mix(in srgb,var(--tdm-info) 13%,var(--tdm-surface));color:var(--tdm-info)}
-.tdm-quick-action.is-assign.active{border-color:var(--tdm-info);box-shadow:0 0 0 3px color-mix(in srgb,var(--tdm-info) 10%,transparent)}
+.tdm-quick-action.is-assign.active{border-color:color-mix(in srgb,var(--tdm-info) 62%,var(--tdm-border))}
+.tdm-quick-action.is-reminder{border-color:color-mix(in srgb,var(--tdm-warning) 26%,var(--tdm-border));background:color-mix(in srgb,var(--tdm-warning) 6%,var(--tdm-surface))}
+.tdm-quick-action.is-reminder .tdm-quick-action-icon{background:color-mix(in srgb,var(--tdm-warning) 14%,var(--tdm-surface));color:var(--tdm-warning)}
+.tdm-quick-action.is-reminder.active{border-color:color-mix(in srgb,var(--tdm-warning) 64%,var(--tdm-border))}
 .tdm-quick-action-chevron{margin-left:auto;color:var(--tdm-muted);flex:0 0 auto}
-.tdm-quick-action-wrap .tdm-assign-popover{top:calc(100% + 7px);right:0;width:300px}
-
+.tdm-quick-action-wrap .tdm-assign-popover,.tdm-quick-popover{top:calc(100% + 7px);width:300px}
+.tdm-quick-action-wrap:nth-child(odd) .tdm-assign-popover,.tdm-quick-action-wrap:nth-child(odd) .tdm-quick-popover{left:0;right:auto}
+.tdm-quick-action-wrap:nth-child(even) .tdm-assign-popover,.tdm-quick-action-wrap:nth-child(even) .tdm-quick-popover{left:auto;right:0}
+.tdm-quick-popover{position:absolute;background:var(--tdm-surface);border:1px solid var(--tdm-border);border-radius:12px;box-shadow:0 14px 36px rgba(15,23,42,.13);padding:10px;z-index:74}
+.tdm-quick-popover-title{margin:0 0 8px;color:var(--tdm-text);font-size:12px;font-weight:800}
+.tdm-schedule-options{display:flex;flex-direction:column;gap:5px}
+.tdm-schedule-option{width:100%;min-height:38px;border:0;border-radius:9px;background:var(--tdm-page);color:var(--tdm-text);padding:6px 8px;display:flex;align-items:center;gap:8px;font-family:inherit;font-size:11.5px;font-weight:750;text-align:left;cursor:pointer}
+.tdm-schedule-option:hover{background:var(--tdm-brand-soft);color:var(--tdm-brand)}
+.tdm-schedule-option iconify-icon{color:var(--tdm-brand);flex:0 0 auto}
+.tdm-schedule-date{margin-top:6px;display:grid;grid-template-columns:minmax(0,1fr);gap:5px}
+.tdm-schedule-date label,.tdm-reminder-tool label{color:var(--tdm-text-soft);font-size:10px;font-weight:750}
+.tdm-schedule-date input,.tdm-reminder-tool input{width:100%;height:34px;border:1px solid var(--tdm-border);border-radius:9px;background:var(--tdm-page);color:var(--tdm-text);font-family:inherit;font-size:11.5px;font-weight:650;padding:0 8px;outline:0}
+.tdm-schedule-date input:focus,.tdm-reminder-tool input:focus{border-color:var(--tdm-brand)}
+.tdm-reminder-tool{display:grid;grid-template-columns:1fr 88px;gap:8px}
+.tdm-reminder-field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.tdm-reminder-actions{grid-column:1/-1;display:flex;align-items:center;gap:7px;margin-top:3px}
+.tdm-reminder-save,.tdm-reminder-delete{height:32px;border:0;border-radius:9px;padding:0 10px;font-family:inherit;font-size:11px;font-weight:800;cursor:pointer}
+.tdm-reminder-save{background:var(--tdm-brand);color:#fff;flex:1}
+.tdm-reminder-save:disabled{opacity:.5;cursor:wait}
+.tdm-reminder-delete{background:color-mix(in srgb,var(--tdm-danger) 8%,var(--tdm-surface));color:var(--tdm-danger)}
 .dark .tdm-backdrop{--tdm-brand:#A78BFA;--tdm-brand-soft:#241C3F;--tdm-success:#4ADE80;--tdm-warning:#FBBF24;--tdm-danger:#F87171;--tdm-info:#22D3EE;--tdm-page:#0B1120;--tdm-surface:#111827;--tdm-surface-alt:#182236;--tdm-border:#26354F;--tdm-muted:#94A3B8;--tdm-text:#EAF0FA;--tdm-text-soft:#BAC6D8}
 .dark .tdm-modal{background:var(--tdm-surface);color:var(--tdm-text);box-shadow:0 32px 90px rgba(0,0,0,.45)}
 .dark .tdm-head,.dark .tdm-main,.dark .tdm-props,.dark .tdm-conv,.dark .tdm-conv-head,.dark .tdm-msg-wrap,.dark .tdm-foot{border-color:var(--tdm-border)}
@@ -278,7 +300,8 @@
 	.dark .tdm-chat-toggle-switch{background:var(--tdm-border)}
 	.dark .tdm-close{background:#17233a;color:#8ea0bd}
 	.dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
-	.dark .tdm-quick-action{background:var(--tdm-surface-alt);border-color:var(--tdm-border);color:var(--tdm-text)}
+	.dark .tdm-quick-action{border-color:var(--tdm-border);color:var(--tdm-text)}
+	.dark .tdm-quick-popover,.dark .tdm-schedule-date input,.dark .tdm-reminder-tool input{background:var(--tdm-surface-alt);border-color:var(--tdm-border);color:var(--tdm-text)}
 
 @media(max-width:1040px){
     .tdm-modal{width:96vw;height:94vh}
@@ -293,7 +316,7 @@
     .tdm-prop{align-items:flex-start}
     .tdm-prop-value{justify-content:flex-start}
     .tdm-prop-datetime{justify-content:flex-start;flex-wrap:wrap}
-	    .tdm-option-popover,.tdm-assign-popover{right:auto;left:0;width:min(292px,calc(100vw - 32px))}
+	    .tdm-option-popover,.tdm-assign-popover,.tdm-quick-popover{right:auto;left:0;width:min(292px,calc(100vw - 32px))}
 }
 </style>
 
@@ -607,28 +630,49 @@
 	                            <div class="tdm-quick-actions">
 	                                <button type="button"
 	                                        class="tdm-quick-action is-today"
-	                                        :class="{ 'active': $store.taskModal.isScheduledForDay(0) }"
+	                                        :class="{ 'active': $store.taskModal.isScheduledForDay(0), 'is-remove': $store.taskModal.isScheduledForDay(0) }"
 	                                        :disabled="$store.taskModal.quickScheduleBusy"
-	                                        @click.stop="$store.taskModal.scheduleForDay(0)">
-	                                    <span class="tdm-quick-action-icon"><iconify-icon icon="solar:bolt-bold-duotone" width="16"></iconify-icon></span>
-	                                    <span class="tdm-quick-action-copy">
-	                                        <span class="tdm-quick-action-label">Faire aujourd’hui</span>
-	                                        <span class="tdm-quick-action-note">Ajouter au jour</span>
+	                                        @click.stop="$store.taskModal.toggleToday()">
+	                                    <span class="tdm-quick-action-icon">
+	                                        <iconify-icon :icon="$store.taskModal.isScheduledForDay(0) ? 'solar:minus-circle-bold-duotone' : 'solar:bolt-bold-duotone'" width="16"></iconify-icon>
 	                                    </span>
-	                                </button>
-	                                <button type="button"
-	                                        class="tdm-quick-action is-tomorrow"
-	                                        :class="{ 'active': $store.taskModal.isScheduledForDay(1) }"
-	                                        :disabled="$store.taskModal.quickScheduleBusy"
-	                                        @click.stop="$store.taskModal.scheduleForDay(1)">
-	                                    <span class="tdm-quick-action-icon"><iconify-icon icon="solar:clock-circle-bold-duotone" width="16"></iconify-icon></span>
 	                                    <span class="tdm-quick-action-copy">
-	                                        <span class="tdm-quick-action-label">Reporter à demain</span>
-	                                        <span class="tdm-quick-action-note">Changer la date</span>
+	                                        <span class="tdm-quick-action-label" x-text="$store.taskModal.isScheduledForDay(0) ? 'Retirer d’aujourd’hui' : 'Faire aujourd’hui'"></span>
+	                                        <span class="tdm-quick-action-note" x-text="$store.taskModal.isScheduledForDay(0) ? $store.taskModal.todayRetentionLabel() : 'Ajouter aux tâches du jour'"></span>
 	                                    </span>
 	                                </button>
 
-	                                <div class="tdm-quick-action-wrap is-wide" @click.stop>
+	                                <div class="tdm-quick-action-wrap" @click.stop>
+	                                    <button type="button"
+	                                            class="tdm-quick-action is-schedule"
+	                                            :class="{ 'active': $store.taskModal.scheduleMenu }"
+	                                            :disabled="$store.taskModal.quickScheduleBusy"
+	                                            @click="$store.taskModal.toggleScheduleMenu()">
+	                                        <span class="tdm-quick-action-icon"><iconify-icon icon="solar:clock-circle-bold-duotone" width="16"></iconify-icon></span>
+	                                        <span class="tdm-quick-action-copy">
+	                                            <span class="tdm-quick-action-label">Reporter</span>
+	                                            <span class="tdm-quick-action-note">Demain ou autre date</span>
+	                                        </span>
+	                                        <iconify-icon class="tdm-quick-action-chevron" icon="solar:alt-arrow-down-linear" width="14"></iconify-icon>
+	                                    </button>
+	                                    <div class="tdm-quick-popover" x-show="$store.taskModal.scheduleMenu" x-transition>
+	                                        <div class="tdm-quick-popover-title">Reporter la tâche</div>
+	                                        <div class="tdm-schedule-options">
+	                                            <button type="button" class="tdm-schedule-option" data-schedule-tomorrow @click="$store.taskModal.scheduleForDay(1)">
+	                                                <iconify-icon icon="solar:calendar-date-bold-duotone" width="16"></iconify-icon>
+	                                                Reporter à demain
+	                                            </button>
+	                                        </div>
+	                                        <div class="tdm-schedule-date">
+	                                            <label for="tdm-schedule-custom-date">Choisir une date</label>
+	                                            <input id="tdm-schedule-custom-date" type="date"
+	                                                   :min="$store.taskModal.localDayKey(0)"
+	                                                   @change="$store.taskModal.scheduleForDate($event.target.value); $event.target.value = ''">
+	                                        </div>
+	                                    </div>
+	                                </div>
+
+	                                <div class="tdm-quick-action-wrap" @click.stop>
 	                                    <button type="button"
 	                                            class="tdm-quick-action is-assign"
 	                                            :class="{ 'active': $store.taskModal.assignMenu }"
@@ -683,6 +727,48 @@
 	                                        </template>
 	                                    </div>
 	                                </div>
+
+	                                <div class="tdm-quick-action-wrap" @click.stop>
+	                                    <button type="button"
+	                                            class="tdm-quick-action is-reminder"
+	                                            :class="{ 'active': $store.taskModal.reminderMenu || !!$store.taskModal.task.reminder }"
+	                                            @click="$store.taskModal.toggleReminderMenu()">
+	                                        <span class="tdm-quick-action-icon"><iconify-icon icon="solar:bell-bing-bold-duotone" width="16"></iconify-icon></span>
+	                                        <span class="tdm-quick-action-copy">
+	                                            <span class="tdm-quick-action-label">Rappel</span>
+	                                            <span class="tdm-quick-action-note" x-text="$store.taskModal.reminderActionLabel()"></span>
+	                                        </span>
+	                                        <iconify-icon class="tdm-quick-action-chevron" icon="solar:alt-arrow-down-linear" width="14"></iconify-icon>
+	                                    </button>
+	                                    <div class="tdm-quick-popover" x-show="$store.taskModal.reminderMenu" x-transition>
+	                                        <div class="tdm-quick-popover-title">Créer un rappel</div>
+	                                        <div class="tdm-reminder-tool">
+	                                            <label class="tdm-reminder-field">
+	                                                <span>Date</span>
+	                                                <input type="date"
+	                                                       :min="$store.taskModal.localDayKey(0)"
+	                                                       x-model="$store.taskModal.reminderDraft.date"
+	                                                       @input="$store.taskModal.setReminderDraftPart('date', $event.target.value || '')">
+	                                            </label>
+	                                            <label class="tdm-reminder-field">
+	                                                <span>Heure</span>
+	                                                <input type="time"
+	                                                       x-model="$store.taskModal.reminderDraft.time"
+	                                                       :disabled="!$store.taskModal.reminderDateVal()"
+	                                                       @input="$store.taskModal.setReminderDraftPart('time', $event.target.value || '')">
+	                                            </label>
+	                                            <div class="tdm-reminder-actions">
+	                                                <button type="button" class="tdm-reminder-save"
+	                                                        :disabled="!$store.taskModal.canSaveReminderDraft() || $store.taskModal.reminderSaving"
+	                                                        @click="$store.taskModal.saveReminderDraftFromMenu()">Enregistrer</button>
+	                                                <button type="button" class="tdm-reminder-delete"
+	                                                        x-show="$store.taskModal.task.reminder"
+	                                                        :disabled="$store.taskModal.reminderSaving"
+	                                                        @click="$store.taskModal.clearReminderFromMenu()">Supprimer</button>
+	                                            </div>
+	                                        </div>
+	                                    </div>
+	                                </div>
 	                            </div>
 
                             <div class="tdm-prop">
@@ -729,29 +815,6 @@
                                                :value="$store.taskModal.toTimeVal($store.taskModal.task.completedAt)"
                                                :disabled="!$store.taskModal.toDateVal($store.taskModal.task.completedAt)"
                                                @change="$store.taskModal.updateCompletedAtPart('time', $event.target.value || '')">
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="tdm-prop">
-                                <span class="tdm-prop-icon tdm-reminder-icon"><iconify-icon icon="solar:bell-bing-bold-duotone" width="15"></iconify-icon></span>
-                                <span class="tdm-prop-label">Rappel</span>
-                                <div class="tdm-prop-value">
-                                    <span class="tdm-prop-datetime">
-                                        <input type="date" class="tdm-prop-date"
-                                               x-model="$store.taskModal.reminderDraft.date"
-                                               @input="$store.taskModal.setReminderDraftPart('date', $event.target.value || '')"
-                                               @change="$store.taskModal.updateReminderPart('date', $event.target.value || '')">
-                                        <input type="time" class="tdm-prop-time"
-                                               x-model="$store.taskModal.reminderDraft.time"
-                                               :disabled="!$store.taskModal.reminderDateVal()"
-                                               @input="$store.taskModal.setReminderDraftPart('time', $event.target.value || '')"
-                                               @change="$store.taskModal.updateReminderPart('time', $event.target.value || '')">
-                                        <button type="button" class="tdm-reminder-clear" title="Supprimer le rappel"
-                                                x-show="$store.taskModal.task.reminder"
-                                                @click.stop="$store.taskModal.clearReminder()">
-                                            <iconify-icon icon="solar:trash-bin-minimalistic-linear" width="14"></iconify-icon>
-                                        </button>
                                     </span>
                                 </div>
                             </div>
@@ -923,6 +986,8 @@ document.addEventListener('alpine:init', () => {
 	        teamInvitations: [],
 	        teamLoading: false,
 		        assignMenu: false,
+		        scheduleMenu: false,
+		        reminderMenu: false,
 			        inviteEmail: '',
 			        inviteBusy: false,
 			        chatFiles: [],
@@ -1304,13 +1369,39 @@ document.addEventListener('alpine:init', () => {
 	            this.optionMenu = null;
 	            this.optionEditor = null;
 	            this.assignMenu = false;
+	            this.scheduleMenu = false;
+	            this.reminderMenu = false;
 	        },
 
 	        toggleAssignMenu() {
-	            this.optionMenu = null;
-	            this.optionEditor = null;
-	            this.assignMenu = !this.assignMenu;
+	            const shouldOpen = !this.assignMenu;
+	            this.closeMenus();
+	            this.assignMenu = shouldOpen;
 	            if (this.assignMenu && !this.teamLoading && this.teamMembers.length === 0) this.loadTeamMembers();
+	        },
+
+	        toggleScheduleMenu() {
+	            const shouldOpen = !this.scheduleMenu;
+	            this.closeMenus();
+	            this.scheduleMenu = shouldOpen;
+	        },
+
+	        toggleReminderMenu() {
+	            const shouldOpen = !this.reminderMenu;
+	            this.closeMenus();
+	            this.reminderMenu = shouldOpen;
+	            if (!shouldOpen) return;
+	            this.syncReminderDraft({ force: true });
+	            if (!this.reminderDraft.date) {
+	                const nextHour = new Date();
+	                nextHour.setMinutes(0, 0, 0);
+	                nextHour.setHours(nextHour.getHours() + 1);
+	                this.reminderDraft = {
+	                    date: this.reminderDateFromValue(nextHour),
+	                    time: this.reminderTimeFromValue(nextHour),
+	                    dirty: false
+	                };
+	            }
 	        },
 
 	        async loadTeamMembers() {
@@ -1783,9 +1874,55 @@ document.addEventListener('alpine:init', () => {
         isScheduledForDay(dayOffset = 0) {
             if (!this.task) return false;
             const expected = this.localDayKey(dayOffset);
-            const actual = this.toDateVal(this.task.startDate || this.task.dueDate);
-            if (dayOffset === 0) return this.task.isDayPriority === true || actual === expected;
-            return this.task.isDayPriority !== true && actual === expected;
+            const startKey = this.toDateVal(this.task.startDate);
+            const dueKey = this.toDateVal(this.task.dueDate);
+            if (dayOffset === 0) {
+                if (this.task.isDayPriority === true && (!startKey || startKey <= expected) && (!dueKey || dueKey >= expected)) return true;
+                if (startKey && startKey <= expected && (!dueKey || dueKey >= expected)) return true;
+                return !startKey && dueKey === expected;
+            }
+            if (startKey === expected || dueKey === expected) return true;
+            return !!(startKey && dueKey && startKey <= expected && dueKey >= expected);
+        },
+
+        todayRetentionLabel() {
+            const listLabel = String(this.task?.listLabel || '').trim() || 'Liste des tâches';
+            return `Reste dans ${listLabel}`;
+        },
+
+        async toggleToday() {
+            if (this.isScheduledForDay(0)) return this.removeFromToday();
+            return this.scheduleForDay(0);
+        },
+
+        async removeFromToday() {
+            if (!this.task?._id || this.quickScheduleBusy) return false;
+            const today = this.localDayKey(0);
+            const tomorrow = this.localDayKey(1);
+            const startKey = this.toDateVal(this.task.startDate);
+            const dueKey = this.toDateVal(this.task.dueDate);
+            const previous = {
+                startDate: this.task.startDate || null,
+                dueDate: this.task.dueDate || null,
+                isDayPriority: !!this.task.isDayPriority
+            };
+            const updates = { isDayPriority: false };
+
+            if (startKey && startKey <= today) {
+                updates.startDate = dueKey && dueKey > today ? tomorrow : null;
+            }
+            if (dueKey === today) updates.dueDate = null;
+
+            Object.assign(this.task, updates);
+            this.quickScheduleBusy = true;
+            const saved = await this.updateFields(updates, { silent: true });
+            this.quickScheduleBusy = false;
+            if (!saved) {
+                Object.assign(this.task, previous);
+                return false;
+            }
+            if (window.showMessage) window.showMessage(`Tâche retirée d’aujourd’hui. ${this.todayRetentionLabel()}.`, 'success');
+            return true;
         },
 
         async scheduleForDay(dayOffset = 0) {
@@ -1807,9 +1944,34 @@ document.addEventListener('alpine:init', () => {
                 Object.assign(this.task, previous);
                 return false;
             }
+            this.scheduleMenu = false;
             if (window.showMessage) {
                 window.showMessage(offset === 0 ? 'Tâche prévue aujourd’hui' : 'Tâche reportée à demain', 'success');
             }
+            return true;
+        },
+
+        async scheduleForDate(dateValue) {
+            const date = String(dateValue || '').trim();
+            if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !this.task?._id || this.quickScheduleBusy) return false;
+            const previous = {
+                startDate: this.task.startDate || null,
+                isDayPriority: !!this.task.isDayPriority
+            };
+            const updates = {
+                startDate: date,
+                isDayPriority: date === this.localDayKey(0)
+            };
+            Object.assign(this.task, updates);
+            this.quickScheduleBusy = true;
+            const saved = await this.updateFields(updates, { silent: true });
+            this.quickScheduleBusy = false;
+            if (!saved) {
+                Object.assign(this.task, previous);
+                return false;
+            }
+            this.scheduleMenu = false;
+            if (window.showMessage) window.showMessage(`Tâche reportée au ${this.formatDate(date)}`, 'success');
             return true;
         },
 
@@ -2137,15 +2299,27 @@ document.addEventListener('alpine:init', () => {
             return new Date(year, month - 1, day, hour, minute, 0, 0).toISOString();
         },
 
-        updateTaskDatePart(field, part, value) {
-            if (!this.task || !['startDate', 'dueDate'].includes(field)) return;
+        async updateTaskDatePart(field, part, value) {
+            if (!this.task || !['startDate', 'dueDate'].includes(field)) return false;
             const currentDate = this.toDateVal(this.task[field]);
             const currentTime = this.toTimeVal(this.task[field]);
             const nextDate = part === 'date' ? String(value || '') : currentDate;
             const nextTime = part === 'time' ? String(value || '') : currentTime;
             const nextValue = this.composeDateTime(nextDate, nextTime);
-            this.task[field] = nextValue;
-            this.updateField(field, nextValue);
+            const otherField = field === 'startDate' ? 'dueDate' : 'startDate';
+            const otherDate = this.toDateVal(this.task[otherField]);
+            const previous = {
+                [field]: this.task[field] || null,
+                isDayPriority: !!this.task.isDayPriority
+            };
+            const updates = {
+                [field]: nextValue,
+                isDayPriority: nextDate === this.localDayKey(0) || otherDate === this.localDayKey(0)
+            };
+            Object.assign(this.task, updates);
+            const saved = await this.updateFields(updates);
+            if (!saved) Object.assign(this.task, previous);
+            return saved;
         },
 
         updateCompletedAtPart(part, value) {
@@ -2176,6 +2350,38 @@ document.addEventListener('alpine:init', () => {
 
         reminderTimeVal() {
             return this.reminderDraft.date ? (this.reminderDraft.time || '') : '';
+        },
+
+        reminderActionLabel() {
+            const scheduledAt = this.task?.reminder?.scheduledAt;
+            if (!scheduledAt) return 'Créer un rappel';
+            const date = new Date(scheduledAt);
+            if (Number.isNaN(date.getTime())) return 'Créer un rappel';
+            return new Intl.DateTimeFormat('fr-FR', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).format(date);
+        },
+
+        canSaveReminderDraft() {
+            return !!this.composeReminderDateTime(this.reminderDraft.date, this.reminderDraft.time);
+        },
+
+        async saveReminderDraftFromMenu() {
+            const scheduledAt = this.composeReminderDateTime(this.reminderDraft.date, this.reminderDraft.time);
+            if (!scheduledAt || this.reminderSaving) return false;
+            const saved = await this.setReminder(scheduledAt);
+            if (saved) this.reminderMenu = false;
+            return saved;
+        },
+
+        async clearReminderFromMenu() {
+            if (this.reminderSaving) return false;
+            const cleared = await this.clearReminder();
+            if (cleared) this.reminderMenu = false;
+            return cleared;
         },
 
         reminderTimeZone() {

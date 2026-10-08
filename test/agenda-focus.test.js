@@ -14,6 +14,9 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /class="ah-sidebar-title"/);
     assert.match(view, /title="Calendrier"/);
     assert.match(view, /title="Liste"/);
+    assert.match(view, /syncCalendarToolbarButtons\(\)/);
+    assert.match(view, /datesSet:\s*\(\)\s*=>\s*self\.syncCalendarToolbarButtons\(\)/);
+    assert.match(view, /style\.setProperty\('-webkit-text-fill-color',\s*color,\s*'important'\)/);
 
     const styles = [...view.matchAll(/<style>([\s\S]*?)<\/style>/g)]
         .map(match => match[1])

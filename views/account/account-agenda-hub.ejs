@@ -79,8 +79,7 @@
 /* ── Main ── */
 .ah-main { flex:1; min-width:0; display:flex; flex-direction:column; overflow:hidden; }
 .ah-calendar-container {
-    /* FullCalendar reuses this token for active buttons: keep its fallback legible. */
-    --fc-button-text-color:#fff;
+    --fc-button-text-color:var(--focus-brand,#634efb);
     --fc-button-bg-color:var(--focus-surface,#fff);
     --fc-button-border-color:var(--focus-border,#e5e7eb);
     --fc-button-hover-bg-color:var(--focus-brand-soft,#ebe8ff);
@@ -762,6 +761,23 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
+        syncCalendarToolbarButtons() {
+            const el = this.$refs.calendarEl;
+            if (!el) return;
+            window.requestAnimationFrame(() => {
+                const styles = window.getComputedStyle(el);
+                const brand = styles.getPropertyValue('--focus-brand').trim() || '#634efb';
+                const muted = styles.getPropertyValue('--focus-muted').trim() || '#9ca3af';
+                el.querySelectorAll('.fc-button').forEach(button => {
+                    const color = button.classList.contains('fc-button-active')
+                        ? '#ffffff'
+                        : (button.disabled ? muted : brand);
+                    button.style.setProperty('color', color, 'important');
+                    button.style.setProperty('-webkit-text-fill-color', color, 'important');
+                });
+            });
+        },
+
         initCalendar() {
             if (this.calendar) { this.calendar.destroy(); this.calendar = null; }
             const el = this.$refs.calendarEl;
@@ -791,6 +807,7 @@ document.addEventListener('alpine:init', () => {
                 expandRows: true,
                 eventTimeFormat: { hour:'2-digit', minute:'2-digit', meridiem:false, hour12:false },
                 events: this.toCalendarEvents(this.filteredEvents),
+                datesSet: () => self.syncCalendarToolbarButtons(),
                 eventClick: (info) => {
                     const ev = info.event.extendedProps._ev;
                     self.showDetail(ev);
@@ -858,6 +875,7 @@ document.addEventListener('alpine:init', () => {
                 }
             });
             this.calendar.render();
+            this.syncCalendarToolbarButtons();
         }
     }));
 });

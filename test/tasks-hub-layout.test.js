@@ -14,6 +14,7 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
     await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
 
     const view = fs.readFileSync(viewPath, 'utf8');
+	assert.match(view, /focusTarget:\s*'\.th-wrap \.th-simple-shell'/);
     const styles = [...view.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(match => match[1]).join('\n');
     await page.setContent(`
         <style>${styles}</style>

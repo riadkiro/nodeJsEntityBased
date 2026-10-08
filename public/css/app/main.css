@@ -100,6 +100,55 @@ html.sidebar-collapsed-boot .main-container .main-content:where([dir="rtl"], [di
 /* Distraction-free workspaces keep the global icon rail without the wide menu. */
 body.focus-workspace-mode {
   --focus-sidebar-width: 350px;
+  /* Shared focus-workspace palette, mirrored from the Flutter DexTheme. */
+  --primary: #634efb;
+  --primary-color: #634efb;
+  --primary-rgb: 99 78 251;
+  --rw-accent: #634efb;
+  --focus-brand: #634efb;
+  --focus-brand-hover: #5742e8;
+  --focus-brand-soft: #ebe8ff;
+  --focus-brand-ring: rgba(99, 78, 251, 0.12);
+  --focus-page: #fcfcfd;
+  --focus-surface: #ffffff;
+  --focus-surface-alt: #f1f5f9;
+  --focus-border: #e5e7eb;
+  --focus-border-soft: #eef1f6;
+  --focus-text: #111827;
+  --focus-text-soft: #6b7280;
+  --focus-muted: #9ca3af;
+  --focus-success: #22c55e;
+  --focus-warning: #f59e0b;
+  --focus-danger: #ef4444;
+  --focus-info: #3b82f6;
+  --focus-radius: 14px;
+  --focus-control-radius: 10px;
+  --focus-shadow-soft: 0 8px 24px rgba(17, 24, 39, 0.05);
+}
+
+.dark body.focus-workspace-mode,
+[data-theme="dark"] body.focus-workspace-mode {
+  --primary: #a78bfa;
+  --primary-color: #a78bfa;
+  --primary-rgb: 167 139 250;
+  --rw-accent: #a78bfa;
+  --focus-brand: #a78bfa;
+  --focus-brand-hover: #c4b5fd;
+  --focus-brand-soft: #241c3f;
+  --focus-brand-ring: rgba(167, 139, 250, 0.16);
+  --focus-page: #0b1120;
+  --focus-surface: #111827;
+  --focus-surface-alt: #182236;
+  --focus-border: #26354f;
+  --focus-border-soft: #1f2d44;
+  --focus-text: #eaf0fa;
+  --focus-text-soft: #bac6d8;
+  --focus-muted: #94a3b8;
+  --focus-success: #4ade80;
+  --focus-warning: #fbbf24;
+  --focus-danger: #f87171;
+  --focus-info: #22d3ee;
+  --focus-shadow-soft: 0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 body.focus-workspace-mode [data-island="ai-assistant"] {

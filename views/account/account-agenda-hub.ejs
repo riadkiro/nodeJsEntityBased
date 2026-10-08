@@ -5,11 +5,11 @@
 /* ═══ Agenda Hub — Full-Height App Layout ═══ */
 .ah-page {
     display:flex; flex-direction:column; width:100%; height:calc(100vh - 86px); min-height:540px;
-    padding:0; overflow:hidden; box-sizing:border-box; border:1px solid #dbe2ea;
-    border-radius:14px; background:#fff;
+    padding:0; overflow:hidden; box-sizing:border-box; border:1px solid var(--focus-border,#e5e7eb);
+    border-radius:var(--focus-radius,14px); background:var(--focus-surface,#fff); box-shadow:var(--focus-shadow-soft);
 }
 .ah-view-pills {
-    display:flex; gap:2px; padding:3px; background:#f1f5f9; border-radius:10px; border:1px solid #e2e8f0;
+    display:flex; gap:2px; padding:3px; background:var(--focus-surface-alt,#f1f5f9); border-radius:10px; border:1px solid var(--focus-border,#e5e7eb);
 }
 .ah-vpill {
     display:flex; align-items:center; gap:5px; padding:6px 12px; border:none; border-radius:8px;
@@ -17,43 +17,44 @@
     transition:all .2s; font-family:'Nunito',sans-serif; white-space:nowrap;
 }
 .ah-vpill:hover { color:#374151; background:rgba(0,0,0,.04); }
-.ah-vpill.active { background:#fff; color:#14b8a6; box-shadow:0 1px 3px rgba(0,0,0,.08); }
+.ah-vpill.active { background:var(--focus-surface,#fff); color:var(--focus-brand,#634efb); box-shadow:0 1px 3px rgba(17,24,39,.08); }
 .ah-count-badge {
     display:inline-flex; align-items:center; justify-content:center; min-width:22px; height:22px;
     padding:0 6px; border-radius:11px; font-size:11px; font-weight:700;
-    background:rgba(20,184,166,.1); color:#14b8a6;
+    background:var(--focus-brand-soft,#ebe8ff); color:var(--focus-brand,#634efb);
 }
 
 .ah-body { display:flex; flex:1; min-height:0; overflow:hidden; }
 
 /* ── Sidebar ── */
 .ah-sidebar {
-    width:var(--focus-sidebar-width,350px); flex-shrink:0; border-right:1px solid #e8ecf1;
-    display:flex; flex-direction:column; background:#fafbfc; overflow:hidden; box-sizing:border-box;
+    width:var(--focus-sidebar-width,350px); flex-shrink:0; border-right:1px solid var(--focus-border,#e5e7eb);
+    display:flex; flex-direction:column; background:var(--focus-page,#fcfcfd); overflow:hidden; box-sizing:border-box;
 }
 .ah-sidebar-header {
-    padding:14px 16px; border-bottom:1px solid #e8ecf1;
-    font-size:12px; font-weight:700; color:#0e1726;
+    min-height:64px; padding:14px 16px; border-bottom:1px solid var(--focus-border,#e5e7eb); box-sizing:border-box;
+    font-size:12px; font-weight:700; color:var(--focus-text,#111827); background:var(--focus-surface,#fff);
     display:flex; align-items:center; justify-content:space-between;
 }
 .ah-sidebar-title { display:flex; align-items:center; gap:7px; min-width:0; font-size:14px; font-weight:800; }
+.ah-sidebar-title-icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; border-radius:10px; color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff); }
 .ah-sidebar-header .ah-count-badge { min-width:20px; height:20px; padding:0 5px; font-size:10px; }
 .ah-sidebar-header .ah-view-pills { flex-shrink:0; }
 .ah-sidebar-header .ah-vpill { padding:5px 8px; font-size:11px; }
 .ah-sidebar-search {
-    margin:10px 12px; padding:7px 10px; border:1px solid #e2e8f0;
-    border-radius:8px; font-size:12px; background:#fff; color:#0e1726;
+    margin:10px 12px; padding:7px 10px; border:1px solid var(--focus-border,#e5e7eb);
+    border-radius:var(--focus-control-radius,10px); font-size:12px; background:var(--focus-surface,#fff); color:var(--focus-text,#111827);
     outline:none; font-family:inherit; width:calc(100% - 24px);
 }
-.ah-sidebar-search:focus { border-color:#14b8a6; }
+.ah-sidebar-search:focus { border-color:var(--focus-brand,#634efb); box-shadow:0 0 0 3px var(--focus-brand-ring); }
 .ah-sidebar-body { flex:1; overflow-y:auto; padding:4px 0; }
 .ah-sidebar-all {
     display:flex; align-items:center; gap:8px; padding:8px 16px;
-    font-size:12px; font-weight:600; color:#14b8a6; cursor:pointer;
-    transition:background .15s; border-bottom:1px solid #f1f5f9;
+    font-size:12px; font-weight:700; color:var(--focus-brand,#634efb); cursor:pointer;
+    transition:background .15s; border-bottom:1px solid var(--focus-border-soft,#eef1f6);
 }
-.ah-sidebar-all:hover { background:#f0fdfa; }
-.ah-sidebar-all.active { background:#f0fdfa; font-weight:700; }
+.ah-sidebar-all:hover { background:color-mix(in srgb,var(--focus-brand-soft,#ebe8ff) 68%,#fff); }
+.ah-sidebar-all.active { background:var(--focus-brand-soft,#ebe8ff); box-shadow:inset 4px 0 0 var(--focus-brand,#634efb); font-weight:800; }
 .ah-entity-group { border-bottom:1px solid #f1f5f9; }
 .ah-entity-header {
     display:flex; align-items:center; gap:8px; padding:8px 16px; cursor:pointer;
@@ -70,7 +71,7 @@
     font-size:12px; color:#6b7280; cursor:pointer; transition:all .15s;
 }
 .ah-record-item:hover { background:#f8fafc; color:#0e1726; }
-.ah-record-item.active { background:#f0fdfa; color:#14b8a6; font-weight:600; }
+.ah-record-item.active { background:var(--focus-brand-soft,#ebe8ff); color:var(--focus-brand,#634efb); font-weight:700; }
 .ah-record-count {
     margin-left:auto; font-size:10px; font-weight:600; color:#d1d5db;
 }
@@ -84,19 +85,19 @@
 .ah-calendar-container .fc { font-family:'Nunito',sans-serif; height:100% !important; }
 .ah-calendar-container .fc .fc-toolbar-title { font-size:18px; font-weight:700; color:#0e1726; }
 .ah-calendar-container .fc .fc-button {
-    background:#f8fafc !important; border:1px solid #e2e8f0 !important;
+    background:var(--focus-surface,#fff) !important; border:1px solid var(--focus-border,#e5e7eb) !important;
     color:#4b5563 !important; font-size:12px !important; font-weight:600 !important;
     padding:6px 14px !important; border-radius:8px !important;
     transition:all .2s !important; box-shadow:none !important; text-transform:none !important;
 }
-.ah-calendar-container .fc .fc-button:hover { background:#e2e8f0 !important; color:#0e1726 !important; }
+.ah-calendar-container .fc .fc-button:hover { background:var(--focus-brand-soft,#ebe8ff) !important; border-color:color-mix(in srgb,var(--focus-brand,#634efb) 28%,#fff) !important; color:var(--focus-brand,#634efb) !important; }
 .ah-calendar-container .fc .fc-button-active {
-    background:linear-gradient(135deg, #14b8a6, #14b8a6dd) !important;
-    border-color:#14b8a6 !important; color:#fff !important;
+    background:var(--focus-brand,#634efb) !important;
+    border-color:var(--focus-brand,#634efb) !important; color:#fff !important;
 }
 .ah-calendar-container .fc .fc-col-header-cell-cushion { font-size:12px; font-weight:700; color:#6b7280; text-transform:uppercase; letter-spacing:.04em; }
 .ah-calendar-container .fc .fc-daygrid-day-number { font-size:13px; font-weight:600; color:#374151; padding:6px 8px; }
-.ah-calendar-container .fc .fc-day-today { background:rgba(20,184,166,.04) !important; }
+.ah-calendar-container .fc .fc-day-today { background:color-mix(in srgb,var(--focus-brand-soft,#ebe8ff) 58%,#fff) !important; }
 .ah-calendar-container .fc .fc-event {
     border:none !important; border-radius:6px !important; padding:2px 6px !important;
     font-size:12px !important; font-weight:600 !important; cursor:pointer !important;
@@ -128,7 +129,7 @@
     font-size:10px; font-weight:700; padding:3px 8px; border-radius:6px;
     text-transform:uppercase; letter-spacing:.03em; white-space:nowrap;
 }
-.ah-record-link { color:#14b8a6; font-weight:600; font-size:12px; text-decoration:none; }
+.ah-record-link { color:var(--focus-brand,#634efb); font-weight:700; font-size:12px; text-decoration:none; }
 .ah-record-link:hover { text-decoration:underline; }
 
 /* Empty state */
@@ -163,8 +164,8 @@
 .ah-modal-icon {
     width:36px; height:36px; border-radius:10px;
     display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(135deg, #14b8a618, #14b8a608);
-    color:#14b8a6;
+    background:var(--focus-brand-soft,#ebe8ff);
+    color:var(--focus-brand,#634efb);
 }
 .ah-modal-header h3 { font-size:16px; font-weight:700; color:#0e1726; margin:0; }
 .ah-modal-close {
@@ -204,19 +205,19 @@
 }
 .ah-modal-btn {
     display:inline-flex; align-items:center; gap:6px;
-    padding:9px 18px; border-radius:8px;
+    min-height:38px; padding:9px 18px; border-radius:var(--focus-control-radius,10px);
     font-size:13px; font-weight:600; cursor:pointer;
     transition:all .15s; font-family:'Nunito',sans-serif; border:none;
 }
 .ah-modal-btn-outline {
-    background:#fff; border:1.5px solid #e2e8f0; color:#6b7280;
+    background:var(--focus-surface,#fff); border:1px solid var(--focus-border,#e5e7eb); color:var(--focus-text-soft,#6b7280);
 }
 .ah-modal-btn-outline:hover { background:#f9fafb; border-color:#d1d5db; }
 .ah-modal-btn-primary {
-    background:linear-gradient(135deg, #14b8a6, #14b8a6dd);
+    background:var(--focus-brand,#634efb);
     color:#fff; border:none;
 }
-.ah-modal-btn-primary:hover { transform:translateY(-1px); box-shadow:0 4px 12px rgba(20,184,166,.3); }
+.ah-modal-btn-primary:hover { background:var(--focus-brand-hover,#5742e8); transform:translateY(-1px); box-shadow:0 5px 14px var(--focus-brand-ring); }
 
 /* Modal dark mode */
 .dark .ah-modal { background:#0e1726; border:1px solid #253b5c; }
@@ -231,7 +232,7 @@
 
 /* Loading */
 .ah-loading { display:flex; align-items:center; justify-content:center; gap:10px; padding:60px; color:#888da8; font-size:14px; }
-.ah-spin { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:#14b8a6; border-radius:50%; animation:ahSpin .8s linear infinite; }
+.ah-spin { width:24px; height:24px; border:3px solid #e2e8f0; border-top-color:var(--focus-brand,#634efb); border-radius:50%; animation:ahSpin .8s linear infinite; }
 @keyframes ahSpin { to { transform:rotate(360deg); } }
 
 /* ═══ Dark Mode ═══ */
@@ -239,7 +240,7 @@
 .dark .ah-view-pills { background:#1b2e4b; border-color:#253b5c; }
 .dark .ah-vpill { color:#888da8; }
 .dark .ah-vpill:hover { color:#e0e6ed; background:rgba(255,255,255,.04); }
-.dark .ah-vpill.active { background:#0e1726; color:#14b8a6; }
+.dark .ah-vpill.active { background:#0e1726; color:var(--focus-brand,#a78bfa); }
 .dark .ah-sidebar { background:#0e1726; border-color:#253b5c; }
 .dark .ah-sidebar-header { color:#e0e6ed; border-color:#253b5c; }
 .dark .ah-sidebar-search { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
@@ -251,15 +252,15 @@
 .dark .ah-entity-count { background:#1b2e4b; color:#506690; }
 .dark .ah-record-item { color:#888da8; }
 .dark .ah-record-item:hover { background:#1b2e4b; color:#e0e6ed; }
-.dark .ah-record-item.active { background:#0b2a3a; color:#14b8a6; }
+.dark .ah-record-item.active { background:var(--focus-brand-soft,#241c3f); color:var(--focus-brand,#a78bfa); }
 .dark .ah-record-count { color:#506690; }
 .dark .ah-calendar-container .fc .fc-toolbar-title { color:#e0e6ed; }
 .dark .ah-calendar-container .fc .fc-button { background:#1b2e4b !important; border-color:#253b5c !important; color:#888da8 !important; }
 .dark .ah-calendar-container .fc .fc-button:hover { background:#253b5c !important; color:#e0e6ed !important; }
-.dark .ah-calendar-container .fc .fc-button-active { background:linear-gradient(135deg,#14b8a6,#14b8a6dd) !important; border-color:#14b8a6 !important; color:#fff !important; }
+.dark .ah-calendar-container .fc .fc-button-active { background:var(--focus-brand,#a78bfa) !important; border-color:var(--focus-brand,#a78bfa) !important; color:#111827 !important; }
 .dark .ah-calendar-container .fc .fc-col-header-cell-cushion { color:#506690; }
 .dark .ah-calendar-container .fc .fc-daygrid-day-number { color:#888da8; }
-.dark .ah-calendar-container .fc .fc-day-today { background:rgba(20,184,166,.08) !important; }
+.dark .ah-calendar-container .fc .fc-day-today { background:var(--focus-brand-soft,#241c3f) !important; }
 .dark .ah-calendar-container .fc td, .dark .ah-calendar-container .fc th { border-color:#1b2e4b !important; }
 .dark .ah-calendar-container .fc .fc-scrollgrid { border-color:#253b5c !important; }
 .dark .ah-calendar-container .fc .fc-timegrid-slot-label-cushion { color:#506690; }
@@ -319,7 +320,7 @@ window.addEventListener('pagehide', () => {
         <div class="ah-sidebar">
             <div class="ah-sidebar-header">
                 <span class="ah-sidebar-title">
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="17" style="color:#14b8a6"></iconify-icon>
+                    <span class="ah-sidebar-title-icon"><iconify-icon icon="solar:calendar-bold-duotone" width="17"></iconify-icon></span>
                     Agenda
                     <span class="ah-count-badge" x-text="filteredEvents.length" x-show="!loading"></span>
                 </span>
@@ -337,7 +338,7 @@ window.addEventListener('pagehide', () => {
             <div class="ah-sidebar-body">
                 <!-- All -->
                 <div class="ah-sidebar-all" :class="!filterRecordId && 'active'" @click="clearFilter()">
-                    <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:#14b8a6"></iconify-icon>
+                    <iconify-icon icon="solar:calendar-bold-duotone" width="16" style="color:var(--focus-brand,#634efb)"></iconify-icon>
                     Tous les événements
                     <span class="ah-count-badge" x-text="allEvents.length" style="margin-left:auto"></span>
                 </div>
@@ -406,7 +407,7 @@ window.addEventListener('pagehide', () => {
                                     <tr @click="showDetail(ev)">
                                         <td style="font-weight:600" x-text="ev.title || 'Sans titre'"></td>
                                         <td x-text="formatDate(ev.date)"></td>
-                                        <td style="color:#14b8a6;font-weight:700" x-text="formatTime(ev.date)"></td>
+                                        <td style="color:var(--focus-brand,#634efb);font-weight:700" x-text="formatTime(ev.date)"></td>
                                         <td><span x-text="getType(ev)"></span></td>
                                         <td>
                                             <span class="ah-status-pill"
@@ -455,7 +456,7 @@ window.addEventListener('pagehide', () => {
                             <div class="ah-detail-label">Date & Heure</div>
                             <div class="ah-detail-value">
                                 <span x-text="formatDate(selectedEvent.date)"></span>
-                                <span style="color:#14b8a6;margin-left:6px" x-text="formatTime(selectedEvent.date)"></span>
+                                <span style="color:var(--focus-brand,#634efb);margin-left:6px" x-text="formatTime(selectedEvent.date)"></span>
                                 <template x-if="selectedEvent.end_date">
                                     <span style="color:#9ca3af"> — <span x-text="formatTime(selectedEvent.end_date)"></span></span>
                                 </template>

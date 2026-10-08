@@ -49,6 +49,7 @@ test('normal task style uses clean cards while compact uses subtle mobile separa
                 background: style.backgroundColor,
                 backgroundImage: style.backgroundImage,
                 borderWidth: style.borderTopWidth,
+                borderColor: style.borderTopColor,
                 borderBottomWidth: style.borderBottomWidth,
                 radius: style.borderRadius,
                 shadow: style.boxShadow,
@@ -69,6 +70,7 @@ test('normal task style uses clean cards while compact uses subtle mobile separa
     for (const card of [result.todayNormal, result.listNormal]) {
         assert.equal(card.height, 50);
         assert.equal(card.borderWidth, '1px');
+        assert.equal(card.borderColor, 'rgb(240, 243, 248)');
         assert.equal(card.radius, '12px');
         assert.notEqual(card.shadow, 'none');
     }

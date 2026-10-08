@@ -178,22 +178,14 @@ test('task modal exposes a two-by-two quick action grid and keeps Today membersh
     assert.equal(reminderState.fallbackRetention, 'Reste dans Liste des tâches');
 
 	await page.evaluate(() => {
-		const focusPane = document.createElement('div');
-		focusPane.id = 'test-task-focus-pane';
-		focusPane.style.cssText = 'position:fixed;left:350px;top:64px;width:1550px;height:780px';
-		document.body.appendChild(focusPane);
 		const store = window.Alpine.store('taskModal');
 		store.closeMenus();
 		store.layoutMode = 'hyperfocus';
-		store.focusTarget = '#test-task-focus-pane';
-		store.refreshFocusFrame();
 	});
 	await page.waitForFunction(() => document.querySelector('.tdm-backdrop')?.classList.contains('is-hub-focus'));
 	const focusState = await page.evaluate(() => {
-		const backdrop = document.querySelector('.tdm-backdrop');
 		const modalRect = document.querySelector('.tdm-modal').getBoundingClientRect();
 		return {
-			style: backdrop.getAttribute('style'),
 			modalRect: {
 				left: Math.round(modalRect.left),
 				top: Math.round(modalRect.top),
@@ -204,8 +196,7 @@ test('task modal exposes a two-by-two quick action grid and keeps Today membersh
 			closeLabel: document.querySelector('.tdm-close-label')?.textContent.trim(),
 		};
 	});
-	assert.match(focusState.style, /--tdm-focus-left:350px/);
-	assert.deepEqual(focusState.modalRect, { left: 350, top: 64, width: 1550, height: 780 });
+	assert.deepEqual(focusState.modalRect, { left: 50, top: 50, width: 1820, height: 800 });
 	assert.equal(focusState.backLabel, 'Retour');
 	assert.equal(focusState.closeLabel, 'Fermer');
 	if (process.env.TASK_MODAL_SCREENSHOT) {

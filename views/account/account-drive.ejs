@@ -1,9 +1,19 @@
-<%- include("../nav/nav-breadcrumb") %>
-
 <style>
-.rm-page { max-width:1200px; margin:0 auto; padding:24px 32px; }
+.account-drive-page {
+    width:100%; height:calc(100vh - 86px); min-height:540px; margin:0;
+}
+@media (max-width:900px) {
+    .account-drive-page { height:auto; min-height:calc(100vh - 78px); }
+}
 </style>
 
-<div class="rm-page">
+<script>
+document.body.classList.add('focus-workspace-mode', 'drive-focus-mode');
+window.addEventListener('pagehide', () => {
+    document.body.classList.remove('focus-workspace-mode', 'drive-focus-mode');
+}, { once:true });
+</script>
+
+<div class="account-drive-page">
     <%- include("../record/partials/drive-shared", { driveMode: 'global' }) %>
 </div>

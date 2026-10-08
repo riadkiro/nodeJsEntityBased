@@ -148,6 +148,89 @@
     .drive-hero-info { flex:1; z-index:1; }
     .drive-hero-info h1 { font-size:20px; font-weight:700; color:#0e1726; margin:0 0 4px; display:flex; align-items:center; gap:8px; }
     .drive-hero-info p { font-size:13px; color:#888da8; margin:0; }
+
+    /* Account Drive: focused master/detail workspace */
+    .drive-global-workspace {
+        width:100%; height:100%; min-height:0; display:grid;
+        grid-template-columns:var(--focus-sidebar-width,350px) minmax(0,1fr);
+        overflow:hidden; border:1px solid var(--focus-border,#e5e7eb);
+        border-radius:var(--focus-radius,14px); background:var(--focus-surface,#fff);
+        box-shadow:var(--focus-shadow-soft); box-sizing:border-box;
+    }
+    .drive-global-sidebar {
+        min-width:0; min-height:0; display:flex; flex-direction:column; overflow:hidden;
+        border-right:1px solid var(--focus-border,#e5e7eb); background:var(--focus-surface,#fff);
+    }
+    .drive-global-sidebar-header {
+        min-height:64px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;
+        gap:12px; border-bottom:1px solid var(--focus-border,#e5e7eb); box-sizing:border-box;
+    }
+    .drive-global-sidebar-title { min-width:0; display:flex; align-items:center; gap:9px; color:var(--focus-text,#111827); font-size:15px; font-weight:800; }
+    .drive-global-sidebar-icon {
+        width:32px; height:32px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+        border-radius:10px; color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff);
+    }
+    .drive-global-sidebar-count {
+        min-width:24px; height:22px; padding:0 7px; display:inline-flex; align-items:center; justify-content:center;
+        border-radius:999px; color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff);
+        font-size:10px; font-weight:800;
+    }
+    .drive-global-sidebar-scroll { min-height:0; flex:1; overflow-y:auto; overscroll-behavior:contain; background:var(--focus-surface,#fff); }
+    .drive-global-nav-item {
+        width:100%; min-height:72px; padding:12px 14px; display:grid; grid-template-columns:40px minmax(0,1fr) auto;
+        align-items:center; gap:11px; border:0; border-bottom:1px solid var(--focus-border-soft,#eef1f6);
+        background:transparent; color:inherit; text-align:left; cursor:pointer; font:inherit;
+        transition:background .15s, box-shadow .15s; box-sizing:border-box;
+    }
+    .drive-global-nav-item:hover { background:color-mix(in srgb,var(--focus-brand-soft,#ebe8ff) 58%,#fff); }
+    .drive-global-nav-item.is-active { background:var(--focus-brand-soft,#ebe8ff); box-shadow:inset 4px 0 0 var(--focus-brand,#634efb); }
+    .drive-global-nav-icon {
+        width:40px; height:40px; display:flex; align-items:center; justify-content:center; position:relative;
+        border-radius:50%; color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff);
+    }
+    .drive-global-nav-icon--folder { color:#f59e0b; background:#fff7e8; }
+    .drive-global-nav-copy { min-width:0; }
+    .drive-global-nav-title { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--focus-text,#111827); font-size:13px; font-weight:800; }
+    .drive-global-nav-meta { margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--focus-muted,#9ca3af); font-size:10px; font-weight:600; }
+    .drive-global-nav-arrow { color:#cbd5e1; }
+    .drive-global-nav-item.is-active .drive-global-nav-arrow { color:var(--focus-brand,#634efb); }
+    .drive-global-section-heading {
+        min-height:42px; padding:8px 14px; display:flex; align-items:center; justify-content:space-between; gap:8px;
+        border-bottom:1px solid var(--focus-border-soft,#eef1f6); color:var(--focus-text-soft,#6b7280);
+        background:var(--focus-surface-alt,#f1f5f9); font-size:10px; font-weight:850; letter-spacing:.045em; text-transform:uppercase;
+    }
+    .drive-global-add-folder {
+        width:28px; height:28px; display:flex; align-items:center; justify-content:center; border:0; border-radius:9px;
+        color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff); cursor:pointer;
+    }
+    .drive-global-add-folder:hover { color:#fff; background:var(--focus-brand,#634efb); }
+    .drive-global-sidebar-empty { padding:18px 16px; color:var(--focus-muted,#9ca3af); font-size:11px; text-align:center; }
+    .drive-global-content { min-width:0; min-height:0; position:relative; overflow-y:auto; padding:14px 20px 24px; background:var(--focus-surface,#fff); box-sizing:border-box; }
+    .drive-global-content .drive-breadcrumb { min-height:34px; margin-bottom:10px; }
+    .drive-global-content .drive-actions-bar { padding-bottom:14px; border-bottom:1px solid var(--focus-border-soft,#eef1f6); }
+    .drive-global-content .drive-action-btn--primary { background:var(--focus-brand,#634efb); box-shadow:none; }
+    .drive-global-content .drive-action-btn--primary:hover { background:var(--focus-brand-hover,#5742e8); box-shadow:none; }
+    .drive-global-content .drive-action-btn--secondary { background:var(--focus-surface,#fff); border-color:var(--focus-border,#e5e7eb); }
+    .drive-global-content .drive-stats-pill { color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff); }
+    .drive-global-content .rm-items-list { gap:6px; }
+    .drive-global-content .rm-item { border-color:var(--focus-border-soft,#eef1f6); }
+    .drive-global-content .rm-item:hover { border-color:color-mix(in srgb,var(--focus-brand,#634efb) 22%,#fff); box-shadow:none; transform:none; }
+    .drive-global-workspace .drive-root-navigation-card { display:none; }
+
+    [data-theme="dark"] .drive-global-workspace, .dark .drive-global-workspace,
+    [data-theme="dark"] .drive-global-sidebar, .dark .drive-global-sidebar,
+    [data-theme="dark"] .drive-global-sidebar-scroll, .dark .drive-global-sidebar-scroll,
+    [data-theme="dark"] .drive-global-content, .dark .drive-global-content { background:var(--focus-surface,#111827); border-color:var(--focus-border,#26354f); }
+    [data-theme="dark"] .drive-global-nav-item, .dark .drive-global-nav-item { border-color:var(--focus-border-soft,#1f2d44); }
+    [data-theme="dark"] .drive-global-nav-item:hover, .dark .drive-global-nav-item:hover,
+    [data-theme="dark"] .drive-global-nav-item.is-active, .dark .drive-global-nav-item.is-active { background:var(--focus-brand-soft,#241c3f); }
+    [data-theme="dark"] .drive-global-nav-icon--folder, .dark .drive-global-nav-icon--folder { background:#352716; }
+
+    @media (max-width:900px) {
+        .drive-global-workspace { height:auto; min-height:0; grid-template-columns:1fr; }
+        .drive-global-sidebar { max-height:380px; border-right:0; border-bottom:1px solid var(--focus-border,#e5e7eb); }
+        .drive-global-content { min-height:520px; }
+    }
     @media (max-width:640px) {
         .drive-actions-bar { align-items:stretch; flex-direction:column; }
         .drive-actions-group { flex-wrap:wrap; width:100%; }
@@ -166,14 +249,16 @@ document.addEventListener('alpine:init', () => {
 
         // === Global mode state ===
         globalEntities: [],
-        globalLevel: 'root',
+        globalLevel: '<%= driveMode === "global" ? "app-entities" : "root" %>',
         selectedEntity: null,
         selectedRecord: null,
         globalStats: { totalFiles: 0, totalSizeFormatted: '0 o' },
+        globalRootFileCount: 0,
 
         // === Global root state (account-level folders & files) ===
         globalDriveFolders: [],
         globalDriveFiles: [],
+        globalDriveIndexFiles: [],
         globalCurrentFolder: '',
 
         // === Record/File mode state ===
@@ -342,6 +427,8 @@ document.addEventListener('alpine:init', () => {
                 if (data2.success) {
                     this.globalDriveFolders = data2.folders || [];
                     this.globalDriveFiles = data2.files || [];
+                    this.globalDriveIndexFiles = [...this.globalDriveFiles];
+                    this.globalRootFileCount = this.globalDriveFiles.filter(file => !file.folder).length;
                 }
             } catch(e) { console.error('[Drive] Global root load error:', e); }
             this.loading = false;
@@ -362,7 +449,23 @@ document.addEventListener('alpine:init', () => {
         // Navigate into App (entities)
         enterApp() {
             this.globalLevel = 'app-entities';
+            this.selectedEntity = null;
+            this.selectedRecord = null;
+            this._recordId = '';
+            this.currentFolder = '';
+            this.viewingGenerated = '';
             this._updateUrl();
+        },
+
+        async openGlobalRootFiles() {
+            await this.loadGlobalRoot();
+            this.globalNavigateTo('root');
+        },
+
+        createGlobalFolderFromSidebar() {
+            this.globalNavigateTo('root');
+            this.showNewFolderInput = true;
+            this.$nextTick(() => this.$refs.folderInput?.focus());
         },
 
         // Navigate into a custom folder
@@ -500,7 +603,7 @@ document.addEventListener('alpine:init', () => {
             return this.globalDriveFolders
                 .filter(name => !name.includes('/'))
                 .map(name => {
-                    const count = this.globalDriveFiles.filter(f => f.folder === name).length;
+                    const count = this.globalDriveIndexFiles.filter(f => f.folder === name).length;
                     return { name, count, isCustom: true };
                 }).sort((a, b) => a.name.localeCompare(b.name));
         },
@@ -524,7 +627,16 @@ document.addEventListener('alpine:init', () => {
                     .sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
             }
             // Root: files without folder
-            return this.globalDriveFiles.filter(f => !f.folder).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+            return this.globalDriveIndexFiles.filter(f => !f.folder).sort((a, b) => new Date(b.uploadedAt) - new Date(a.uploadedAt));
+        },
+
+        get globalRootLooseFileCount() {
+            return this.globalRootFileCount;
+        },
+
+        get recordSidebarFolders() {
+            if (this.globalLevel !== 'app-files' || !this.selectedRecord) return [];
+            return this.displayFolders.filter(folder => folder.isCustom);
         },
 
         // ═══════════════════════════════════════
@@ -677,6 +789,8 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success) {
                     this.globalDriveFolders = data.folders;
+                    this.globalDriveIndexFiles.forEach(file => { if (file.folder === oldName) file.folder = newName; });
+                    this.globalDriveFiles.forEach(file => { if (file.folder === oldName) file.folder = newName; });
                     if (this.globalCurrentFolder === oldName) this.globalCurrentFolder = newName;
                     if (window.showMessage) window.showMessage('Dossier renommé', 'success');
                 } else {
@@ -695,6 +809,9 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success) {
                     this.globalDriveFolders = data.folders;
+                    this.globalDriveIndexFiles.forEach(file => { if (file.folder === folderName) file.folder = ''; });
+                    this.globalDriveFiles.forEach(file => { if (file.folder === folderName) file.folder = ''; });
+                    this.globalRootFileCount = this.globalDriveIndexFiles.filter(file => !file.folder).length;
                     if (this.globalLevel === 'custom-folder' && this.globalCurrentFolder === folderName) {
                         this.globalLevel = 'root';
                         this.globalCurrentFolder = '';
@@ -715,6 +832,8 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json();
                 if (data.success) {
                     this.globalDriveFiles = this.globalDriveFiles.filter(f => f._id !== file._id);
+                    this.globalDriveIndexFiles = this.globalDriveIndexFiles.filter(f => f._id !== file._id);
+                    this.globalRootFileCount = this.globalDriveIndexFiles.filter(item => !item.folder).length;
                     if (window.showMessage) window.showMessage('Fichier supprimé', 'success');
                 }
             } catch (e) { console.error('[Drive] Delete global file error:', e); }
@@ -1167,6 +1286,8 @@ document.addEventListener('alpine:init', () => {
             if (isAccountDriveUpload) {
                 if (data.files) {
                     this.globalDriveFiles.push(...data.files);
+                    this.globalDriveIndexFiles.push(...data.files);
+                    this.globalRootFileCount = this.globalDriveIndexFiles.filter(file => !file.folder).length;
                     data.files.forEach(file => {
                         if (file.folder && !this.globalDriveFolders.includes(file.folder)) this.globalDriveFolders.push(file.folder);
                     });
@@ -1552,28 +1673,97 @@ document.addEventListener('alpine:init', () => {
 <!-- HTML TEMPLATE                                               -->
 <!-- ═══════════════════════════════════════════════════════════ -->
 
-<% if (driveMode === 'global') { %>
-<!-- Global Drive Hero -->
-<div class="drive-hero">
-    <div class="drive-hero-icon">
-        <iconify-icon icon="solar:cloud-storage-bold-duotone" width="28" style="color:#ec4899"></iconify-icon>
-    </div>
-    <div class="drive-hero-info">
-        <h1>
-            <iconify-icon icon="solar:cloud-storage-bold-duotone" width="24" style="color:#ec4899"></iconify-icon>
-            Drive
-        </h1>
-        <p>Tous vos fichiers et documents organisés par entité</p>
-    </div>
-</div>
-<% } %>
-
-<div x-data="driveModule" x-cloak style="position:relative;min-height:calc(100vh - 200px);"
+<div x-data="driveModule" x-cloak class="<%= driveMode === 'global' ? 'drive-global-workspace' : '' %>" style="<%= driveMode === 'global' ? '' : 'position:relative;min-height:calc(100vh - 200px);' %>"
      @dragenter.prevent="isAtFileLevel ? onDragEnter($event) : null"
      @dragover.prevent
      @dragleave.prevent="isAtFileLevel ? onDragLeave($event) : null"
      @drop.prevent="isAtFileLevel ? handleDrop($event) : null"
      @contextmenu.prevent="openBackgroundContextMenu($event)">
+
+    <% if (driveMode === 'global') { %>
+    <aside class="drive-global-sidebar" @contextmenu.stop>
+        <div class="drive-global-sidebar-header">
+            <div class="drive-global-sidebar-title">
+                <span class="drive-global-sidebar-icon"><iconify-icon icon="solar:cloud-storage-bold-duotone" width="18"></iconify-icon></span>
+                <span>Drive</span>
+            </div>
+            <span class="drive-global-sidebar-count" x-text="globalStats.totalFiles" x-show="!loading"></span>
+        </div>
+
+        <div class="drive-global-sidebar-scroll">
+            <button type="button" class="drive-global-nav-item" :class="globalLevel.startsWith('app') && 'is-active'" @click="enterApp()">
+                <span class="drive-global-nav-icon">
+                    <iconify-icon icon="solar:folder-with-files-bold-duotone" width="21"></iconify-icon>
+                    <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="position:absolute;right:0;bottom:0;color:var(--focus-muted,#9ca3af)"></iconify-icon>
+                </span>
+                <span class="drive-global-nav-copy">
+                    <span class="drive-global-nav-title">App</span>
+                    <span class="drive-global-nav-meta" x-text="globalEntities.length + ' rubrique(s) · ' + globalStats.totalFiles + ' fichier(s)'"></span>
+                </span>
+                <iconify-icon class="drive-global-nav-arrow" icon="solar:alt-arrow-right-linear" width="17"></iconify-icon>
+            </button>
+
+            <button type="button" class="drive-global-nav-item" x-show="globalRootLooseFileCount > 0" :class="globalLevel === 'root' && 'is-active'" @click="openGlobalRootFiles()">
+                <span class="drive-global-nav-icon"><iconify-icon icon="solar:documents-bold-duotone" width="20"></iconify-icon></span>
+                <span class="drive-global-nav-copy">
+                    <span class="drive-global-nav-title">Fichiers généraux</span>
+                    <span class="drive-global-nav-meta" x-text="globalRootLooseFileCount + ' fichier(s) sans dossier'"></span>
+                </span>
+                <iconify-icon class="drive-global-nav-arrow" icon="solar:alt-arrow-right-linear" width="17"></iconify-icon>
+            </button>
+
+            <div class="drive-global-section-heading">
+                <span>Dossiers personnalisés</span>
+                <button type="button" class="drive-global-add-folder" @click="createGlobalFolderFromSidebar()" title="Nouveau dossier">
+                    <iconify-icon icon="solar:add-circle-bold" width="17"></iconify-icon>
+                </button>
+            </div>
+            <template x-for="folder in globalRootDisplayFolders" :key="'sidebar-global-' + folder.name">
+                <div class="drive-global-nav-item" role="button" tabindex="0"
+                        :class="globalLevel === 'custom-folder' && (globalCurrentFolder === folder.name || globalCurrentFolder.startsWith(folder.name + '/')) && 'is-active'"
+                        @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)"
+                        @keydown.enter.prevent="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)"
+                        @contextmenu.prevent.stop="openContextMenu($event, { name: folder.name }, 'global-folder')">
+                    <span class="drive-global-nav-icon drive-global-nav-icon--folder"><iconify-icon icon="solar:folder-bold-duotone" width="20"></iconify-icon></span>
+                    <span class="drive-global-nav-copy">
+                        <template x-if="renamingFolderOldName !== folder.name">
+                            <span class="drive-global-nav-title" x-text="folder.name"></span>
+                        </template>
+                        <template x-if="renamingFolderOldName === folder.name">
+                            <input type="text" class="drive-rename-input" x-model="renameFolderValue"
+                                   @keydown.enter.prevent.stop="confirmRenameGlobalFolder()"
+                                   @keydown.escape.prevent.stop="cancelRenameFolder()"
+                                   @blur="confirmRenameGlobalFolder()" @click.stop
+                                   x-init="$nextTick(() => { $el.focus(); $el.select(); })">
+                        </template>
+                        <span class="drive-global-nav-meta" x-text="folder.count + ' fichier(s)'"></span>
+                    </span>
+                    <iconify-icon class="drive-global-nav-arrow" icon="solar:alt-arrow-right-linear" width="17"></iconify-icon>
+                </div>
+            </template>
+            <div class="drive-global-sidebar-empty" x-show="globalRootDisplayFolders.length === 0">Aucun dossier personnalisé</div>
+
+            <template x-if="recordSidebarFolders.length > 0">
+                <div>
+                    <div class="drive-global-section-heading">
+                        <span x-text="selectedRecord ? 'Dossiers · ' + selectedRecord.recordTitle : 'Dossiers de la fiche'"></span>
+                    </div>
+                    <template x-for="folder in recordSidebarFolders" :key="'sidebar-record-' + folder.name">
+                        <button type="button" class="drive-global-nav-item" :class="currentFolder === folder.name && 'is-active'" @click="navigateTo(folder.name); _updateUrl()">
+                            <span class="drive-global-nav-icon drive-global-nav-icon--folder"><iconify-icon icon="solar:folder-bold-duotone" width="20"></iconify-icon></span>
+                            <span class="drive-global-nav-copy">
+                                <span class="drive-global-nav-title" x-text="folder.name"></span>
+                                <span class="drive-global-nav-meta" x-text="folder.count + ' fichier(s) dans cette fiche'"></span>
+                            </span>
+                            <iconify-icon class="drive-global-nav-arrow" icon="solar:alt-arrow-right-linear" width="17"></iconify-icon>
+                        </button>
+                    </template>
+                </div>
+            </template>
+        </div>
+    </aside>
+    <main class="drive-global-content">
+    <% } %>
 
     <!-- Drag overlay -->
     <div x-show="isDragging && isAtFileLevel" class="drive-dropzone-overlay" style="display:none;" x-transition.opacity>
@@ -1722,7 +1912,7 @@ document.addEventListener('alpine:init', () => {
             </template>
 
             <!-- App folder (locked system) -->
-            <div class="rm-item drive-folder-item" @click="enterApp()" style="cursor:pointer;">
+            <div class="rm-item drive-folder-item drive-root-navigation-card" @click="enterApp()" style="cursor:pointer;">
                 <div class="rm-item-icon" style="background:linear-gradient(135deg,#4361ee15,#4361ee08); position:relative;">
                     <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#4361ee"></iconify-icon>
                     <iconify-icon icon="solar:lock-keyhole-bold" width="10" style="color:#94a3b8; position:absolute; bottom:0; right:0;"></iconify-icon>
@@ -1743,8 +1933,8 @@ document.addEventListener('alpine:init', () => {
 
             <!-- Custom folders -->
             <template x-for="(folder, idx) in globalRootDisplayFolders" :key="'root-folder-' + folder.name">
-                <div class="rm-item drive-folder-item" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
-                     @contextmenu.prevent="openContextMenu($event, folder, 'folder')">
+                <div class="rm-item drive-folder-item drive-root-navigation-card" @click="renamingFolderOldName === folder.name ? null : enterGlobalFolder(folder.name)" style="cursor:pointer;" :style="'animation-delay:' + ((idx + 1) * 40) + 'ms'"
+                     @contextmenu.prevent="openContextMenu($event, folder, 'global-folder')">
                     <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
                         <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
                     </div>
@@ -1823,7 +2013,7 @@ document.addEventListener('alpine:init', () => {
             <!-- Subfolders -->
             <template x-for="(subfolder, idx) in globalCurrentSubfolders" :key="'subfolder-' + subfolder.fullPath">
                 <div class="rm-item drive-folder-item" @click="renamingFolderOldName === subfolder.fullPath ? null : enterGlobalFolder(subfolder.fullPath)" style="cursor:pointer;" :style="'animation-delay:' + (idx * 40) + 'ms'"
-                     @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'folder')">
+                     @contextmenu.prevent="openContextMenu($event, {name: subfolder.fullPath}, 'global-folder')">
                     <div class="rm-item-icon" style="background:linear-gradient(135deg,#f59e0b15,#f59e0b08)">
                         <iconify-icon icon="solar:folder-bold-duotone" width="20" style="color:#f59e0b"></iconify-icon>
                     </div>
@@ -2194,6 +2384,10 @@ document.addEventListener('alpine:init', () => {
         </div>
     </div>
 
+    <% if (driveMode === 'global') { %>
+    </main>
+    <% } %>
+
     <!-- Context Menu -->
     <template x-teleport="body">
         <div x-show="contextMenu.show"
@@ -2242,7 +2436,35 @@ document.addEventListener('alpine:init', () => {
                 </div>
             </template>
 
-            <!-- Folder Options -->
+            <!-- Account Drive folder options -->
+            <template x-if="contextMenu.type === 'global-folder' && contextMenu.item">
+                <div>
+                    <button @click="enterGlobalFolder(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#634efb';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:folder-open-bold-duotone" style="color:#634efb" width="18"></iconify-icon>
+                        Ouvrir
+                    </button>
+                    <div style="height:1px;background:#f1f5f9;margin:4px 0;"></div>
+                    <button @click="renamingFolderOldName = contextMenu.item.name; renameFolderValue = contextMenu.item.name; contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#1e293b;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#f8fafc';this.style.color='#f59e0b';"
+                            onmouseout="this.style.background='none';this.style.color='#1e293b';">
+                        <iconify-icon icon="solar:pen-bold-duotone" style="color:#f59e0b" width="18"></iconify-icon>
+                        Renommer
+                    </button>
+                    <button @click="deleteGlobalFolder(contextMenu.item.name); contextMenu.show = false;"
+                            style="width:100%;padding:10px 14px;border:none;background:none;text-align:left;font-size:13px;font-weight:600;color:#ef4444;cursor:pointer;display:flex;align-items:center;gap:10px;transition:all 0.15s;"
+                            onmouseover="this.style.background='#fef2f2';this.style.color='#dc2626';"
+                            onmouseout="this.style.background='none';this.style.color='#ef4444';">
+                        <iconify-icon icon="solar:trash-bin-trash-bold-duotone" style="color:#ef4444" width="18"></iconify-icon>
+                        Supprimer
+                    </button>
+                </div>
+            </template>
+
+            <!-- Record folder options -->
             <template x-if="contextMenu.type === 'folder' && contextMenu.item">
                 <div>
                     <button @click="isGlobalRoot ? enterGlobalFolder(contextMenu.item.name) : navigateTo(contextMenu.item.name); contextMenu.show = false;"

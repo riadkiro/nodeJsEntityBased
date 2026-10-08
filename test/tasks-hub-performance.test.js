@@ -33,11 +33,16 @@ test('task completion and reorder stay local while APIs are slow', { timeout: 15
         <div x-data="tasksHubApp">
             <span id="open-count" x-text="selectedOpenTasks.length"></span>
             <span id="done-count" x-text="completedSelectedTasks.length"></span>
-            <template x-for="task in selectedOpenTasks" :key="task._id">
-                <div class="th-task-row-simple" :data-task-id="task._id">
-                    <button class="toggle-open th-task-check-simple" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">toggle</button>
+            <div class="th-open-list">
+                <div class="th-open-task-rows" data-task-widget-id="tasks-page-today">
+                    <template x-for="task in selectedOpenTasks" :key="task._id">
+                        <div class="th-task-row-simple" :data-task-id="task._id">
+                            <button class="toggle-open th-task-check-simple" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">toggle</button>
+                        </div>
+                    </template>
                 </div>
-            </template>
+                <form class="th-inline-form"><input aria-label="Ajouter une tâche"></form>
+            </div>
             <template x-for="task in completedSelectedTasks" :key="task._id">
                 <button class="toggle-done th-done-action" type="button" @click="toggleTaskStatus(task, $event.currentTarget)">done</button>
             </template>
@@ -214,6 +219,9 @@ test('task completion and reorder stay local while APIs are slow', { timeout: 15
             newDraggableIndex: 0,
         });
         const ordered = state.selectedOpenTasks.slice(0, 2);
+        const addForm = document.querySelector('.th-inline-form');
+        const rowsStayAboveInput = Array.from(container.querySelectorAll(':scope > .th-task-row-simple'))
+            .every(row => Boolean(row.compareDocumentPosition(addForm) & Node.DOCUMENT_POSITION_FOLLOWING));
         return {
             requestStarted: window.__reorderRequestStarted,
             requestResolved: window.__reorderRequestResolved,
@@ -221,6 +229,8 @@ test('task completion and reorder stay local while APIs are slow', { timeout: 15
             firstTaskOrder: ordered[0]?.order,
             secondTaskId: state.taskId(ordered[1]),
             secondTaskOrder: ordered[1]?.order,
+            addFormOutsideSortable: addForm.parentElement !== container,
+            rowsStayAboveInput,
             hubRequestCount: window.__hubRequestCount,
         };
     });
@@ -231,6 +241,8 @@ test('task completion and reorder stay local while APIs are slow', { timeout: 15
         firstTaskOrder: 0,
         secondTaskId: '000000000000000000000002',
         secondTaskOrder: 1,
+        addFormOutsideSortable: true,
+        rowsStayAboveInput: true,
         hubRequestCount: 1,
     });
     await page.waitForFunction(() => window.__reorderRequestResolved);

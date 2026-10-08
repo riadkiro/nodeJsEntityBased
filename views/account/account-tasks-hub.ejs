@@ -295,6 +295,7 @@
 .th-today-body.is-compact .th-task-title-simple,.th-list-panel-body.is-compact .th-task-title-simple{font-size:12.5px}
 .th-list-panel-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:26px;align-items:start}
 .th-open-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.th-open-task-rows{display:flex;flex-direction:column;gap:6px;min-width:0}
 .th-task-row-simple{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:28px;padding:1px 8px;border-radius:8px;position:relative}
 .th-task-row-simple:hover{background:#fbfcff}
 .th-task-row-simple.is-accented{padding-left:12px}
@@ -643,61 +644,63 @@ window.addEventListener('pagehide', () => {
 
                     <div class="th-today-body"
                          :class="{ 'is-completed-hidden': !todayPanelOption('showCompleted', true), 'is-compact': todayPanelOption('compactMode', false) }">
-                        <div class="th-open-list" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
-                            <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
-                                <div class="th-task-row-simple"
-                                     :class="{ 'is-done': isDone(task), 'is-accented': todayPanelOption('accentRows', true) }"
-                                     :style="'--task-accent-color:' + taskAccentColor(task)"
-                                     :data-task-id="task._id || task.id"
-                                     @contextmenu.prevent.stop="openTaskMenu($event, task)">
-                                    <button type="button"
-                                            class="th-task-check-simple"
-                                            :class="{ 'is-checked': isDone(task) }"
-                                            :title="isDone(task) ? 'Marquer à faire' : 'Marquer terminé'"
-                                            :disabled="isTaskTogglePending(task)"
-                                            @click.stop="toggleTaskStatus(task, $event.currentTarget)">
-                                        <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
-                                    </button>
-                                    <div class="th-task-main-simple">
-                                        <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
-                                    </div>
-                                    <div class="th-task-meta-simple">
-                                        <span class="th-reminder-mini" x-show="todayTaskDisplayOption(task, 'showReminders', true) && taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
-                                            <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
-                                        </span>
-                                        <span class="th-attachment-mini" x-show="todayTaskDisplayOption(task, 'showAttachments', true) && taskHasAttachments(task)" title="Pièce jointe">
-                                            <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
-                                        </span>
-                                        <span class="th-tag-stack" x-show="todayTaskDisplayOption(task, 'showTags', true)">
-                                            <template x-for="tag in visibleTaskTags(task)" :key="tag.label">
-                                                <button type="button"
-                                                        class="th-tag-simple"
-                                                        :style="'--tag-color:' + (tag.color || '#6366f1')"
-                                                        @click.stop="openTaskTagMenu($event, task)">
-                                                    <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
-                                                    <span x-text="tag.label"></span>
-                                                </button>
-                                            </template>
-                                            <button type="button" class="th-tag-simple is-empty" x-show="visibleTaskTags(task).length === 0" @click.stop="openTaskTagMenu($event, task)">
-                                                <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
-                                                Tag
-                                            </button>
-                                        </span>
+                        <div class="th-open-list">
+                            <div class="th-open-task-rows" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
+                                <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
+                                    <div class="th-task-row-simple"
+                                         :class="{ 'is-done': isDone(task), 'is-accented': todayPanelOption('accentRows', true) }"
+                                         :style="'--task-accent-color:' + taskAccentColor(task)"
+                                         :data-task-id="task._id || task.id"
+                                         @contextmenu.prevent.stop="openTaskMenu($event, task)">
                                         <button type="button"
-                                                class="th-priority-simple"
-                                                x-show="todayTaskDisplayOption(task, 'showPriority', true)"
-                                                :style="'--priority-color:' + taskPriorityColor(task)"
-                                                :title="'Priorité ' + taskPriorityText(task)"
-                                                @click.stop="openTaskPriorityMenu($event, task)">
-                                            <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
-                                            <span x-text="taskPriorityText(task)"></span>
+                                                class="th-task-check-simple"
+                                                :class="{ 'is-checked': isDone(task) }"
+                                                :title="isDone(task) ? 'Marquer à faire' : 'Marquer terminé'"
+                                                :disabled="isTaskTogglePending(task)"
+                                                @click.stop="toggleTaskStatus(task, $event.currentTarget)">
+                                            <iconify-icon icon="solar:check-read-linear" width="12"></iconify-icon>
                                         </button>
+                                        <div class="th-task-main-simple">
+                                            <span class="th-task-title-simple" x-text="task.title" @click="openTask(task)"></span>
+                                        </div>
+                                        <div class="th-task-meta-simple">
+                                            <span class="th-reminder-mini" x-show="todayTaskDisplayOption(task, 'showReminders', true) && taskHasReminder(task)" :title="'Rappel ' + formatTime(task.reminder?.scheduledAt)">
+                                                <iconify-icon icon="solar:bell-bing-bold-duotone" width="12"></iconify-icon>
+                                            </span>
+                                            <span class="th-attachment-mini" x-show="todayTaskDisplayOption(task, 'showAttachments', true) && taskHasAttachments(task)" title="Pièce jointe">
+                                                <iconify-icon icon="solar:paperclip-rounded-linear" width="12"></iconify-icon>
+                                            </span>
+                                            <span class="th-tag-stack" x-show="todayTaskDisplayOption(task, 'showTags', true)">
+                                                <template x-for="tag in visibleTaskTags(task)" :key="tag.label">
+                                                    <button type="button"
+                                                            class="th-tag-simple"
+                                                            :style="'--tag-color:' + (tag.color || '#6366f1')"
+                                                            @click.stop="openTaskTagMenu($event, task)">
+                                                        <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                                        <span x-text="tag.label"></span>
+                                                    </button>
+                                                </template>
+                                                <button type="button" class="th-tag-simple is-empty" x-show="visibleTaskTags(task).length === 0" @click.stop="openTaskTagMenu($event, task)">
+                                                    <iconify-icon icon="solar:tag-linear" width="10"></iconify-icon>
+                                                    Tag
+                                                </button>
+                                            </span>
+                                            <button type="button"
+                                                    class="th-priority-simple"
+                                                    x-show="todayTaskDisplayOption(task, 'showPriority', true)"
+                                                    :style="'--priority-color:' + taskPriorityColor(task)"
+                                                    :title="'Priorité ' + taskPriorityText(task)"
+                                                    @click.stop="openTaskPriorityMenu($event, task)">
+                                                <iconify-icon icon="solar:flag-linear" width="12"></iconify-icon>
+                                                <span x-text="taskPriorityText(task)"></span>
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
-                            </template>
-                            <template x-if="selectedOpenTasks.length === 0 && !sideLoading">
-                                <div class="th-empty-simple" x-text="selectedEmptyLabel"></div>
-                            </template>
+                                </template>
+                                <template x-if="selectedOpenTasks.length === 0 && !sideLoading">
+                                    <div class="th-empty-simple" x-text="selectedEmptyLabel"></div>
+                                </template>
+                            </div>
                             <form class="th-inline-form" x-show="selectedMode !== 'overdue'" @submit.prevent="createTodayTask()">
                                 <input x-ref="newTaskInput" type="text" x-model="newTaskTitle" :placeholder="addPlaceholder" :disabled="creatingTask">
                                 <button type="submit" :disabled="creatingTask" title="Ajouter">

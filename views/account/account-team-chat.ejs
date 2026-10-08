@@ -109,25 +109,44 @@
     .ts-record-new-input input:focus {
         border-color:rgba(67,97,238,.6);
     }
+
+    /* Focus workspace: the chat itself fills the whole available app height. */
+    .ts-chat-page {
+        width:100%;
+        height:calc(100vh - 86px);
+        min-height:540px;
+        overflow:hidden;
+    }
+    .ts-chat-page .ts-chat-layout {
+        width:100%;
+        height:100%;
+        max-height:none;
+        min-height:0;
+        margin:0;
+        box-sizing:border-box;
+        border-radius:14px;
+    }
+    @media (max-width:640px) {
+        .ts-chat-page {
+            height:auto;
+            min-height:calc(100vh - 78px);
+            overflow:visible;
+        }
+        .ts-chat-page .ts-chat-layout {
+            height:auto;
+            min-height:0;
+        }
+    }
 </style>
 
-<!-- Page Header -->
-<div class="ts-page-header">
-  <div class="ts-page-header-icon">
-    <iconify-icon icon="solar:chat-round-dots-bold-duotone" width="28" style="color:#4361ee"></iconify-icon>
-  </div>
-  <div class="ts-page-header-info">
-    <h1>Chat</h1>
-    <p>Communication en temps réel avec votre équipe</p>
-  </div>
-  <div style="display:flex;gap:10px;z-index:1;">
-    <a href="/account/<%= account_number %>/team" class="ts-btn-primary" style="background:linear-gradient(135deg,#7c3aed,#a855f7);">
-      <iconify-icon icon="solar:users-group-rounded-bold" width="16"></iconify-icon> Équipe
-    </a>
-  </div>
-</div>
+<script>
+document.body.classList.add('focus-workspace-mode', 'chat-focus-mode');
+window.addEventListener('pagehide', () => {
+  document.body.classList.remove('focus-workspace-mode', 'chat-focus-mode');
+}, { once:true });
+</script>
 
-<div x-data="teamChat()" x-init="init()" x-cloak>
+<div class="ts-chat-page" x-data="teamChat()" x-init="init()" x-cloak>
   <!-- Chat Grid Layout -->
   <div class="ts-chat-layout">
     <!-- Sidebar -->

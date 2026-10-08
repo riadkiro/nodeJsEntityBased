@@ -1688,6 +1688,8 @@ document.addEventListener('alpine:init', () => {
             Alpine.store('taskModal').open(task, {
                 onUpdate: () => self.loadHub(),
                 onDelete: () => self.loadHub(),
+				layoutMode: 'hyperfocus',
+				focusTarget: '.th-wrap .th-detail-pane',
             });
         },
         closeTask() { Alpine.store('taskModal').close(); },

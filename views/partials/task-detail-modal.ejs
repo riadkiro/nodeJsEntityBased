@@ -9,11 +9,20 @@
 .tdm-backdrop.open{opacity:1;pointer-events:auto}
 .tdm-modal{width:min(1220px,calc(100vw - 42px));height:min(780px,calc(100vh - 42px));background:#fff;border-radius:16px;box-shadow:0 28px 90px rgba(15,23,42,.20);display:flex;flex-direction:column;transform:scale(.96) translateY(10px);transition:transform .28s cubic-bezier(.2,.8,.2,1);overflow:hidden;color:#0e1726}
 .tdm-backdrop.open .tdm-modal{transform:scale(1) translateY(0)}
+.tdm-backdrop.is-hub-focus{background:rgba(15,23,42,.30);backdrop-filter:blur(6px)}
+.tdm-backdrop.is-hub-focus .tdm-modal{position:fixed;left:var(--tdm-focus-left,68px);top:var(--tdm-focus-top,74px);width:var(--tdm-focus-width,calc(100vw - 80px));height:var(--tdm-focus-height,calc(100vh - 86px));max-width:none;max-height:none;box-sizing:border-box;border:1px solid #dbe2ea;border-left:0;border-radius:0 14px 14px 0;box-shadow:none;transform:translateX(18px)}
+.tdm-backdrop.is-hub-focus.open .tdm-modal{transform:translateX(0)}
 .tdm-shell{display:flex;flex-direction:column;height:100%;min-height:0}
 .tdm-head{height:64px;display:flex;align-items:center;gap:11px;padding:0 26px;border-bottom:1px solid #f1f3f5;flex:0 0 auto}
+.tdm-back{height:34px;border:1px solid #e5e7eb;border-radius:9px;background:#fff;color:#64748b;padding:0 11px;display:inline-flex;align-items:center;gap:6px;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;transition:background .14s,border-color .14s,color .14s}
+.tdm-back:hover{background:var(--tdm-brand-soft);border-color:#d8d2ff;color:var(--tdm-brand)}
+.tdm-head-divider{width:1px;height:24px;background:#e8ecf1;flex:0 0 auto}
 .tdm-head-icon{width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#6366f118,#6366f108);color:#6366f1;flex:0 0 auto}
 .tdm-head-label{color:#7c89a6;font-size:12.5px;font-weight:700;line-height:1.3;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tdm-close{width:32px;height:32px;border:0;border-radius:9px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .14s}
+.tdm-close{min-width:32px;height:32px;padding:0;border:0;border-radius:9px;background:#f8fafc;color:#94a3b8;display:flex;align-items:center;justify-content:center;gap:6px;font-family:inherit;font-size:11.5px;font-weight:800;cursor:pointer;transition:all .14s}
+.tdm-close-label{display:none}
+.tdm-backdrop.is-hub-focus .tdm-close{padding:0 10px;color:#64748b;border:1px solid #e5e7eb;background:#fff}
+.tdm-backdrop.is-hub-focus .tdm-close-label{display:inline}
 .tdm-close:hover{background:#eef2f7;color:#64748b}
 .tdm-body{flex:1;min-height:0;display:grid;grid-template-columns:minmax(340px,1.08fr) minmax(285px,.74fr) minmax(330px,.9fr);overflow:hidden}
 .tdm-main{padding:28px 32px;overflow-y:auto;border-right:1px solid #f1f3f5}
@@ -281,6 +290,7 @@
 .tdm-reminder-delete{background:color-mix(in srgb,var(--tdm-danger) 8%,var(--tdm-surface));color:var(--tdm-danger)}
 .dark .tdm-backdrop{--tdm-brand:#A78BFA;--tdm-brand-soft:#241C3F;--tdm-success:#4ADE80;--tdm-warning:#FBBF24;--tdm-danger:#F87171;--tdm-info:#22D3EE;--tdm-page:#0B1120;--tdm-surface:#111827;--tdm-surface-alt:#182236;--tdm-border:#26354F;--tdm-muted:#94A3B8;--tdm-text:#EAF0FA;--tdm-text-soft:#BAC6D8}
 .dark .tdm-modal{background:var(--tdm-surface);color:var(--tdm-text);box-shadow:0 32px 90px rgba(0,0,0,.45)}
+.dark .tdm-backdrop.is-hub-focus .tdm-modal{border-color:var(--tdm-border);box-shadow:none}
 .dark .tdm-head,.dark .tdm-main,.dark .tdm-props,.dark .tdm-conv,.dark .tdm-conv-head,.dark .tdm-msg-wrap,.dark .tdm-foot{border-color:var(--tdm-border)}
 .dark .tdm-conv,.dark .tdm-attachment-drop{background:var(--tdm-page)}
 	.dark .tdm-title-input,.dark .tdm-msg-input,.dark .tdm-prop-input,.dark .tdm-prop-date,.dark .tdm-prop-time,.dark .tdm-list-select,.dark .tdm-reminder-clear,.dark .tdm-option-popover,.dark .tdm-option-search,.dark .tdm-option-editor-input,.dark .tdm-assign-popover,.dark .tdm-invite-input{background:var(--tdm-surface-alt);border-color:var(--tdm-border);color:var(--tdm-text)}
@@ -300,6 +310,8 @@
 	.dark .tdm-chat-toggle-switch{background:var(--tdm-border)}
 	.dark .tdm-close{background:#17233a;color:#8ea0bd}
 	.dark .tdm-close:hover{background:#253b5c;color:#e0e6ed}
+	.dark .tdm-back,.dark .tdm-backdrop.is-hub-focus .tdm-close{background:var(--tdm-surface-alt);border-color:var(--tdm-border);color:var(--tdm-text-soft)}
+	.dark .tdm-head-divider{background:var(--tdm-border)}
 	.dark .tdm-quick-action{border-color:var(--tdm-border);color:var(--tdm-text)}
 	.dark .tdm-quick-popover,.dark .tdm-schedule-date input,.dark .tdm-reminder-tool input{background:var(--tdm-surface-alt);border-color:var(--tdm-border);color:var(--tdm-text)}
 
@@ -309,9 +321,16 @@
     .tdm-main,.tdm-props{border-right:0;border-bottom:1px solid #f1f3f5;overflow:visible}
     .tdm-conv{min-height:360px}
 }
+@media(max-width:900px){
+    .tdm-backdrop.is-hub-focus .tdm-modal{left:8px;top:8px;width:calc(100vw - 16px);height:calc(100vh - 16px);border:1px solid var(--tdm-border);border-radius:14px}
+}
 @media(max-width:640px){
     .tdm-modal{width:100vw;height:100vh;border-radius:0}
+	.tdm-backdrop.is-hub-focus .tdm-modal{left:0;top:0;width:100vw;height:100vh;border:0;border-radius:0}
     .tdm-head{padding:0 16px}
+	.tdm-back{width:32px;padding:0;justify-content:center}
+	.tdm-back span{display:none}
+	.tdm-head-divider{display:none}
     .tdm-main,.tdm-props{padding:20px 16px}
     .tdm-prop{align-items:flex-start}
     .tdm-prop-value{justify-content:flex-start}
@@ -322,16 +341,30 @@
 
 <!-- ═══ Modal HTML ═══ -->
 <div x-data x-show="$store.taskModal.task" x-cloak>
-    <div class="tdm-backdrop" :class="{'open': $store.taskModal.task}" @click.self="$store.taskModal.close()">
+	<div class="tdm-backdrop"
+	     :class="{'open': $store.taskModal.task, 'is-hub-focus': $store.taskModal.isHyperfocus()}"
+	     :style="$store.taskModal.focusFrameStyle()"
+	     @click.self="$store.taskModal.close()">
 	        <div class="tdm-modal" @keydown.escape.window="$store.taskModal.close()" @click="$store.taskModal.closeMenus()">
             <template x-if="$store.taskModal.task">
                 <div class="tdm-shell">
                     <div class="tdm-head">
+						<button class="tdm-back" type="button"
+						        x-show="$store.taskModal.isHyperfocus()"
+						        title="Retour aux tâches"
+						        @click="$store.taskModal.back()">
+							<iconify-icon icon="solar:arrow-left-linear" width="16"></iconify-icon>
+							<span>Retour</span>
+						</button>
+						<span class="tdm-head-divider" x-show="$store.taskModal.isHyperfocus()"></span>
                         <span class="tdm-head-icon">
                             <iconify-icon :icon="$store.taskModal.task.listIcon || 'solar:checklist-bold-duotone'" width="16"></iconify-icon>
                         </span>
                         <span class="tdm-head-label" x-text="$store.taskModal.task.listLabel || 'Liste des tâches'"></span>
-                        <button class="tdm-close" type="button" @click="$store.taskModal.close()"><iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon></button>
+						<button class="tdm-close" type="button" title="Fermer" @click="$store.taskModal.close()">
+							<span class="tdm-close-label">Fermer</span>
+							<iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon>
+						</button>
                     </div>
 
                     <div class="tdm-body">
@@ -972,6 +1005,9 @@ document.addEventListener('alpine:init', () => {
 
     Alpine.store('taskModal', {
 	        task: null,
+	        layoutMode: 'modal',
+	        focusTarget: '',
+	        focusFrame: null,
 	        statusOptions: [],
 	        priorityOptions: [],
 	        tagOptions: [],
@@ -1023,9 +1059,52 @@ document.addEventListener('alpine:init', () => {
         },
         colorPalette: ['#634EFB','#3B82F6','#22C55E','#14B8A6','#F59E0B','#F97316','#EF4444','#EC4899','#A78BFA','#6B7280'],
 
-		        async open(taskObj, { onUpdate, onDelete } = {}) {
+		isHyperfocus() {
+			return this.layoutMode === 'hyperfocus';
+		},
+
+		refreshFocusFrame() {
+			if (!this.isHyperfocus() || !this.focusTarget) {
+				this.focusFrame = null;
+				return;
+			}
+			let target = document.querySelector(this.focusTarget);
+			if (!target) {
+				this.focusFrame = null;
+				return;
+			}
+			let rect = target.getBoundingClientRect();
+			if (rect.width < 1120) {
+				const workspace = target.closest('.th-simple-shell');
+				if (workspace) {
+					target = workspace;
+					rect = target.getBoundingClientRect();
+				}
+			}
+			this.focusFrame = {
+				left: Math.max(0, Math.round(rect.left)),
+				top: Math.max(0, Math.round(rect.top)),
+				width: Math.max(320, Math.round(rect.width)),
+				height: Math.max(420, Math.round(rect.height))
+			};
+		},
+
+		focusFrameStyle() {
+			if (!this.isHyperfocus() || !this.focusFrame) return '';
+			const frame = this.focusFrame;
+			return `--tdm-focus-left:${frame.left}px;--tdm-focus-top:${frame.top}px;--tdm-focus-width:${frame.width}px;--tdm-focus-height:${frame.height}px`;
+		},
+
+		back() {
+			this.close();
+		},
+
+		        async open(taskObj, { onUpdate, onDelete, layoutMode = 'modal', focusTarget = '' } = {}) {
 		            const openSeq = ++this._openSeq;
 		            const taskId = String(taskObj?._id || '');
+		            this.layoutMode = layoutMode === 'hyperfocus' ? 'hyperfocus' : 'modal';
+		            this.focusTarget = this.layoutMode === 'hyperfocus' ? String(focusTarget || '') : '';
+		            this.refreshFocusFrame();
 		            window.dispatchEvent(new CustomEvent('close-home-task-menu'));
 		            this.closeMenus();
 			            this.clearChatFiles();
@@ -1057,6 +1136,8 @@ document.addEventListener('alpine:init', () => {
 	                reminder: taskObj?.reminder || null
             };
             this.syncReminderDraft({ force: true });
+			this.refreshFocusFrame();
+			requestAnimationFrame(() => this.refreshFocusFrame());
 	            this._onUpdate = onUpdate || null;
 	            this._onDelete = onDelete || null;
 	            this.loadTeamMembers();
@@ -1132,6 +1213,9 @@ document.addEventListener('alpine:init', () => {
 		        close() {
 		            this._openSeq += 1;
 		            this.task = null;
+		            this.layoutMode = 'modal';
+		            this.focusTarget = '';
+		            this.focusFrame = null;
 		            this.closeMenus();
 			            this.uploadBusy = false;
 			            this.chatSending = false;
@@ -2540,8 +2624,15 @@ document.addEventListener('alpine:init', () => {
             Alpine.store('taskModal').open(e.detail.task, {
                 onUpdate: e.detail.onUpdate || null,
                 onDelete: e.detail.onDelete || null,
+				layoutMode: e.detail.layoutMode || 'modal',
+				focusTarget: e.detail.focusTarget || '',
             });
         }
     });
+
+	if (!window.__taskModalFocusResizeBound) {
+		window.__taskModalFocusResizeBound = true;
+		window.addEventListener('resize', () => Alpine.store('taskModal')?.refreshFocusFrame?.());
+	}
 });
 </script>

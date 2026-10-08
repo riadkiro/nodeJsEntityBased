@@ -16,7 +16,7 @@ test('task modal exposes a two-by-two quick action grid and keeps Today membersh
 
     const page = await browser.newPage();
     page.setDefaultTimeout(5_000);
-    await page.setViewport({ width: 1280, height: 860, deviceScaleFactor: 1 });
+    await page.setViewport({ width: 1920, height: 900, deviceScaleFactor: 1 });
     const pageErrors = [];
     page.on('pageerror', error => pageErrors.push(error.message));
 
@@ -158,9 +158,6 @@ test('task modal exposes a two-by-two quick action grid and keeps Today membersh
     assert.equal(clearDateState.active, false);
     await page.waitForSelector('.tdm-quick-action-wrap:nth-child(2) .tdm-quick-popover', { hidden: true });
 
-    if (process.env.TASK_MODAL_SCREENSHOT) {
-        await page.screenshot({ path: process.env.TASK_MODAL_SCREENSHOT, fullPage: true });
-    }
     await page.click('.tdm-quick-action.is-assign');
     await page.waitForFunction(() => window.Alpine.store('taskModal').assignMenu === true);
     await page.click('.tdm-quick-action.is-reminder');
@@ -179,5 +176,42 @@ test('task modal exposes a two-by-two quick action grid and keeps Today membersh
     assert.match(reminderState.date, /^\d{4}-\d{2}-\d{2}$/);
     assert.match(reminderState.time, /^\d{2}:\d{2}$/);
     assert.equal(reminderState.fallbackRetention, 'Reste dans Liste des tâches');
+
+	await page.evaluate(() => {
+		const focusPane = document.createElement('div');
+		focusPane.id = 'test-task-focus-pane';
+		focusPane.style.cssText = 'position:fixed;left:350px;top:64px;width:1550px;height:780px';
+		document.body.appendChild(focusPane);
+		const store = window.Alpine.store('taskModal');
+		store.closeMenus();
+		store.layoutMode = 'hyperfocus';
+		store.focusTarget = '#test-task-focus-pane';
+		store.refreshFocusFrame();
+	});
+	await page.waitForFunction(() => document.querySelector('.tdm-backdrop')?.classList.contains('is-hub-focus'));
+	const focusState = await page.evaluate(() => {
+		const backdrop = document.querySelector('.tdm-backdrop');
+		const modalRect = document.querySelector('.tdm-modal').getBoundingClientRect();
+		return {
+			style: backdrop.getAttribute('style'),
+			modalRect: {
+				left: Math.round(modalRect.left),
+				top: Math.round(modalRect.top),
+				width: Math.round(modalRect.width),
+				height: Math.round(modalRect.height),
+			},
+			backLabel: document.querySelector('.tdm-back')?.textContent.trim(),
+			closeLabel: document.querySelector('.tdm-close-label')?.textContent.trim(),
+		};
+	});
+	assert.match(focusState.style, /--tdm-focus-left:350px/);
+	assert.deepEqual(focusState.modalRect, { left: 350, top: 64, width: 1550, height: 780 });
+	assert.equal(focusState.backLabel, 'Retour');
+	assert.equal(focusState.closeLabel, 'Fermer');
+	if (process.env.TASK_MODAL_SCREENSHOT) {
+		await page.screenshot({ path: process.env.TASK_MODAL_SCREENSHOT, fullPage: true });
+	}
+	await page.click('.tdm-back');
+	await page.waitForFunction(() => window.Alpine.store('taskModal').task === null);
     assert.deepEqual(pageErrors, []);
 });

@@ -276,6 +276,8 @@
 .th-today-card{border:1px solid #dfe8f3;border-radius:14px;background:#fff;box-shadow:0 10px 24px rgba(15,23,42,.025);padding:18px 22px 20px}
 .th-today-header{display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:16px}
 .th-today-title{display:inline-flex;align-items:center;gap:8px;min-width:0;flex-wrap:wrap;color:#0e1726;font-size:14px;font-weight:850}
+.th-today-heading{display:inline-flex;align-items:center;gap:8px;min-width:0}
+.th-today-heading-label{min-width:0;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .th-today-icon{width:28px;height:28px;border-radius:9px;display:inline-flex;align-items:center;justify-content:center;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);flex:0 0 auto}
 .th-count-pill{height:22px;display:inline-flex;align-items:center;justify-content:center;padding:0 9px;border-radius:8px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);font-size:10.5px;font-weight:850;white-space:nowrap}
 .th-day-nav{height:22px;border:1px solid color-mix(in srgb,var(--focus-brand,#634efb) 22%,#fff);border-radius:8px;background:#fff;color:var(--focus-brand,#634efb);padding:0 9px;font-family:inherit;font-size:10.5px;font-weight:850;line-height:1;display:inline-flex;align-items:center;gap:4px;cursor:pointer;transition:background .14s,border-color .14s,color .14s}
@@ -646,8 +648,10 @@ window.addEventListener('pagehide', () => {
                 <section class="th-today-card">
                     <div class="th-today-header">
                         <div class="th-today-title">
-                            <span class="th-today-icon"><iconify-icon icon="solar:bolt-bold-duotone" width="16"></iconify-icon></span>
-                            <span>Tâches du jour</span>
+                            <span class="th-today-heading">
+                                <span class="th-today-icon"><iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-today-heading-label" x-text="selectedTasksTitle"></span>
+                            </span>
                             <span class="th-count-pill" x-text="selectedOpenTasks.length + ' à faire'"></span>
                             <button type="button"
                                     class="th-day-nav is-overdue"
@@ -2087,6 +2091,13 @@ document.addEventListener('alpine:init', () => {
         get selectedShortLabel() {
             return this.formatDayKey(this.selectedDateKey);
         },
+        get selectedTasksTitle() {
+            if (this.selectedMode === 'overdue') return 'Tâches en retard';
+            const dateLabel = this.formatDayKey(this.selectedDateKey, { weekday: true });
+            if (this.selectedIsToday) return `Tâches d'aujourd'hui · ${dateLabel}`;
+            if (this.selectedIsTomorrow) return `Tâches de demain · ${dateLabel}`;
+            return `Tâches du ${dateLabel}`;
+        },
         get selectedListIsToday() {
             return this.selectedListDateKey === this.todayKey();
         },
@@ -2101,6 +2112,13 @@ document.addEventListener('alpine:init', () => {
         },
         formatDayKey(key, options = {}) {
             const d = this.dateFromKey(key);
+            if (options.weekday) {
+                return d.toLocaleDateString('fr-FR', {
+                    weekday: 'long',
+                    day: '2-digit',
+                    month: 'long'
+                });
+            }
             if (options.long) return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' });
             return d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' }).replace('.', '');
         },

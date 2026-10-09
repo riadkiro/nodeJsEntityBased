@@ -182,6 +182,8 @@
 .ah-calendar-container .fc .fc-scrollgrid { border-color:#e8ecf1 !important; }
 .ah-calendar-container .fc .fc-timegrid-slot { height:40px; }
 .ah-calendar-container .fc .fc-timegrid-slot-label-cushion { font-size:11px; font-weight:600; color:#9ca3af; }
+.ah-calendar-container .fc .fc-timegrid-axis-cushion { color:#7c89a6; font-size:10px; font-weight:800; }
+.ah-calendar-container .fc .fc-timegrid-allday { background:#fbfcff; }
 .ah-calendar-container .fc .fc-now-indicator-line { border-color:#ef4444 !important; }
 
 /* List view table */
@@ -1326,10 +1328,34 @@ document.addEventListener('alpine:init', () => {
             return `Dans ${days} jours`;
         },
 
+        nextDateKey(key) {
+            const match = String(key || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            if (!match) return '';
+            const date = new Date(Date.UTC(Number(match[1]), Number(match[2]) - 1, Number(match[3])));
+            date.setUTCDate(date.getUTCDate() + 1);
+            return date.toISOString().slice(0, 10);
+        },
+
         toCalendarEvents(evts) {
             return evts.map(ev => {
                 const status = this.getStatus(ev);
                 const duration = this.getFieldValue(ev, 'duree_evenement');
+                const allDay = this.isAllDayEvent(ev);
+                if (allDay) {
+                    const startKey = this.dateKeyForInput(ev.date);
+                    const inclusiveEndKey = ev.end_date ? this.dateKeyForInput(ev.end_date) : '';
+                    return {
+                        id: ev._id?.toString(),
+                        title: ev.title || 'Sans titre',
+                        start: startKey,
+                        end: inclusiveEndKey ? this.nextDateKey(inclusiveEndKey) : undefined,
+                        backgroundColor: status.color,
+                        borderColor: status.color,
+                        textColor: '#fff',
+                        allDay: true,
+                        extendedProps: { _ev: ev }
+                    };
+                }
                 let start = ev.date ? new Date(ev.date) : new Date();
                 let end = ev.end_date ? new Date(ev.end_date) : null;
                 if (!end && duration) { end = new Date(start.getTime() + (parseInt(duration) || 30) * 60000); }
@@ -1343,7 +1369,7 @@ document.addEventListener('alpine:init', () => {
                     backgroundColor: status.color,
                     borderColor: status.color,
                     textColor: '#fff',
-                    allDay: this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false),
+                    allDay: false,
                     extendedProps: { _ev: ev }
                 };
             });
@@ -1390,7 +1416,8 @@ document.addEventListener('alpine:init', () => {
                 slotMaxTime: '21:00:00',
                 slotDuration: '00:15:00',
                 snapDuration: '00:05:00',
-                allDaySlot: false,
+                allDaySlot: true,
+                allDayText: 'Toute la journée',
                 height: '100%',
                 expandRows: true,
                 eventTimeFormat: { hour:'2-digit', minute:'2-digit', meridiem:false, hour12:false },

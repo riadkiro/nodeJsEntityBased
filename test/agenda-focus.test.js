@@ -30,6 +30,10 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /@change="setAllDay\(\$event\.target\.checked\)"/);
     assert.match(view, /if \(allDay\) payload\.dateKey = startKey/);
     assert.match(view, /Toute la journée/);
+    assert.match(view, /allDaySlot:\s*true/);
+    assert.match(view, /allDayText:\s*'Toute la journée'/);
+    assert.match(view, /start:\s*startKey/);
+    assert.match(view, /end:\s*inclusiveEndKey \? this\.nextDateKey\(inclusiveEndKey\) : undefined/);
     assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-main"'));
     assert.ok(view.indexOf('class="ah-main"') < view.indexOf('class="ah-upcoming-sidebar"'));
     assert.match(view, /syncCalendarToolbarButtons\(\)/);

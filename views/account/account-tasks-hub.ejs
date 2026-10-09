@@ -346,6 +346,23 @@
 .th-completed-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-decoration:line-through;cursor:pointer}
 .th-completed-record{font-size:10px;font-weight:800;color:#8fa0bd;white-space:nowrap}
 .th-empty-simple{min-height:80px;border:1px dashed #dbe4f0;border-radius:10px;background:#fafbff;color:#8fa0bd;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;text-align:center;padding:16px}
+.th-day-events{margin-top:16px;padding-top:15px;border-top:1px solid #e8edf5}
+.th-day-events-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px;color:#172033}
+.th-day-events-title{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:850}
+.th-day-events-icon{width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb)}
+.th-day-events-count{min-width:21px;height:21px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);font-size:10px;font-weight:850}
+.th-day-events-list{display:flex;flex-direction:column;gap:7px}
+.th-day-event-card{width:100%;min-height:58px;display:grid;grid-template-columns:40px minmax(0,1fr) auto 14px;align-items:center;gap:10px;padding:7px 10px;border:1px solid #edf1f6;border-radius:11px;background:#fff;color:inherit;text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.th-day-event-card:hover{border-color:color-mix(in srgb,var(--focus-brand,#634efb) 22%,#fff);box-shadow:0 5px 15px rgba(15,23,42,.045);transform:translateY(-1px)}
+.th-day-event-date{width:40px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;background:color-mix(in srgb,var(--focus-brand-soft,#ebe8ff) 72%,#fff);color:var(--focus-brand,#634efb)}
+.th-day-event-day{font-size:14px;font-weight:900;line-height:1}
+.th-day-event-month{margin-top:3px;font-size:8.5px;font-weight:900;line-height:1;text-transform:uppercase}
+.th-day-event-copy{min-width:0}
+.th-day-event-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#172033;font-size:12.5px;font-weight:800}
+.th-day-event-meta{display:flex;align-items:center;gap:5px;min-width:0;margin-top:5px;color:#8a96aa;font-size:10px;font-weight:650}
+.th-day-event-record{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.th-day-event-badge{display:inline-flex;align-items:center;min-height:20px;padding:0 7px;border-radius:999px;background:#f2f0ff;color:var(--focus-brand,#634efb);font-size:9px;font-weight:850;white-space:nowrap}
+.th-day-event-arrow{color:#a6b0c3;display:inline-flex;align-items:center}
 .th-error-simple{margin-top:8px;color:#ef4444;font-size:12px;font-weight:750}
 .th-task-ctx{position:fixed;z-index:10020;width:240px;background:#fff;border:1px solid #e8ecf1;border-radius:13px;box-shadow:0 18px 46px rgba(15,23,42,.16);padding:8px}
 .th-task-ctx button{width:100%;min-height:32px;border:0;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:750;display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;text-align:left;transition:background .14s,color .14s}
@@ -423,6 +440,12 @@
 .dark .th-day,.dark .th-month-label{color:#c1cad6}
 .dark .th-day.is-muted{color:#506690}
 .dark .th-workload-bg,.dark .th-empty-simple{background:#111f35;border-color:#253b5c}
+.dark .th-day-events{border-color:#253b5c}
+.dark .th-day-events-head,.dark .th-day-event-name{color:#e0e6ed}
+.dark .th-day-event-card{background:#0e1726;border-color:#253b5c}
+.dark .th-day-event-card:hover{border-color:#4f46e5;box-shadow:0 5px 15px rgba(0,0,0,.18)}
+.dark .th-day-event-date,.dark .th-day-event-badge{background:#1b2447}
+.dark .th-day-event-meta{color:#8ea0bd}
 .dark .th-task-row-simple:hover{background:#111f35}
 .dark .th-today-body:not(.is-compact) .th-task-row-simple,.dark .th-list-panel-body:not(.is-compact) .th-task-row-simple{background:#0e1726;border-color:#253b5c;box-shadow:none}
 .dark .th-today-body:not(.is-compact) .th-task-row-simple:hover,.dark .th-list-panel-body:not(.is-compact) .th-task-row-simple:hover{background:#111f35;border-color:#334b70;box-shadow:0 8px 20px rgba(0,0,0,.16)}
@@ -724,6 +747,39 @@ window.addEventListener('pagehide', () => {
                                 <template x-if="selectedOpenTasks.length === 0 && !sideLoading">
                                     <div class="th-empty-simple" x-text="selectedEmptyLabel"></div>
                                 </template>
+                                <section class="th-day-events"
+                                         x-show="selectedMode === 'date' && selectedDayEvents.length > 0"
+                                         aria-label="Événements de la journée">
+                                    <div class="th-day-events-head">
+                                        <div class="th-day-events-title">
+                                            <span class="th-day-events-icon">
+                                                <iconify-icon icon="solar:calendar-mark-bold-duotone" width="15"></iconify-icon>
+                                            </span>
+                                            <span x-text="selectedEventsTitle"></span>
+                                        </div>
+                                        <span class="th-day-events-count" x-text="selectedDayEvents.length"></span>
+                                    </div>
+                                    <div class="th-day-events-list">
+                                        <template x-for="ev in selectedDayEvents" :key="'day-event-' + ev._id">
+                                            <button type="button" class="th-day-event-card" @click="openDayEvent(ev)">
+                                                <span class="th-day-event-date">
+                                                    <span class="th-day-event-day" x-text="eventCalendarDay(ev.date)"></span>
+                                                    <span class="th-day-event-month" x-text="eventCalendarMonth(ev.date)"></span>
+                                                </span>
+                                                <span class="th-day-event-copy">
+                                                    <span class="th-day-event-name" x-text="ev.title || 'Sans titre'"></span>
+                                                    <span class="th-day-event-meta">
+                                                        <span x-text="formatEventTime(ev.date)"></span>
+                                                        <span>·</span>
+                                                        <span class="th-day-event-record" x-text="eventRecordTitle(ev)"></span>
+                                                    </span>
+                                                </span>
+                                                <span class="th-day-event-badge">Événement</span>
+                                                <span class="th-day-event-arrow"><iconify-icon icon="solar:alt-arrow-right-linear" width="14"></iconify-icon></span>
+                                            </button>
+                                        </template>
+                                    </div>
+                                </section>
                             </div>
                             <div class="th-task-composer" x-show="selectedMode !== 'overdue' || addError">
                                 <form class="th-inline-form" x-show="selectedMode !== 'overdue'" @submit.prevent="createTodayTask()">
@@ -1252,6 +1308,9 @@ document.addEventListener('alpine:init', () => {
         taskIndexById: {},
         taskSourceById: {},
         myLists: [],
+        agendaEvents: [],
+        agendaParentLookup: {},
+        agendaLoading: true,
         sideLoading: true,
         hubTab: 'today',
         selectedMyListId: '',
@@ -1354,7 +1413,7 @@ document.addEventListener('alpine:init', () => {
             this.calendarCursor = this.monthKeyFromDateKey(this.selectedDateKey);
             this.loadTodayPanelOptions();
             window.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeTask(); });
-            await this.loadHub();
+            await Promise.all([this.loadHub(), this.loadAgendaEvents()]);
         },
 
         async loadHub() {
@@ -1381,6 +1440,32 @@ document.addEventListener('alpine:init', () => {
             } catch (e) { console.error('[TasksHub]', e); }
             this.sideLoading = false;
             this.$nextTick(() => this.refreshTodaySortable());
+        },
+
+        async loadAgendaEvents() {
+            this.agendaLoading = true;
+            try {
+                const res = await fetch(API + '/api/agenda-hub', { credentials:'include' });
+                const data = await res.json();
+                if (data.success) {
+                    this.agendaEvents = Array.isArray(data.events) ? data.events : [];
+                    this.agendaParentLookup = {};
+                    (data.entities || []).forEach(entity => {
+                        (entity.records || []).forEach(record => {
+                            this.agendaParentLookup[String(record.recordId)] = {
+                                recordId: String(record.recordId),
+                                recordTitle: record.recordTitle || 'Sans titre',
+                                entitySlug: entity.entitySlug || ''
+                            };
+                        });
+                    });
+                }
+            } catch (e) {
+                console.error('[TasksHub] Agenda events error:', e);
+                this.agendaEvents = [];
+            } finally {
+                this.agendaLoading = false;
+            }
         },
 
         get allRecords() {
@@ -2058,6 +2143,56 @@ document.addEventListener('alpine:init', () => {
                 ? this.overdueTasks
                 : this.rawVisibleTasks.filter(task => !this.isDone(task) && this.taskMatchesDate(task, this.selectedDateKey));
             return tasks.slice().sort((a, b) => this.compareDayTasks(a, b));
+        },
+        get selectedDayEvents() {
+            if (this.selectedMode !== 'date') return [];
+            return (this.agendaEvents || [])
+                .filter(ev => this.dateKeyFromValue(ev.date) === this.selectedDateKey)
+                .slice()
+                .sort((a, b) => new Date(a.date) - new Date(b.date));
+        },
+        get selectedEventsTitle() {
+            if (this.selectedIsToday) return 'Événements du jour';
+            if (this.selectedIsTomorrow) return 'Événements de demain';
+            return 'Événements du ' + this.formatDayKey(this.selectedDateKey, { long: true });
+        },
+        eventParentId(ev = {}) {
+            for (const relation of (ev.relations || [])) {
+                const values = Array.isArray(relation.value) ? relation.value : [relation.value];
+                for (const value of values) {
+                    const id = value?._id || value;
+                    if (id && this.agendaParentLookup[String(id)]) return String(id);
+                }
+            }
+            return '';
+        },
+        eventRecordInfo(ev = {}) {
+            return this.agendaParentLookup[this.eventParentId(ev)] || null;
+        },
+        eventRecordTitle(ev = {}) {
+            return this.eventRecordInfo(ev)?.recordTitle || 'Agenda';
+        },
+        formatEventTime(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
+        },
+        eventCalendarDay(value) {
+            const date = new Date(value);
+            return Number.isNaN(date.getTime()) ? '--' : String(date.getDate()).padStart(2, '0');
+        },
+        eventCalendarMonth(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            return date.toLocaleDateString('fr-FR', { month:'short' }).replace('.', '').toUpperCase();
+        },
+        openDayEvent(ev = {}) {
+            const info = this.eventRecordInfo(ev);
+            if (info?.entitySlug && info.recordId) {
+                window.location.href = API + '/record/' + info.entitySlug + '/' + info.recordId + '/agenda';
+                return;
+            }
+            window.location.href = API + '/agenda';
         },
         get completedSelectedTasks() {
             if (this.selectedMode === 'overdue') return [];

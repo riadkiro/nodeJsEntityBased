@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const ejs = require('ejs');
 const puppeteer = require('puppeteer');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -14,9 +15,18 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /class="ah-sidebar-title"/);
     assert.match(view, /title="Calendrier"/);
     assert.match(view, /title="Liste"/);
+    assert.match(view, /class="ah-upcoming-sidebar"/);
+    assert.match(view, /x-for="ev in upcomingEvents"/);
+    assert.match(view, /class="ah-upcoming-delay" x-text="relativeDayBadge\(ev\.date\)"/);
+    assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-upcoming-sidebar"'));
+    assert.ok(view.indexOf('class="ah-upcoming-sidebar"') < view.indexOf('class="ah-main"'));
     assert.match(view, /syncCalendarToolbarButtons\(\)/);
     assert.match(view, /datesSet:\s*\(\)\s*=>\s*self\.syncCalendarToolbarButtons\(\)/);
     assert.match(view, /style\.setProperty\('-webkit-text-fill-color',\s*color,\s*'important'\)/);
+    const rendered = await ejs.renderFile(viewPath, { account_number: '6804' });
+    for (const match of rendered.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
+        assert.doesNotThrow(() => new Function(match[1]));
+    }
 
     const styles = [...view.matchAll(/<style>([\s\S]*?)<\/style>/g)]
         .map(match => match[1])
@@ -30,6 +40,7 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         <div class="ah-page">
             <div class="ah-body">
                 <aside class="ah-sidebar"></aside>
+                <aside class="ah-upcoming-sidebar"></aside>
                 <main class="ah-main"></main>
             </div>
         </div>
@@ -39,11 +50,14 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         const root = document.querySelector('.ah-page').getBoundingClientRect();
         const body = document.querySelector('.ah-body').getBoundingClientRect();
         const sidebar = document.querySelector('.ah-sidebar').getBoundingClientRect();
+        const upcoming = document.querySelector('.ah-upcoming-sidebar').getBoundingClientRect();
         return {
             rootHeight: root.height,
             bodyHeight: body.height,
             sidebarHeight: sidebar.height,
             sidebarWidth: sidebar.width,
+            upcomingHeight: upcoming.height,
+            upcomingWidth: upcoming.width,
             overflow: getComputedStyle(document.querySelector('.ah-page')).overflow
         };
     });
@@ -53,6 +67,8 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         bodyHeight: 812,
         sidebarHeight: 812,
         sidebarWidth: 350,
+        upcomingHeight: 812,
+        upcomingWidth: 320,
         overflow: 'hidden'
     });
 });

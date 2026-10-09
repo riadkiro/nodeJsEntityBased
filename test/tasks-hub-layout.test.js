@@ -16,6 +16,11 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
 
     const view = fs.readFileSync(viewPath, 'utf8');
 	assert.match(view, /layoutMode:\s*'hyperfocus'/);
+    assert.match(view, /await Promise\.all\(\[this\.loadHub\(\), this\.loadAgendaEvents\(\)\]\)/);
+    assert.match(view, /get selectedDayEvents\(\)/);
+    assert.match(view, /return 'Événements du jour'/);
+    assert.ok(view.indexOf('class="th-open-task-rows"') < view.indexOf('class="th-day-events"'));
+    assert.ok(view.indexOf('class="th-day-events"') < view.indexOf('class="th-task-composer"'));
     const styles = [...view.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(match => match[1]).join('\n');
     await page.setContent(`
         <style>${styles}</style>

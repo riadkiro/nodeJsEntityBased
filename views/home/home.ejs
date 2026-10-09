@@ -319,6 +319,7 @@ document.addEventListener('alpine:init', () => {
             this.scrollToBottom();
 
             try {
+                await this.loadContext();
                 const res = await fetch(API + '/api/ai-assistant/chat', {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json' },

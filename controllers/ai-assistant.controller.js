@@ -14,6 +14,7 @@
 const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
 const Mail = require("../models/mail.model");
+const TaskOverview = require("../services/task-overview.service");
 
 // ── Global models (Provider & Action live in global DB) ──────
 const IntegrationProvider = require("../src/integrations/models/IntegrationProvider.model");
@@ -96,6 +97,42 @@ function webSearchToolOptionsFromEnv() {
             region: process.env.AI_ASSISTANT_WEB_SEARCH_REGION || process.env.OPENAI_WEB_SEARCH_REGION,
             timezone: process.env.AI_ASSISTANT_WEB_SEARCH_TIMEZONE || process.env.OPENAI_WEB_SEARCH_TIMEZONE
         }
+    };
+}
+
+function summarizeTaskForAssistant(task = {}) {
+    return {
+        id: String(task.id || task._id || ""),
+        title: String(task.title || "Sans titre"),
+        status: String(task.status || "À faire"),
+        priority: String(task.priority || "Normal"),
+        startDate: task.startDate || null,
+        dueDate: task.dueDate || null,
+        isDayPriority: task.isDayPriority === true,
+        assignedTo: task.assignedTo || "",
+        list: task.listLabel || "Liste des tâches",
+        record: task.recordTitle || "",
+        entity: task.entityName || "",
+    };
+}
+
+function summarizeTaskBoardForAssistant(board = {}) {
+    return {
+        loaded: true,
+        dateKey: board.dateKey || "",
+        timeZone: board.timeZone || "Africa/Casablanca",
+        stats: {
+            open: Number(board.stats?.openTasks || 0),
+            today: Number(board.stats?.todayTasks || 0),
+            overdue: Number(board.stats?.overdueCount || 0),
+            completedToday: Array.isArray(board.completedToday) ? board.completedToday.length : 0,
+        },
+        todayTasks: (board.tasks || board.todayTasks || [])
+            .slice(0, 100)
+            .map(summarizeTaskForAssistant),
+        overdueTasks: (board.overdueTasks || [])
+            .slice(0, 50)
+            .map(summarizeTaskForAssistant),
     };
 }
 
@@ -199,9 +236,25 @@ async function buildWorkspaceContext(req) {
             })
         );
 
+        let taskContext = {
+            loaded: false,
+            dateKey: "",
+            timeZone: "Africa/Casablanca",
+            stats: { open: 0, today: 0, overdue: 0, completedToday: 0 },
+            todayTasks: [],
+            overdueTasks: [],
+        };
+        try {
+            const taskBoard = await TaskOverview.buildTaskBoard(req);
+            taskContext = summarizeTaskBoardForAssistant(taskBoard);
+        } catch (taskError) {
+            console.warn("[AIAssistant] Task context unavailable:", taskError.message);
+        }
+
         return {
             accountNumber: req.account_number,
             entities: entitySummaries,
+            taskContext,
             timestamp: new Date().toISOString(),
         };
     } catch (error) {
@@ -367,6 +420,35 @@ function isEmailRelatedQuery(message) {
 }
 
 // ── System prompt builder ────────────────────────────────────
+function taskContextPrompt(taskContext = {}) {
+    if (taskContext.loaded !== true) {
+        return "Le contexte des tâches n'a pas pu être chargé. Ne conclus jamais qu'il n'y a aucune tâche.";
+    }
+    const todayTasks = Array.isArray(taskContext.todayTasks) ? taskContext.todayTasks : [];
+    const overdueTasks = Array.isArray(taskContext.overdueTasks) ? taskContext.overdueTasks : [];
+    const formatTask = (task, index) => {
+        const details = [
+            `priorité: ${task.priority || "Normal"}`,
+            task.list ? `liste: ${task.list}` : "",
+            task.record ? `fiche: ${task.record}` : "",
+            task.assignedTo ? `assignée à: ${task.assignedTo}` : "",
+            task.dueDate ? `échéance: ${task.dueDate}` : "",
+        ].filter(Boolean).join("; ");
+        return `${index + 1}. **${task.title || "Sans titre"}**${details ? ` — ${details}` : ""}`;
+    };
+    return `Date de référence: ${taskContext.dateKey || "aujourd'hui"} (${taskContext.timeZone || "Africa/Casablanca"})
+- Tâches ouvertes au total: ${taskContext.stats?.open || 0}
+- Tâches à faire aujourd'hui: ${taskContext.stats?.today || todayTasks.length}
+- Tâches en retard: ${taskContext.stats?.overdue || overdueTasks.length}
+- Terminées aujourd'hui: ${taskContext.stats?.completedToday || 0}
+
+### Tâches à faire aujourd'hui:
+${todayTasks.length ? todayTasks.map(formatTask).join("\n") : "Aucune tâche ouverte pour aujourd'hui."}
+
+### Tâches en retard:
+${overdueTasks.length ? overdueTasks.map(formatTask).join("\n") : "Aucune tâche en retard."}`;
+}
+
 function buildSystemPrompt(context, pageContext) {
     const now = new Date();
     const dateStr = now.toLocaleDateString("fr-FR", {
@@ -410,6 +492,7 @@ function buildSystemPrompt(context, pageContext) {
     } else if (pageContext?.page) {
         const pageNames = {
             home: "la page d'accueil",
+            "home-agent": "l'interface de l'agent IA",
             tasks: "les tâches",
             admin: "le panneau admin",
             superadmin: "le panneau SuperAdmin",
@@ -427,6 +510,11 @@ ${pageHint}
 
 ## Collections disponibles dans ce workspace:
 ${entityList}
+
+## ✅ Tâches réelles du workspace:
+${taskContextPrompt(context?.taskContext)}
+
+RÈGLE TÂCHES: pour toute question sur les tâches, les priorités ou le programme du jour, utilise d'abord et fidèlement la section ci-dessus. Les fiches récentes des collections ne remplacent jamais cette liste. N'affirme jamais qu'il n'y a aucune tâche si le contexte des tâches n'est pas chargé.
 
 ## 📧 Accès Mailbox:
 Tu as accès à la boîte mail de l'utilisateur. Tu peux:
@@ -1190,6 +1278,12 @@ module.exports = {
             });
         }
     },
+};
+
+module.exports.__test = {
+    buildSystemPrompt,
+    summarizeTaskBoardForAssistant,
+    taskContextPrompt,
 };
 
 // ── Fallback response (when AI is not configured) ────────────

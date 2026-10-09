@@ -49,8 +49,10 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
                                     <div class="th-today-body is-completed-hidden">
                                         <div class="th-open-list">
                                             <div class="th-day-tasks-head"><span class="th-day-tasks-icon"></span><span>Tâches</span></div>
-                                            <div class="th-open-task-rows">
-                                                <div class="th-task-row-simple"><span></span><span>Tâche test</span><span></span></div>
+                                            <div class="th-day-scroll">
+                                                <div class="th-open-task-rows">
+                                                    <div class="th-task-row-simple"><span></span><span>Tâche test</span><span></span></div>
+                                                </div>
                                                 <section class="th-day-events">
                                                     <div class="th-day-events-head"><div class="th-day-events-title"><span class="th-day-events-icon"></span><span>Événements du jour</span></div></div>
                                                 </section>

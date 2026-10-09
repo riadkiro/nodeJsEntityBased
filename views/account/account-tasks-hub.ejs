@@ -299,6 +299,7 @@
 .th-open-list{display:flex;flex-direction:column;gap:6px;min-width:0}
 .th-day-tasks-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;padding:16px 22px 0;box-sizing:border-box;color:#172033;font-size:12px;font-weight:850}
 .th-day-tasks-icon{width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);flex:0 0 auto}
+.th-day-scroll{min-width:0}
 .th-open-task-rows{display:flex;flex-direction:column;gap:6px;min-width:0}
 .th-task-row-simple{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:28px;padding:1px 8px;border-radius:8px;position:relative}
 .th-task-row-simple:hover{background:#fbfcff}
@@ -419,7 +420,8 @@
 .th-today-header{height:64px;min-height:64px;flex:0 0 64px;align-items:center;margin:0;padding:0 22px;border-bottom:1px solid #e3e8ef;box-sizing:border-box}
 .th-today-body{flex:1;min-height:0;display:block;overflow:hidden;padding:0;box-sizing:border-box}
 .th-open-list{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden;padding:0}
-.th-open-task-rows{flex:1;min-height:0;overflow-y:auto;padding:0 22px 12px}
+.th-day-scroll{flex:1;min-height:0;overflow-y:auto;padding:0 22px 12px}
+.th-open-task-rows{overflow:visible;padding:0}
 .th-completed{height:100%;min-height:0;display:flex;flex-direction:column;overflow:hidden}
 .th-completed-list{flex:1;min-height:0;max-height:none}
 .th-side-stack .th-completed-panel{height:auto;min-height:190px;flex:1 1 220px;border:0;padding:16px;background:transparent}
@@ -482,7 +484,7 @@
 /* Responsive */
 @media(max-width:1280px){.th-shell{grid-template-columns:248px minmax(0,1fr)}}
 @media(max-width:900px){.th-wrap{height:auto;min-height:calc(100vh - 70px);overflow:visible}.th-shell{display:block}.th-rail{height:auto;border-right:0;border-bottom:1px solid #e8ecf1}.th-rail-body{max-height:300px}.th-main{overflow:visible}.th-main-inner{padding:16px}.th-content-header{flex-direction:column;gap:12px}.th-date-tabs{flex-wrap:wrap}.th-date-tabs-right{margin-left:0;margin-top:6px}.th-task-item{grid-template-columns:32px minmax(0,1fr) 28px}.th-task-item>.th-task-date-label,.th-task-item>.th-task-priority-badge{display:none}}
-@media(max-width:1100px){.th-detail-scroll{overflow-y:auto}.th-detail-scroll .th-simple-grid{height:auto;grid-template-columns:1fr}.th-center{height:auto;grid-column:1;grid-row:1}.th-side-stack{height:auto;grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0;border-top:1px solid #e8edf5}.th-side-stack .th-completed-panel{grid-column:1/-1;min-height:220px}.th-today-card{height:auto;min-height:520px}.th-today-body,.th-list-panel-body{grid-template-columns:1fr;overflow:visible}.th-open-list{height:auto;overflow:visible}.th-completed{height:auto;border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px;overflow:visible}.th-side-stack .th-completed-panel{padding:18px;border-top:0}.th-completed-list{max-height:220px}}
+@media(max-width:1100px){.th-detail-scroll{overflow-y:auto}.th-detail-scroll .th-simple-grid{height:auto;grid-template-columns:1fr}.th-center{height:auto;grid-column:1;grid-row:1}.th-side-stack{height:auto;grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));border-left:0;border-top:1px solid #e8edf5}.th-side-stack .th-completed-panel{grid-column:1/-1;min-height:220px}.th-today-card{height:auto;min-height:520px}.th-today-body,.th-list-panel-body{grid-template-columns:1fr;overflow:visible}.th-open-list,.th-day-scroll{height:auto;overflow:visible}.th-completed{height:auto;border-left:0;border-top:1px solid #e8edf5;padding-left:0;padding-top:18px;overflow:visible}.th-side-stack .th-completed-panel{padding:18px;border-top:0}.th-completed-list{max-height:220px}}
 @media(max-width:900px){.th-wrap.th-simple{height:auto;min-height:calc(100vh - 78px);overflow:visible}.th-simple-shell{height:auto;grid-template-columns:1fr}.th-nav-sidebar{max-height:360px;border-right:0;border-bottom:1px solid #e0e6ed}.th-detail-pane{overflow:visible}.th-detail-scroll{height:auto;overflow:visible;padding:14px}.th-list-view .th-list-task-card{min-height:440px}.dark .th-nav-sidebar{border-bottom-color:#253b5c}}
 @media(max-width:640px){.th-simple-shell{padding:0;border-radius:10px}.th-side-stack{display:flex}.th-today-card,.th-list-task-card{padding:0}.th-today-header,.th-list-view .th-list-task-head{height:auto;min-height:64px;flex-basis:auto;align-items:flex-start;padding:12px 14px}.th-today-body,.th-list-view .th-list-panel-body{padding:14px}.th-card-link{display:none}.th-task-meta-simple{min-width:0}.th-priority-simple span{display:none}.th-list-modal-backdrop{align-items:flex-end;padding:10px}.th-list-modal{max-height:calc(100vh - 20px)}.th-list-icon-grid{grid-template-columns:repeat(4,32px)}.th-list-config-grid{grid-template-columns:1fr}}
 </style>
@@ -705,7 +707,8 @@ window.addEventListener('pagehide', () => {
                                 </span>
                                 <span>Tâches</span>
                             </div>
-                            <div class="th-open-task-rows" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
+                            <div class="th-day-scroll">
+                                <div class="th-open-task-rows" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
                                 <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
                                     <div class="th-task-row-simple"
                                          :class="{ 'is-done': isDone(task), 'is-accented': todayPanelOption('accentRows', true) }"
@@ -760,6 +763,7 @@ window.addEventListener('pagehide', () => {
                                 <template x-if="selectedOpenTasks.length === 0 && !sideLoading">
                                     <div class="th-empty-simple" x-text="selectedEmptyLabel"></div>
                                 </template>
+                                </div>
                                 <section class="th-day-events"
                                          x-show="selectedMode === 'date' && selectedDayEvents.length > 0"
                                          aria-label="Événements de la journée">

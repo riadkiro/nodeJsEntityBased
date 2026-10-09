@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const test = require('node:test');
+const ejs = require('ejs');
 const puppeteer = require('puppeteer');
 
 const projectRoot = path.resolve(__dirname, '..');
@@ -71,4 +72,71 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
         sectionBackground: 'rgb(255, 255, 255)',
         taskBorder: '1px',
     });
+});
+
+test('task composers stay docked at the bottom with a WhatsApp-style send control', { timeout: 10_000 }, async (t) => {
+    const browser = await puppeteer.launch({ headless: true });
+    t.after(() => browser.close());
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 900, deviceScaleFactor: 1 });
+
+    const view = fs.readFileSync(viewPath, 'utf8');
+    assert.equal((view.match(/class="th-task-composer"/g) || []).length, 2);
+    assert.match(view, /solar:plain-2-bold/);
+    const rendered = await ejs.renderFile(viewPath, { account_number: '6804' });
+    for (const match of rendered.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/g)) {
+        assert.doesNotThrow(() => new Function(match[1]));
+    }
+    const styles = [...view.matchAll(/<style>([\s\S]*?)<\/style>/g)].map(match => match[1]).join('\n');
+    await page.setContent(`
+        <style>${styles}</style>
+        <div class="th-list-view" style="width:1000px;height:600px">
+            <section class="th-list-task-card">
+                <div class="th-list-task-head">Liste</div>
+                <div class="th-list-panel-body">
+                    <div class="th-list-open">
+                        <div class="th-list-task-rows">
+                            <div class="th-task-row-simple"><span></span><span>Tâche</span><span></span></div>
+                        </div>
+                        <div class="th-task-composer">
+                            <form class="th-inline-form"><input placeholder="Ajouter"><button type="button">+</button></form>
+                        </div>
+                    </div>
+                    <aside class="th-completed"></aside>
+                </div>
+            </section>
+        </div>
+    `);
+
+    const layout = await page.evaluate(() => {
+        const card = document.querySelector('.th-list-task-card').getBoundingClientRect();
+        const composerElement = document.querySelector('.th-task-composer');
+        const composer = composerElement.getBoundingClientRect();
+        const rows = document.querySelector('.th-list-task-rows').getBoundingClientRect();
+        const input = document.querySelector('.th-inline-form input').getBoundingClientRect();
+        const button = document.querySelector('.th-inline-form button').getBoundingClientRect();
+        const composerStyle = getComputedStyle(composerElement);
+        const buttonStyle = getComputedStyle(document.querySelector('.th-inline-form button'));
+        return {
+            bottomDelta: Math.abs(card.bottom - composer.bottom),
+            rowsEndAtComposer: Math.abs(rows.bottom - composer.top),
+            inputHeight: input.height,
+            buttonWidth: button.width,
+            buttonHeight: button.height,
+            buttonRadius: buttonStyle.borderRadius,
+            buttonBackground: buttonStyle.backgroundColor,
+            composerBorder: composerStyle.borderTopWidth,
+            composerShadow: composerStyle.boxShadow
+        };
+    });
+
+    assert.equal(layout.bottomDelta, 0);
+    assert.equal(layout.rowsEndAtComposer, 0);
+    assert.equal(layout.inputHeight, 42);
+    assert.equal(layout.buttonWidth, 42);
+    assert.equal(layout.buttonHeight, 42);
+    assert.equal(layout.buttonRadius, '50%');
+    assert.notEqual(layout.buttonBackground, 'rgba(0, 0, 0, 0)');
+    assert.equal(layout.composerBorder, '1px');
+    assert.notEqual(layout.composerShadow, 'none');
 });

@@ -769,7 +769,7 @@ window.addEventListener('pagehide', () => {
                                                 <span class="th-day-event-copy">
                                                     <span class="th-day-event-name" x-text="ev.title || 'Sans titre'"></span>
                                                     <span class="th-day-event-meta">
-                                                        <span x-text="formatEventTime(ev.date)"></span>
+                                                        <span x-text="formatEventTime(ev)"></span>
                                                         <span>·</span>
                                                         <span class="th-day-event-record" x-text="eventRecordTitle(ev)"></span>
                                                     </span>
@@ -2172,8 +2172,18 @@ document.addEventListener('alpine:init', () => {
         eventRecordTitle(ev = {}) {
             return this.eventRecordInfo(ev)?.recordTitle || 'Agenda';
         },
-        formatEventTime(value) {
-            const date = new Date(value);
+        agendaFieldValue(ev = {}, name = '') {
+            const field = (ev.customFields || []).find(item =>
+                item.field_id?.name === name || item.fieldName === name || item.name === name
+            );
+            return field?.value;
+        },
+        formatEventTime(ev = {}) {
+            const allDay = ['true', '1', 'yes', 'oui', 'on'].includes(
+                String(this.agendaFieldValue(ev, 'toute_la_journee') ?? false).toLowerCase()
+            );
+            if (allDay) return 'Toute la journée';
+            const date = new Date(ev.date);
             if (Number.isNaN(date.getTime())) return '';
             return date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
         },

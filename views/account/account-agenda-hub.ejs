@@ -536,7 +536,7 @@ window.addEventListener('pagehide', () => {
                                     <tr @click="showDetail(ev)">
                                         <td style="font-weight:600" x-text="ev.title || 'Sans titre'"></td>
                                         <td x-text="formatDate(ev.date)"></td>
-                                        <td style="color:var(--focus-brand,#634efb);font-weight:700" x-text="formatTime(ev.date)"></td>
+                                        <td style="color:var(--focus-brand,#634efb);font-weight:700" x-text="eventTimeLabel(ev)"></td>
                                         <td><span x-text="getType(ev)"></span></td>
                                         <td>
                                             <span class="ah-status-pill"
@@ -582,7 +582,7 @@ window.addEventListener('pagehide', () => {
                         <span class="ah-upcoming-copy">
                             <span class="ah-upcoming-name" x-text="ev.title || 'Sans titre'"></span>
                             <span class="ah-upcoming-meta">
-                                <span x-text="formatTime(ev.date)"></span>
+                                <span x-text="eventTimeLabel(ev)"></span>
                                 <span>·</span>
                                 <span x-text="getStatus(ev).label"></span>
                                 <span class="ah-upcoming-delay" x-text="relativeDayBadge(ev.date)"></span>
@@ -637,12 +637,18 @@ window.addEventListener('pagehide', () => {
                             </select>
                         </label>
                         <label class="ah-form-field">
-                            <span class="ah-form-label">Début</span>
-                            <input class="ah-form-control" type="datetime-local" step="300" x-model="eventForm.startAt">
+                            <span class="ah-form-label" x-text="eventForm.allDay ? 'Date' : 'Début'"></span>
+                            <input x-ref="eventStartInput" class="ah-form-control" type="datetime-local"
+                                   :type="eventForm.allDay ? 'date' : 'datetime-local'"
+                                   :step="eventForm.allDay ? null : 300"
+                                   x-model="eventForm.startAt">
                         </label>
                         <label class="ah-form-field">
-                            <span class="ah-form-label">Fin</span>
-                            <input class="ah-form-control" type="datetime-local" step="300" x-model="eventForm.endAt">
+                            <span class="ah-form-label" x-text="eventForm.allDay ? 'Fin (optionnelle)' : 'Fin'"></span>
+                            <input x-ref="eventEndInput" class="ah-form-control" type="datetime-local"
+                                   :type="eventForm.allDay ? 'date' : 'datetime-local'"
+                                   :step="eventForm.allDay ? null : 300"
+                                   x-model="eventForm.endAt">
                         </label>
                         <label class="ah-form-field">
                             <span class="ah-form-label">Type</span>
@@ -687,7 +693,7 @@ window.addEventListener('pagehide', () => {
                         <div class="ah-form-switches">
                             <label class="ah-form-switch">
                                 <span>Journée entière<small>Sans horaire précis</small></span>
-                                <input type="checkbox" x-model="eventForm.allDay">
+                                <input type="checkbox" :checked="eventForm.allDay" @change="setAllDay($event.target.checked)">
                             </label>
                             <label class="ah-form-switch">
                                 <span>À venir<small>Afficher dans la sidebar</small></span>
@@ -708,11 +714,11 @@ window.addEventListener('pagehide', () => {
                             <iconify-icon icon="solar:clock-circle-bold-duotone" width="16"></iconify-icon>
                         </div>
                         <div class="ah-detail-content">
-                            <div class="ah-detail-label">Date & Heure</div>
+                            <div class="ah-detail-label" x-text="isAllDayEvent(selectedEvent) ? 'Date' : 'Date & Heure'"></div>
                             <div class="ah-detail-value">
                                 <span x-text="formatDate(selectedEvent.date)"></span>
-                                <span style="color:var(--focus-brand,#634efb);margin-left:6px" x-text="formatTime(selectedEvent.date)"></span>
-                                <template x-if="selectedEvent.end_date">
+                                <span style="color:var(--focus-brand,#634efb);margin-left:6px" x-text="eventTimeLabel(selectedEvent)"></span>
+                                <template x-if="selectedEvent.end_date && !isAllDayEvent(selectedEvent)">
                                     <span style="color:#9ca3af"> — <span x-text="formatTime(selectedEvent.end_date)"></span></span>
                                 </template>
                             </div>
@@ -1031,6 +1037,35 @@ document.addEventListener('alpine:init', () => {
             return local.toISOString().slice(0, 16);
         },
 
+        dateKeyForInput(value) {
+            const raw = String(value || '');
+            const direct = raw.match(/^(\d{4}-\d{2}-\d{2})/);
+            if (direct) return direct[1];
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const pad = number => String(number).padStart(2, '0');
+            return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+        },
+
+        setAllDay(enabled) {
+            this.eventForm.allDay = !!enabled;
+            if (this.eventForm.allDay) {
+                this.eventForm.startAt = this.dateKeyForInput(this.eventForm.startAt);
+                this.eventForm.endAt = this.eventForm.endAt
+                    ? this.dateKeyForInput(this.eventForm.endAt)
+                    : '';
+            } else {
+                const startDate = this.dateKeyForInput(this.eventForm.startAt);
+                const endDate = this.dateKeyForInput(this.eventForm.endAt);
+                this.eventForm.startAt = startDate ? `${startDate}T09:00` : '';
+                this.eventForm.endAt = endDate ? `${endDate}T09:30` : '';
+            }
+            this.$nextTick(() => {
+                window.DxDatePicker?.refresh(this.$refs.eventStartInput);
+                window.DxDatePicker?.refresh(this.$refs.eventEndInput);
+            });
+        },
+
         emptyEventForm(startValue = null) {
             const dateOnly = String(startValue || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
             const start = dateOnly
@@ -1092,21 +1127,24 @@ document.addEventListener('alpine:init', () => {
 
         openEditEvent(ev) {
             if (!ev) return;
+            const allDay = this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false);
             this.eventMode = 'edit';
             this.selectedEvent = ev;
             this.eventError = '';
             this.eventForm = {
                 title: ev.title || '',
                 recordId: this.getParentId(ev) || '',
-                startAt: this.toLocalDateTime(ev.date),
-                endAt: ev.end_date ? this.toLocalDateTime(ev.end_date) : '',
+                startAt: allDay ? this.dateKeyForInput(ev.date) : this.toLocalDateTime(ev.date),
+                endAt: ev.end_date
+                    ? (allDay ? this.dateKeyForInput(ev.end_date) : this.toLocalDateTime(ev.end_date))
+                    : '',
                 type: this.getFieldValue(ev, 'type_evenement') || 'autre',
                 statusOptionId: this.eventStatusOptionId(ev),
                 recurrence: this.getFieldValue(ev, 'repetition_evenement') || 'none',
                 location: this.getFieldValue(ev, 'lieu_evenement') || '',
                 tags: this.eventTagsText(ev),
                 notes: this.getFieldValue(ev, 'notes_evenement') || ev.description || '',
-                allDay: this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false),
+                allDay,
                 showInUpcoming: this.booleanFieldValue(this.getFieldValue(ev, 'widget_prochains_evenements'), true),
                 isImportant: this.booleanFieldValue(this.getFieldValue(ev, 'widget_date_importante'), false)
             };
@@ -1123,17 +1161,24 @@ document.addEventListener('alpine:init', () => {
 
         eventPayload() {
             const title = String(this.eventForm.title || '').trim();
-            const start = new Date(this.eventForm.startAt);
-            const end = this.eventForm.endAt ? new Date(this.eventForm.endAt) : null;
             if (!title) throw new Error('Le titre est requis.');
-            if (Number.isNaN(start.getTime())) throw new Error('La date de début est requise.');
+            const allDay = !!this.eventForm.allDay;
+            const startKey = allDay ? this.dateKeyForInput(this.eventForm.startAt) : '';
+            const endKey = allDay && this.eventForm.endAt ? this.dateKeyForInput(this.eventForm.endAt) : '';
+            const start = allDay
+                ? (startKey ? new Date(`${startKey}T12:00:00.000Z`) : new Date(NaN))
+                : new Date(this.eventForm.startAt);
+            const end = allDay
+                ? (endKey ? new Date(`${endKey}T12:00:00.000Z`) : null)
+                : (this.eventForm.endAt ? new Date(this.eventForm.endAt) : null);
+            if (Number.isNaN(start.getTime())) throw new Error('La date est requise.');
             if (end && Number.isNaN(end.getTime())) throw new Error('La date de fin est invalide.');
             if (end && end.getTime() < start.getTime()) throw new Error('La fin doit être après le début.');
             const payload = {
                 title,
                 startAt: start.toISOString(),
                 endAt: end ? end.toISOString() : null,
-                allDay: !!this.eventForm.allDay,
+                allDay,
                 type: this.eventForm.type || 'autre',
                 recurrence: this.eventForm.recurrence || 'none',
                 location: String(this.eventForm.location || '').trim(),
@@ -1142,6 +1187,7 @@ document.addEventListener('alpine:init', () => {
                 showInUpcoming: !!this.eventForm.showInUpcoming,
                 isImportant: !!this.eventForm.isImportant
             };
+            if (allDay) payload.dateKey = startKey;
             if (this.eventMode === 'create' && this.eventForm.recordId) payload.recordId = this.eventForm.recordId;
             if (this.eventForm.statusOptionId) payload.statusOptionId = this.eventForm.statusOptionId;
             return payload;
@@ -1247,6 +1293,14 @@ document.addEventListener('alpine:init', () => {
         formatTime(d) {
             if (!d) return '';
             return new Date(d).toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
+        },
+
+        isAllDayEvent(ev) {
+            return !!ev && this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false);
+        },
+
+        eventTimeLabel(ev) {
+            return this.isAllDayEvent(ev) ? 'Toute la journée' : this.formatTime(ev?.date);
         },
 
         eventDay(d) {

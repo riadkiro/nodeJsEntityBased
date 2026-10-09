@@ -260,7 +260,7 @@
             ${timeRow}
             <div class="dx-date-picker-foot">
                 <button type="button" class="dx-date-picker-quick is-muted" data-dx-date-action="clear">Effacer</button>
-                <span style="display:inline-flex;gap:6px;margin-left:auto;">
+                <span class="dx-date-picker-shortcuts">
                     <button type="button" class="dx-date-picker-quick" data-dx-date-action="today">
                         <iconify-icon icon="solar:calendar-date-linear" width="13"></iconify-icon>
                         Aujourd'hui

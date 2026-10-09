@@ -7,6 +7,7 @@ const puppeteer = require('puppeteer');
 
 const projectRoot = path.resolve(__dirname, '..');
 const viewPath = path.join(projectRoot, 'views', 'account', 'account-agenda-hub.ejs');
+const tasksViewPath = path.join(projectRoot, 'views', 'account', 'account-tasks-hub.ejs');
 const accountRoutesPath = path.join(projectRoot, 'routes', 'routes-inc-account.js');
 
 test('agenda removes its full-width header and fills the focus workspace', { timeout: 10_000 }, async (t) => {
@@ -25,6 +26,10 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /async deleteEvent\(\)/);
     assert.match(view, /dateClick:\s*\(info\)\s*=>\s*\{\s*self\.openCreateEvent\(info\.dateStr\)/);
     assert.match(view, /api\/agenda-hub\/events/);
+    assert.match(view, /:type="eventForm\.allDay \? 'date' : 'datetime-local'"/);
+    assert.match(view, /@change="setAllDay\(\$event\.target\.checked\)"/);
+    assert.match(view, /if \(allDay\) payload\.dateKey = startKey/);
+    assert.match(view, /Toute la journée/);
     assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-main"'));
     assert.ok(view.indexOf('class="ah-main"') < view.indexOf('class="ah-upcoming-sidebar"'));
     assert.match(view, /syncCalendarToolbarButtons\(\)/);
@@ -78,6 +83,13 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         upcomingWidth: 320,
         overflow: 'hidden'
     });
+});
+
+test('all-day agenda events never expose a fake hour in the tasks workspace', () => {
+    const tasksView = fs.readFileSync(tasksViewPath, 'utf8');
+    assert.match(tasksView, /x-text="formatEventTime\(ev\)"/);
+    assert.match(tasksView, /agendaFieldValue\(ev, 'toute_la_journee'\)/);
+    assert.match(tasksView, /if \(allDay\) return 'Toute la journée'/);
 });
 
 test('agenda hub exposes account CRUD endpoints for create, edit and delete', () => {

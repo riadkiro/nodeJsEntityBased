@@ -1,7 +1,7 @@
 <% const _homeApi = '/account/' + account_number; %>
 
 <style>
-.ai-home{height:calc(100vh - 86px);min-height:600px;overflow:hidden;color:#172033;font-family:inherit}
+.ai-home{height:calc(100dvh - 86px);min-height:0;overflow:hidden;color:#172033;font-family:inherit}
 .ai-home-shell{height:100%;display:grid;grid-template-columns:minmax(520px,1.08fr) minmax(430px,.92fr);overflow:hidden;border:1px solid var(--focus-border,#e5e7eb);border-radius:var(--focus-radius,14px);background:#fff;box-shadow:var(--focus-shadow-soft,0 8px 30px rgba(15,23,42,.05))}
 .ai-chat{min-width:0;min-height:0;display:grid;grid-template-rows:68px minmax(0,1fr) auto;border-right:1px solid #e8edf4;background:#fff}
 .ai-chat-head{padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e8edf4}
@@ -84,9 +84,16 @@
 .dark .ai-connections{background:linear-gradient(180deg,#0b1020,#080d19)}
 .dark .ai-visual-card,.dark .ai-integrations{background:rgba(14,23,38,.82);border-color:#253b5c}
 .dark .ai-visual-card img{mix-blend-mode:normal;opacity:.9}
-@media(max-width:1180px){.ai-home{height:auto;min-height:calc(100vh - 86px);overflow:visible}.ai-home-shell{height:auto;min-height:calc(100vh - 86px);grid-template-columns:1fr}.ai-chat{height:720px;border-right:0;border-bottom:1px solid #e8edf4}.ai-connections{min-height:650px}.ai-visual-card{max-width:720px}}
-@media(max-width:650px){.ai-home-shell{border-radius:0}.ai-chat{height:calc(100vh - 70px)}.ai-chat-head{padding:0 14px}.ai-new-chat span{display:none}.ai-messages{padding:18px 13px}.ai-suggestions{grid-template-columns:1fr}.ai-bubble{max-width:88%}.ai-connections{min-height:560px}.ai-visual{padding:8px}.ai-integrations{padding:12px}.ai-response-actions,.ai-plan{margin-left:39px}}
+@media(max-width:1180px) and (min-width:761px){.ai-home-shell{grid-template-columns:minmax(0,1.06fr) minmax(300px,.94fr)}.ai-chat-head{padding:0 16px}.ai-messages{padding:20px 16px 16px}.ai-connections-head{padding:15px 15px 4px}.ai-visual{padding:4px 10px 7px}.ai-integrations{padding:11px 12px 13px}}
+@media(max-width:760px){.ai-home{height:calc(100dvh - 80px)}.ai-home-shell{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 210px;border-radius:10px}.ai-chat{min-height:0;height:auto;border-right:0;border-bottom:1px solid #e8edf4}.ai-chat-head{padding:0 14px}.ai-chat-title p,.ai-new-chat span{display:none}.ai-messages{padding:16px 12px}.ai-suggestions{grid-template-columns:1fr}.ai-suggestion{min-height:50px}.ai-bubble{max-width:88%}.ai-connections{min-height:0;display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);grid-template-rows:50px minmax(0,1fr)}.ai-connections-head{grid-column:1/-1;padding:8px 12px 4px}.ai-connections-title p{display:none}.ai-live-badge{min-height:24px}.ai-visual{grid-column:1;grid-row:2;padding:5px 3px 8px 8px;min-width:0}.ai-visual-card{height:100%;border-radius:13px}.ai-visual-card img{width:100%;height:100%;object-fit:cover}.ai-integrations{grid-column:2;grid-row:2;min-width:0;padding:6px 8px 8px;border-top:0;background:transparent}.ai-integrations-head{margin-bottom:5px}.ai-integration-row{padding-bottom:5px}.ai-integration-chip{height:30px}.ai-add-integration{height:34px;margin-top:0}.ai-response-actions,.ai-plan{margin-left:39px}}
 </style>
+
+<script>
+document.body.classList.add('focus-workspace-mode', 'ai-home-focus-mode');
+window.addEventListener('pagehide', () => {
+    document.body.classList.remove('focus-workspace-mode', 'ai-home-focus-mode');
+}, { once:true });
+</script>
 
 <main class="ai-home" x-data="homeAgentApp()">
     <div class="ai-home-shell">

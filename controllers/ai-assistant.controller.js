@@ -15,6 +15,7 @@ const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
 const Mail = require("../models/mail.model");
 const TaskOverview = require("../services/task-overview.service");
+const MobileAgendaService = require("../services/mobile-agenda.service");
 
 // ── Global models (Provider & Action live in global DB) ──────
 const IntegrationProvider = require("../src/integrations/models/IntegrationProvider.model");
@@ -136,6 +137,48 @@ function summarizeTaskBoardForAssistant(board = {}) {
     };
 }
 
+function summarizeAgendaForAssistant(events = [], now = new Date()) {
+    const startOfToday = new Date(now);
+    startOfToday.setHours(0, 0, 0, 0);
+    const endOfToday = new Date(startOfToday);
+    endOfToday.setDate(endOfToday.getDate() + 1);
+
+    const normalized = (Array.isArray(events) ? events : [])
+        .map(event => ({
+            id: String(event.id || event._id || ""),
+            title: String(event.title || "Sans titre"),
+            startAt: event.startAt || event.date || null,
+            endAt: event.endAt || event.end_date || null,
+            allDay: event.allDay === true,
+            isImportant: event.isImportant === true,
+            showInUpcoming: event.showInUpcoming !== false,
+            type: String(event.type || "autre"),
+            location: String(event.location || ""),
+            status: String(event.status || "Planifie"),
+            recurrence: String(event.recurrence || "none"),
+        }))
+        .filter(event => event.startAt && !Number.isNaN(new Date(event.startAt).getTime()))
+        .sort((a, b) => new Date(a.startAt) - new Date(b.startAt));
+
+    const upcomingEvents = normalized
+        .filter(event => event.showInUpcoming)
+        .slice(0, 50);
+
+    return {
+        loaded: true,
+        dateKey: startOfToday.toISOString().slice(0, 10),
+        timeZone: "Africa/Casablanca",
+        total: normalized.length,
+        todayCount: normalized.filter(event => {
+            const date = new Date(event.startAt);
+            return date >= startOfToday && date < endOfToday;
+        }).length,
+        importantCount: upcomingEvents.filter(event => event.isImportant).length,
+        upcomingEvents,
+        importantEvents: upcomingEvents.filter(event => event.isImportant),
+    };
+}
+
 // ── Context builder ──────────────────────────────────────────
 async function buildWorkspaceContext(req) {
     try {
@@ -251,10 +294,35 @@ async function buildWorkspaceContext(req) {
             console.warn("[AIAssistant] Task context unavailable:", taskError.message);
         }
 
+        let agendaContext = {
+            loaded: false,
+            dateKey: "",
+            timeZone: "Africa/Casablanca",
+            total: 0,
+            todayCount: 0,
+            importantCount: 0,
+            upcomingEvents: [],
+            importantEvents: [],
+        };
+        try {
+            const from = new Date();
+            from.setHours(0, 0, 0, 0);
+            const to = new Date(from);
+            to.setFullYear(to.getFullYear() + 1);
+            const events = await MobileAgendaService.listAgendaEvents(req, {
+                from: from.toISOString(),
+                to: to.toISOString(),
+            });
+            agendaContext = summarizeAgendaForAssistant(events, from);
+        } catch (agendaError) {
+            console.warn("[AIAssistant] Agenda context unavailable:", agendaError.message);
+        }
+
         return {
             accountNumber: req.account_number,
             entities: entitySummaries,
             taskContext,
+            agendaContext,
             timestamp: new Date().toISOString(),
         };
     } catch (error) {
@@ -420,6 +488,13 @@ function isEmailRelatedQuery(message) {
 }
 
 // ── System prompt builder ────────────────────────────────────
+function isAgendaRelatedQuery(message = "") {
+    const normalized = String(message)
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "");
+    return /\b(agenda|calendrier|evenement|evenements|event|events|rendez[- ]?vous|anniversaire|jour ferie|sortie)\b/i.test(normalized);
+}
+
 function taskContextPrompt(taskContext = {}) {
     if (taskContext.loaded !== true) {
         return "Le contexte des tâches n'a pas pu être chargé. Ne conclus jamais qu'il n'y a aucune tâche.";
@@ -447,6 +522,83 @@ ${todayTasks.length ? todayTasks.map(formatTask).join("\n") : "Aucune tâche ouv
 
 ### Tâches en retard:
 ${overdueTasks.length ? overdueTasks.map(formatTask).join("\n") : "Aucune tâche en retard."}`;
+}
+
+function agendaContextPrompt(agendaContext = {}) {
+    if (agendaContext.loaded !== true) {
+        return "Le contexte de l'agenda n'a pas pu etre charge. Ne conclus pas qu'il n'y a aucun evenement.";
+    }
+    const upcomingEvents = Array.isArray(agendaContext.upcomingEvents)
+        ? agendaContext.upcomingEvents : [];
+    const formatEvent = (event, index) => {
+        const date = new Date(event.startAt);
+        const dateLabel = Number.isNaN(date.getTime())
+            ? "date inconnue"
+            : date.toLocaleDateString("fr-FR", {
+                weekday: "long", day: "2-digit", month: "long", year: "numeric",
+                timeZone: agendaContext.timeZone || "Africa/Casablanca",
+            });
+        const timeLabel = event.allDay || Number.isNaN(date.getTime())
+            ? "toute la journee"
+            : date.toLocaleTimeString("fr-FR", {
+                hour: "2-digit", minute: "2-digit",
+                timeZone: agendaContext.timeZone || "Africa/Casablanca",
+            });
+        const details = [
+            `${dateLabel}, ${timeLabel}`,
+            event.isImportant ? "important" : "",
+            event.type && event.type !== "autre" ? `type: ${event.type}` : "",
+            event.location ? `lieu: ${event.location}` : "",
+            event.status ? `statut: ${event.status}` : "",
+        ].filter(Boolean).join("; ");
+        return `${index + 1}. **${event.title || "Sans titre"}** — ${details}`;
+    };
+    return `Date de reference: ${agendaContext.dateKey || "aujourd'hui"} (${agendaContext.timeZone || "Africa/Casablanca"})
+- Evenements a venir charges: ${agendaContext.total || upcomingEvents.length}
+- Evenements aujourd'hui: ${agendaContext.todayCount || 0}
+- Evenements marques importants: ${agendaContext.importantCount || 0}
+
+### Prochains evenements:
+${upcomingEvents.length ? upcomingEvents.map(formatEvent).join("\n") : "Aucun evenement a venir dans les 12 prochains mois."}`;
+}
+
+function immediateAgendaResponse(message, agendaContext = {}) {
+    if (agendaContext.loaded !== true) return "Je n'ai pas pu charger l'agenda pour le moment.";
+    const wantsImportant = /important|priorit/i.test(String(message || ""));
+    const importantEvents = Array.isArray(agendaContext.importantEvents)
+        ? agendaContext.importantEvents : [];
+    const upcomingEvents = Array.isArray(agendaContext.upcomingEvents)
+        ? agendaContext.upcomingEvents : [];
+    const events = (wantsImportant ? importantEvents : upcomingEvents).slice(0, 10);
+    if (!events.length) {
+        return wantsImportant
+            ? "Aucun prochain evenement n'est marque comme important. Vous pouvez ouvrir l'agenda pour en marquer un."
+            : "Aucun evenement a venir n'est enregistre dans les 12 prochains mois.";
+    }
+    const formatter = new Intl.DateTimeFormat("fr-FR", {
+        weekday: "long", day: "2-digit", month: "long", year: "numeric",
+        timeZone: agendaContext.timeZone || "Africa/Casablanca",
+    });
+    const lines = events.map((event, index) => {
+        const date = new Date(event.startAt);
+        const dateLabel = Number.isNaN(date.getTime()) ? "Date inconnue" : formatter.format(date);
+        const timeLabel = event.allDay || Number.isNaN(date.getTime())
+            ? "Toute la journee"
+            : date.toLocaleTimeString("fr-FR", {
+                hour: "2-digit", minute: "2-digit",
+                timeZone: agendaContext.timeZone || "Africa/Casablanca",
+            });
+        return `${index + 1}. **${event.title}** — ${dateLabel}, ${timeLabel}`;
+    });
+    return `Voici ${wantsImportant ? "les prochains evenements importants" : "les prochains evenements"} :\n\n${lines.join("\n")}`;
+}
+
+function ensureImmediateAgendaResponse(message, response, agendaContext = {}) {
+    const deferredPromise = /\b(un instant|patientez|je vais (?:chercher|rechercher|proc[eé]der|v[eé]rifier)|je proc[eè]de|je reviens|dans quelques instants)\b/i;
+    if (!isAgendaRelatedQuery(message) || !deferredPromise.test(String(response || ""))) {
+        return response;
+    }
+    return immediateAgendaResponse(message, agendaContext);
 }
 
 function buildSystemPrompt(context, pageContext) {
@@ -515,6 +667,11 @@ ${entityList}
 ${taskContextPrompt(context?.taskContext)}
 
 RÈGLE TÂCHES: pour toute question sur les tâches, les priorités ou le programme du jour, utilise d'abord et fidèlement la section ci-dessus. Les fiches récentes des collections ne remplacent jamais cette liste. N'affirme jamais qu'il n'y a aucune tâche si le contexte des tâches n'est pas chargé.
+
+## 📅 Agenda réel du workspace:
+${agendaContextPrompt(context?.agendaContext)}
+
+RÈGLE AGENDA: pour toute question sur les événements, le calendrier ou les rendez-vous, utilise directement et fidèlement la section ci-dessus. Donne le résultat dans la réponse actuelle. N'annonce jamais une recherche ultérieure ou une seconde réponse.
 
 ## 📧 Accès Mailbox:
 Tu as accès à la boîte mail de l'utilisateur. Tu peux:
@@ -881,6 +1038,11 @@ module.exports = {
 
             // Parse response for actions/plans
             const parsed = parseAIResponse(aiResponse);
+            parsed.response = ensureImmediateAgendaResponse(
+                message,
+                parsed.response,
+                workspaceContext?.agendaContext,
+            );
             console.log("[AIAssistant] Parsed result — actions:", parsed.actions ? JSON.stringify(parsed.actions).substring(0, 200) : "null", "| plan:", parsed.plan ? "yes" : "null");
 
             // ── Fallback: auto-detect navigate intent if AI forgot the actions block ──
@@ -1282,6 +1444,9 @@ module.exports = {
 
 module.exports.__test = {
     buildSystemPrompt,
+    agendaContextPrompt,
+    ensureImmediateAgendaResponse,
+    summarizeAgendaForAssistant,
     summarizeTaskBoardForAssistant,
     taskContextPrompt,
 };

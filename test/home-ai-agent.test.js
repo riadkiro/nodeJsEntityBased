@@ -18,6 +18,9 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /Intégrations actives/);
     assert.match(view, /Ajouter une intégration/);
     assert.match(view, /dex-ai-agent-connections\.png/);
+    assert.match(view, /focus-workspace-mode', 'ai-home-focus-mode/);
+    assert.match(view, /height:calc\(100dvh - 86px\)/);
+    assert.doesNotMatch(view, /\.ai-home\{height:auto/);
     assert.doesNotMatch(view, /home-overview-shell|homeOverviewHub|api\/home-overview/);
 
     assert.ok(fs.existsSync(illustrationPath), 'AI connections illustration should exist');

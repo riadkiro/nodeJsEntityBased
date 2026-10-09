@@ -46,7 +46,17 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
                             <div class="th-center">
                                 <section class="th-today-card">
                                     <div class="th-today-header">Tâches du jour</div>
-                                    <div class="th-today-body">Contenu</div>
+                                    <div class="th-today-body is-completed-hidden">
+                                        <div class="th-open-list">
+                                            <div class="th-day-tasks-head"><span class="th-day-tasks-icon"></span><span>Tâches</span></div>
+                                            <div class="th-open-task-rows">
+                                                <div class="th-task-row-simple"><span></span><span>Tâche test</span><span></span></div>
+                                                <section class="th-day-events">
+                                                    <div class="th-day-events-head"><div class="th-day-events-title"><span class="th-day-events-icon"></span><span>Événements du jour</span></div></div>
+                                                </section>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </section>
                             </div>
                             <aside class="th-side-stack"></aside>
@@ -63,6 +73,9 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
         const listRow = document.querySelector('.th-nav-item:not(.active)');
         const list = document.querySelector('.th-nav-list');
         const section = document.querySelector('.th-nav-section-head');
+        const tasksSection = document.querySelector('.th-day-tasks-icon').getBoundingClientRect();
+        const taskRow = document.querySelector('.th-task-row-simple').getBoundingClientRect();
+        const eventsSection = document.querySelector('.th-day-events-icon').getBoundingClientRect();
         return {
             navHeight: navHeader.height,
             taskHeight: taskHeader.height,
@@ -71,6 +84,8 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
             rowBackground: getComputedStyle(listRow).backgroundColor,
             sectionBackground: getComputedStyle(section).backgroundColor,
             taskBorder: getComputedStyle(document.querySelector('.th-today-header')).borderBottomWidth,
+            taskAlignmentDelta: Math.abs(tasksSection.left - taskRow.left),
+            eventAlignmentDelta: Math.abs(eventsSection.left - taskRow.left),
         };
     });
 
@@ -82,6 +97,8 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
         rowBackground: 'rgb(255, 255, 255)',
         sectionBackground: 'rgb(255, 255, 255)',
         taskBorder: '1px',
+        taskAlignmentDelta: 0,
+        eventAlignmentDelta: 0,
     });
 });
 

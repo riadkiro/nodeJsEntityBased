@@ -357,17 +357,21 @@
 .th-day-events-icon{width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb)}
 .th-day-events-count{min-width:21px;height:21px;padding:0 6px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);font-size:10px;font-weight:850}
 .th-day-events-list{display:flex;flex-direction:column;gap:7px}
-.th-day-event-card{width:100%;min-height:58px;display:grid;grid-template-columns:40px minmax(0,1fr) auto 14px;align-items:center;gap:10px;padding:7px 10px;border:1px solid #edf1f6;border-radius:11px;background:#fff;color:inherit;text-align:left;font:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s,transform .15s}
+.th-day-event-card{width:100%;min-height:50px;display:grid;grid-template-columns:minmax(0,1fr) auto 14px;align-items:center;gap:10px;padding:8px 12px;border:1px solid #f0f3f8;border-radius:12px;background:#fff;color:inherit;text-align:left;font:inherit;cursor:pointer;box-shadow:0 3px 12px rgba(15,23,42,.025);transition:border-color .15s,box-shadow .15s,transform .15s,background .15s}
 .th-day-event-card:hover{border-color:color-mix(in srgb,var(--focus-brand,#634efb) 22%,#fff);box-shadow:0 5px 15px rgba(15,23,42,.045);transform:translateY(-1px)}
-.th-day-event-date{width:40px;height:42px;display:flex;flex-direction:column;align-items:center;justify-content:center;border-radius:9px;background:color-mix(in srgb,var(--focus-brand-soft,#ebe8ff) 72%,#fff);color:var(--focus-brand,#634efb)}
-.th-day-event-day{font-size:14px;font-weight:900;line-height:1}
-.th-day-event-month{margin-top:3px;font-size:8.5px;font-weight:900;line-height:1;text-transform:uppercase}
 .th-day-event-copy{min-width:0}
-.th-day-event-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#172033;font-size:12.5px;font-weight:800}
+.th-day-event-name{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#172033;font-size:13.5px;font-weight:800}
 .th-day-event-meta{display:flex;align-items:center;gap:5px;min-width:0;margin-top:5px;color:#8a96aa;font-size:10px;font-weight:650}
 .th-day-event-record{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .th-day-event-badge{display:inline-flex;align-items:center;min-height:20px;padding:0 7px;border-radius:999px;background:#f2f0ff;color:var(--focus-brand,#634efb);font-size:9px;font-weight:850;white-space:nowrap}
 .th-day-event-arrow{color:#a6b0c3;display:inline-flex;align-items:center}
+.th-today-body.is-compact .th-day-events-list{gap:0}
+.th-today-body.is-compact .th-day-event-card{min-height:28px;padding:4px 8px;border:0;border-bottom:1px solid #edf1f6;border-radius:0;background:transparent;box-shadow:none;transform:none}
+.th-today-body.is-compact .th-day-event-card:hover{border-color:#edf1f6;background:#fbfcff;box-shadow:none;transform:none}
+.th-today-body.is-compact .th-day-event-copy{display:flex;align-items:center;gap:7px;min-width:0}
+.th-today-body.is-compact .th-day-event-name{font-size:12.5px;font-weight:750}
+.th-today-body.is-compact .th-day-event-meta{flex:0 0 auto;margin-top:0;font-size:9.5px}
+.th-today-body.is-compact .th-day-event-badge{display:none}
 .th-error-simple{margin-top:8px;color:#ef4444;font-size:12px;font-weight:750}
 .th-task-ctx{position:fixed;z-index:10020;width:240px;background:#fff;border:1px solid #e8ecf1;border-radius:13px;box-shadow:0 18px 46px rgba(15,23,42,.16);padding:8px}
 .th-task-ctx button{width:100%;min-height:32px;border:0;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:750;display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;text-align:left;transition:background .14s,color .14s}
@@ -451,7 +455,7 @@
 .dark .th-day-tasks-head{color:#e0e6ed}
 .dark .th-day-event-card{background:#0e1726;border-color:#253b5c}
 .dark .th-day-event-card:hover{border-color:#4f46e5;box-shadow:0 5px 15px rgba(0,0,0,.18)}
-.dark .th-day-event-date,.dark .th-day-event-badge{background:#1b2447}
+.dark .th-day-event-badge{background:#1b2447}
 .dark .th-day-event-meta{color:#8ea0bd}
 .dark .th-task-row-simple:hover{background:#111f35}
 .dark .th-today-body:not(.is-compact) .th-task-row-simple,.dark .th-list-panel-body:not(.is-compact) .th-task-row-simple{background:#0e1726;border-color:#253b5c;box-shadow:none}
@@ -779,10 +783,6 @@ window.addEventListener('pagehide', () => {
                                     <div class="th-day-events-list">
                                         <template x-for="ev in selectedDayEvents" :key="'day-event-' + ev._id">
                                             <button type="button" class="th-day-event-card" @click="openDayEvent(ev)">
-                                                <span class="th-day-event-date">
-                                                    <span class="th-day-event-day" x-text="eventCalendarDay(ev.date)"></span>
-                                                    <span class="th-day-event-month" x-text="eventCalendarMonth(ev.date)"></span>
-                                                </span>
                                                 <span class="th-day-event-copy">
                                                     <span class="th-day-event-name" x-text="ev.title || 'Sans titre'"></span>
                                                     <span class="th-day-event-meta">
@@ -2218,15 +2218,6 @@ document.addEventListener('alpine:init', () => {
             const date = new Date(ev.date);
             if (Number.isNaN(date.getTime())) return '';
             return date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
-        },
-        eventCalendarDay(value) {
-            const date = new Date(value);
-            return Number.isNaN(date.getTime()) ? '--' : String(date.getDate()).padStart(2, '0');
-        },
-        eventCalendarMonth(value) {
-            const date = new Date(value);
-            if (Number.isNaN(date.getTime())) return '';
-            return date.toLocaleDateString('fr-FR', { month:'short' }).replace('.', '').toUpperCase();
         },
         openDayEvent(ev = {}) {
             const info = this.eventRecordInfo(ev);

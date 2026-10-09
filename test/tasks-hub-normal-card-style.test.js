@@ -37,6 +37,16 @@ test('normal task style uses clean cards while compact uses subtle mobile separa
                 </div>
             </div>
         </div>
+        <div class="th-today-body">
+            <div class="th-day-events-list">
+                <button id="event-normal" class="th-day-event-card"><span class="th-day-event-copy"><span class="th-day-event-name">Film</span><span class="th-day-event-meta">Toute la journée</span></span><span class="th-day-event-badge">Événement</span><span></span></button>
+            </div>
+        </div>
+        <div class="th-today-body is-compact">
+            <div class="th-day-events-list">
+                <button id="event-compact" class="th-day-event-card"><span class="th-day-event-copy"><span class="th-day-event-name">Film</span><span class="th-day-event-meta">Toute la journée</span></span><span class="th-day-event-badge">Événement</span><span></span></button>
+            </div>
+        </div>
     `);
 
     const result = await page.evaluate(() => {
@@ -64,6 +74,9 @@ test('normal task style uses clean cards while compact uses subtle mobile separa
             todayNormal: read('#today-normal'),
             listNormal: read('#list-normal'),
             todayCompact: read('#today-compact'),
+            eventNormal: read('#event-normal'),
+            eventCompact: read('#event-compact'),
+            compactEventBadge: getComputedStyle(document.querySelector('#event-compact .th-day-event-badge')).display,
         };
     });
 
@@ -87,4 +100,15 @@ test('normal task style uses clean cards while compact uses subtle mobile separa
     assert.equal(result.todayCompact.accent.height, '16px');
     assert.equal(result.todayCompact.accent.left, '4px');
     assert.equal(result.todayCompact.accent.radius, '999px');
+    assert.equal(result.eventNormal.height, 50);
+    assert.equal(result.eventNormal.borderWidth, '1px');
+    assert.equal(result.eventNormal.borderColor, 'rgb(240, 243, 248)');
+    assert.equal(result.eventNormal.radius, '12px');
+    assert.notEqual(result.eventNormal.shadow, 'none');
+    assert.equal(result.eventCompact.borderWidth, '0px');
+    assert.equal(result.eventCompact.borderBottomWidth, '1px');
+    assert.equal(result.eventCompact.radius, '0px');
+    assert.equal(result.eventCompact.shadow, 'none');
+    assert.equal(result.compactEventBadge, 'none');
+    assert.doesNotMatch(view, /class="th-day-event-date"/);
 });

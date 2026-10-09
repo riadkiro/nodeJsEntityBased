@@ -150,9 +150,22 @@ function shouldUseOpenAIWebSearch(value) {
     const externalTarget = /\b(medecins?|docteurs?|praticiens?|specialistes?|[a-z]{4,}ologues?|cardiologues?|pneumologues?|dentistes?|dermatologues?|gynecologues?|pediatres?|orthopedistes?|ophtalmologues?|psychiatres?|psychologues?|kinesitherapeutes?|cliniques?|hopitaux?|hopital|cabinets?|pharmacies?|laboratoires?|fournisseurs?|distributeurs?|fabricants?|grossistes?|prestataires?|entreprises?|societes?|marques?|produits?|marchandises?|materiels?|equipements?|pieces?|consultants?|avocats?|notaires?|restaurants?|hotels?)\b/.test(text);
     const procurementTarget = /\b(cahier des charges|appel d offres?|pouvoir adjudicateur|bordereau|devis|marche public|marches publics|lot\b|lots\b)\b/.test(text);
     const locationSignal = /\b(pres de|proche de|autour de|near|around)\s+[a-z][a-z-]{2,}\b/.test(text);
+    const temporalQuestion = /\b(quand|quelle date|quel jour|a quelle heure|prochain|prochaine|prochains|prochaines|calendrier|programme)\b/.test(text);
+    const sportsSignal = /\b(match|matchs|football|foot|futsal|basket|rugby|tennis|equipe nationale|selection|joue|jouera|affronte|affrontera|adversaire|coup d envoi|score|resultat|resultats|classement|qualification|qualifications|can\b|coupe du monde|championnat)\b/.test(text);
+    const sportsLive = sportsSignal && (
+        temporalQuestion ||
+        /\b(score|resultat|resultats|classement|qualification|qualifications|coup d envoi)\b/.test(text)
+    );
+    const weatherLive = /\b(meteo|temperature|pluie|neige|vent|previsions? meteo|weather)\b/.test(text);
+    const marketLive = /\b(taux de change|cours (?:de |du |des )?(?:bourse|action|actions|bitcoin|crypto|or)|prix du petrole|exchange rate|stock price)\b/.test(text);
+    const transportLive = temporalQuestion && /\b(vols?|trains?|trafic|circulation|bus|ferry|ferries)\b/.test(text);
 
     return explicitWeb ||
         currentInfo ||
+        sportsLive ||
+        weatherLive ||
+        marketLive ||
+        transportLive ||
         contactQuestion ||
         (findVerb && (externalTarget || procurementTarget || locationSignal || contactInfo)) ||
         (externalTarget && (procurementTarget || contactInfo));
@@ -215,11 +228,56 @@ function appendWebSearchInstructions(instructions = '') {
         [
             'Recherche web live invisible:',
             '- Si la demande exige des informations externes, recentes, locales, des fournisseurs, des medecins, des adresses ou des contacts, utilise l outil web_search.',
+            '- Pour le sport, verifie le calendrier ou le resultat le plus recent, la date, l heure, le fuseau horaire, la competition et l adversaire aupres de sources fiables.',
+            '- Reponds avec le resultat dans ce message. Ne promets jamais une recherche ou une seconde reponse ulterieure.',
             '- Appuie les resultats trouves sur des sources et donne les liens utiles quand ils influencent la reponse.',
             '- Pour un dossier medical, ne pose pas de diagnostic definitif: identifie les specialites ou praticiens pertinents et recommande une consultation professionnelle.',
             '- Pour un cahier des charges, extrais les besoins avant de chercher des fournisseurs proches ou pertinents selon l adresse et les contraintes.'
         ].join('\n')
     ].filter(Boolean).join('\n\n');
+}
+
+function extractOpenAIWebSearchSources(data) {
+    const sources = [];
+    const seen = new Set();
+    const addSource = source => {
+        const url = String(source?.url || source?.link || '').trim();
+        if (!/^https?:\/\//i.test(url) || seen.has(url)) return;
+        let fallbackTitle = 'Source';
+        try {
+            fallbackTitle = new URL(url).hostname || fallbackTitle;
+        } catch (_) {
+            return;
+        }
+        seen.add(url);
+        sources.push({
+            title: String(source?.title || source?.name || fallbackTitle).trim(),
+            url,
+        });
+    };
+
+    const output = Array.isArray(data?.output) ? data.output : [];
+    output.forEach(item => {
+        (Array.isArray(item?.action?.sources) ? item.action.sources : []).forEach(addSource);
+        (Array.isArray(item?.sources) ? item.sources : []).forEach(addSource);
+        (Array.isArray(item?.content) ? item.content : []).forEach(part => {
+            (Array.isArray(part?.annotations) ? part.annotations : []).forEach(annotation => {
+                addSource(annotation?.url_citation || annotation);
+            });
+        });
+    });
+    (Array.isArray(data?.sources) ? data.sources : []).forEach(addSource);
+    return sources;
+}
+
+function appendOpenAIWebSearchSources(text, sources = [], limit = 5) {
+    const content = String(text || '').trim();
+    const uniqueSources = (Array.isArray(sources) ? sources : [])
+        .filter(source => source?.url && !content.includes(source.url))
+        .slice(0, limit);
+    if (!uniqueSources.length) return content;
+    const links = uniqueSources.map(source => `- [${source.title || 'Source'}](${source.url})`);
+    return `${content}\n\n**Sources consultées :**\n${links.join('\n')}`;
 }
 
 function extractOpenAIResponsesText(data) {
@@ -247,7 +305,9 @@ module.exports = {
     ensureOpenAIResponsesAction,
     buildOpenAIWebSearchTool,
     appendWebSearchInstructions,
+    appendOpenAIWebSearchSources,
     extractOpenAIResponsesText,
+    extractOpenAIWebSearchSources,
     extractPrimaryUserRequest,
     shouldUseOpenAIWebSearch
 };

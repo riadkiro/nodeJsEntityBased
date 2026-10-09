@@ -21,6 +21,9 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /focus-workspace-mode', 'ai-home-focus-mode/);
     assert.match(view, /height:calc\(100dvh - 86px\)/);
     assert.doesNotMatch(view, /\.ai-home\{height:auto/);
+    assert.match(view, /Recherche web en direct/);
+    assert.match(view, /isLiveSearchQuery\(value\)/);
+    assert.match(view, /rel="noopener noreferrer"/);
     assert.doesNotMatch(view, /home-overview-shell|homeOverviewHub|api\/home-overview/);
 
     assert.ok(fs.existsSync(illustrationPath), 'AI connections illustration should exist');

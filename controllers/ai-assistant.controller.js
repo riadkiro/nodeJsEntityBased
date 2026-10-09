@@ -24,10 +24,12 @@ const IntegrationConnectionSchema = require("../src/integrations/models/Integrat
 const IntegrationLogSchema = require("../src/integrations/models/IntegrationLog.model").schema;
 const {
     OPENAI_WEB_SEARCH_SOURCES_INCLUDE,
+    appendOpenAIWebSearchSources,
     appendWebSearchInstructions,
     buildOpenAIWebSearchTool,
     ensureOpenAIResponsesAction,
     extractOpenAIResponsesText,
+    extractOpenAIWebSearchSources,
     shouldUseOpenAIWebSearch
 } = require("../src/integrations/openaiActions");
 
@@ -886,7 +888,7 @@ async function callAI(req, messages) {
                     account_number: String(req.account_number || "")
                 },
                 tools: [buildOpenAIWebSearchTool(webSearchToolOptionsFromEnv())],
-                tool_choice: "auto",
+                tool_choice: "required",
                 include: OPENAI_WEB_SEARCH_SOURCES_INCLUDE
             };
 
@@ -909,9 +911,16 @@ async function callAI(req, messages) {
                 throw new Error(result.error || result.errorMessage || "AI web search call failed");
             }
 
-            return extractOpenAIResponsesText(result.data) ||
+            const responseText = extractOpenAIResponsesText(result.data) ||
                 extractOpenAIResponsesText(result.raw) ||
                 "Pas de réponse";
+            const sources = [
+                ...extractOpenAIWebSearchSources(result.data),
+                ...extractOpenAIWebSearchSources(result.raw),
+            ].filter((source, index, items) =>
+                items.findIndex(item => item.url === source.url) === index
+            );
+            return appendOpenAIWebSearchSources(responseText, sources);
         }
 
         // Find chat-completion action (global DB) — support both actionKey formats

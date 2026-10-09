@@ -24,6 +24,10 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /Recherche web en direct/);
     assert.match(view, /isLiveSearchQuery\(value\)/);
     assert.match(view, /rel="noopener noreferrer"/);
+    assert.match(view, /sessionStorage\.setItem/);
+    assert.match(view, /restoreConversation\(\)/);
+    assert.match(view, /this\.messages\.slice\(-24\)/);
+    assert.match(view, /'agenda-create':'solar:calendar-add-bold-duotone'/);
     assert.doesNotMatch(view, /home-overview-shell|homeOverviewHub|api\/home-overview/);
 
     assert.ok(fs.existsSync(illustrationPath), 'AI connections illustration should exist');

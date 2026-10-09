@@ -91,6 +91,25 @@ function messagesToResponsesPayload(messages = []) {
     };
 }
 
+function normalizeConversationHistory(history = [], options = {}) {
+    const maxMessages = Number(options.maxMessages || 24);
+    let remainingChars = Number(options.maxChars || 36000);
+    const normalized = [];
+    const source = Array.isArray(history) ? history.slice(-maxMessages) : [];
+
+    for (let index = source.length - 1; index >= 0 && remainingChars > 0; index -= 1) {
+        const message = source[index] || {};
+        const role = message.role === "user" ? "user" : message.role === "assistant" ? "assistant" : "";
+        if (!role) continue;
+        const content = String(message.content || "").trim();
+        if (!content) continue;
+        const boundedContent = content.slice(0, Math.min(8000, remainingChars));
+        remainingChars -= boundedContent.length;
+        normalized.unshift({ role, content: boundedContent });
+    }
+    return normalized;
+}
+
 function webSearchToolOptionsFromEnv() {
     return {
         searchContextSize: AI_ASSISTANT_WEB_SEARCH_CONTEXT_SIZE,
@@ -707,6 +726,13 @@ L'utilisateur consulte actuellement cet email. UTILISE CE CONTENU DIRECTEMENT qu
 ${context.currentEmailDetail.body || '(contenu vide)'}
 ` : ''}
 
+## Continuité de la conversation:
+- Les messages précédents font partie du contexte actif de cette conversation.
+- Résous les références comme « cette date », « ce match », « cet événement », « celui-ci » ou « fais-le » à partir du dernier message pertinent.
+- Réutilise toutes les informations déjà présentes dans l'historique. Ne les redemande jamais.
+- Si une action ne nécessite que quelques champs obligatoires, ne demande pas les champs facultatifs.
+- Demande une seule précision concise uniquement lorsque deux références restent réellement possibles.
+
 ## Tes capacités:
 1. **Interroger les données** — Répondre aux questions sur les fiches, statistiques, etc.
    - Tu as accès aux 5 dernières fiches de chaque collection dans le contexte (champ \`recentRecords\`)
@@ -735,6 +761,12 @@ ${context.currentEmailDetail.body || '(contenu vide)'}
 ${context?.entities?.length ? `   - Collections disponibles (utilise le slug exact pour l'URL): ${context.entities.map(e => `${e.name} → \`${e.slug}\``).join(', ')}` : ''}
    - Utilise TOUJOURS une action \`navigate\` quand l'utilisateur demande d'ouvrir, afficher, aller vers, montrer ou naviguer vers quelque chose
    - **OBLIGATOIRE**: Chaque demande de navigation DOIT TOUJOURS contenir un bloc actions JSON navigate, même si tu as déjà navigué avant dans la conversation. Ne JAMAIS répondre uniquement avec du texte pour une navigation. Le bloc actions est INDISPENSABLE pour que la navigation fonctionne côté client.
+
+7. **📅 Agenda** — Créer un événement avec une action \`agenda-create\`:
+   - Seuls le titre et la date de début sont obligatoires.
+   - \`endAt\`, le lieu, les notes, les tags et le type sont facultatifs: ne les demande pas s'ils ne sont pas fournis.
+   - Si l'utilisateur dit « avec cette date » après un match ou un événement, reprends directement son titre, sa date et son heure depuis la conversation.
+   - Utilise \`allDay: true\` et \`dateKey: YYYY-MM-DD\` pour une journée entière; sinon utilise \`startAt\` en ISO 8601 avec le fuseau horaire.
 
 ## Format de réponse:
 - Réponds en français, de manière concise et professionnelle
@@ -793,6 +825,22 @@ ${context?.entities?.length ? `   - Collections disponibles (utilise le slug exa
     "description": "Afficher le contenu complet",
     "data": {
       "emailId": "ID_DE_LEMAIL"
+    }
+  }
+]
+\`\`\`
+
+\`\`\`actions
+[
+  {
+    "type": "agenda-create",
+    "label": "Ajouter Maroc - Niger à l'agenda",
+    "description": "15 novembre 2026 à 20:00",
+    "data": {
+      "title": "Maroc - Niger",
+      "startAt": "2026-11-15T20:00:00+01:00",
+      "allDay": false,
+      "type": "sport"
     }
   }
 ]
@@ -997,6 +1045,8 @@ module.exports = {
                 return res.status(400).json({ error: "Message required" });
             }
 
+            const conversationHistory = normalizeConversationHistory(history);
+
             // Build full context
             const workspaceContext = clientContext?.workspace || (await buildWorkspaceContext(req));
             const pageContext = clientContext || {};
@@ -1004,7 +1054,7 @@ module.exports = {
             // ── Auto-detect email queries and inject email context ──
             const needsEmailContext = isEmailRelatedQuery(message) ||
                 pageContext?.page === "mailbox" ||
-                history?.some((msg) => isEmailRelatedQuery(msg.content || ""));
+                conversationHistory.some((msg) => isEmailRelatedQuery(msg.content || ""));
 
             if (needsEmailContext && !workspaceContext.emailContext) {
                 console.log("[AIAssistant] Email-related query detected, loading email context...");
@@ -1028,8 +1078,8 @@ module.exports = {
             const aiMessages = [{ role: "system", content: systemPrompt }];
 
             // Add conversation history
-            if (history?.length) {
-                history.forEach((msg) => {
+            if (conversationHistory.length) {
+                conversationHistory.forEach((msg) => {
                     aiMessages.push({
                         role: msg.role === "user" ? "user" : "assistant",
                         content: msg.content,
@@ -1254,6 +1304,30 @@ module.exports = {
                     break;
                 }
 
+                case "agenda-create": {
+                    const input = action.data || {};
+                    if (!String(input.title || "").trim() || !(input.startAt || input.start || input.date || input.dateKey)) {
+                        return res.status(400).json({
+                            error: "Le titre et la date de début sont requis pour créer l'événement.",
+                        });
+                    }
+                    const event = await MobileAgendaService.createAgendaEvent(req, input);
+                    const eventDate = new Date(event.startAt);
+                    const dateLabel = event.allDay
+                        ? eventDate.toLocaleDateString("fr-FR", {
+                            weekday: "long", day: "2-digit", month: "long", year: "numeric",
+                            timeZone: "Africa/Casablanca",
+                        })
+                        : eventDate.toLocaleString("fr-FR", {
+                            weekday: "long", day: "2-digit", month: "long", year: "numeric",
+                            hour: "2-digit", minute: "2-digit",
+                            timeZone: "Africa/Casablanca",
+                        });
+                    result = event;
+                    response = `✅ **Événement ajouté à l'agenda**\n\n📅 **${event.title}** — ${dateLabel}`;
+                    break;
+                }
+
                 case "search": {
                     const { entitySlug, query } = action.data || {};
                     const Entity = await tenantCollection(req, "Entity");
@@ -1455,6 +1529,7 @@ module.exports.__test = {
     buildSystemPrompt,
     agendaContextPrompt,
     ensureImmediateAgendaResponse,
+    normalizeConversationHistory,
     summarizeAgendaForAssistant,
     summarizeTaskBoardForAssistant,
     taskContextPrompt,

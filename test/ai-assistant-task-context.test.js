@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const aiAssistant = require('../controllers/ai-assistant.controller');
+const MobileAgendaService = require('../services/mobile-agenda.service');
 
 test('AI workspace prompt contains the real tasks selected for today', () => {
     const taskContext = aiAssistant.__test.summarizeTaskBoardForAssistant({
@@ -72,6 +73,68 @@ test('AI workspace prompt contains upcoming agenda events', () => {
     assert.match(prompt, /Paiement TVA T3/);
     assert.match(prompt, /Reunion equipe/);
     assert.match(prompt, /N'annonce jamais une recherche ultérieure/);
+    assert.match(prompt, /Continuité de la conversation/);
+    assert.match(prompt, /cette date/);
+    assert.match(prompt, /agenda-create/);
+    assert.match(prompt, /Seuls le titre et la date de début sont obligatoires/);
+});
+
+test('AI keeps the most recent useful conversation context within safe bounds', () => {
+    const history = Array.from({ length: 30 }, (_, index) => ({
+        role: index % 2 ? 'assistant' : 'user',
+        content: `message-${index}`,
+    }));
+    const normalized = aiAssistant.__test.normalizeConversationHistory(history, {
+        maxMessages: 6,
+        maxChars: 1000,
+    });
+
+    assert.equal(normalized.length, 6);
+    assert.equal(normalized[0].content, 'message-24');
+    assert.equal(normalized[5].content, 'message-29');
+});
+
+test('AI can create an agenda event inferred from the preceding conversation', async () => {
+    const originalCreate = MobileAgendaService.createAgendaEvent;
+    let receivedInput = null;
+    MobileAgendaService.createAgendaEvent = async (_req, input) => {
+        receivedInput = input;
+        return {
+            id: 'event-1',
+            title: 'Maroc - Niger',
+            startAt: '2026-11-15T19:00:00.000Z',
+            allDay: false,
+        };
+    };
+
+    let statusCode = 200;
+    let payload = null;
+    const res = {
+        status(code) { statusCode = code; return this; },
+        json(value) { payload = value; return value; },
+    };
+
+    try {
+        await aiAssistant.execute({
+            body: {
+                action: {
+                    type: 'agenda-create',
+                    data: {
+                        title: 'Maroc - Niger',
+                        startAt: '2026-11-15T20:00:00+01:00',
+                        allDay: false,
+                    },
+                },
+            },
+        }, res);
+    } finally {
+        MobileAgendaService.createAgendaEvent = originalCreate;
+    }
+
+    assert.equal(statusCode, 200);
+    assert.equal(receivedInput.title, 'Maroc - Niger');
+    assert.equal(receivedInput.startAt, '2026-11-15T20:00:00+01:00');
+    assert.match(payload.response, /Événement ajouté à l'agenda/);
 });
 
 test('AI replaces a deferred agenda promise with the actual result', () => {

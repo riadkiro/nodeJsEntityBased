@@ -256,8 +256,45 @@ document.addEventListener('alpine:init', () => {
         connectedIntegrations: [],
 
         async init() {
+            this.restoreConversation();
             await Promise.allSettled([this.loadContext(), this.loadIntegrations()]);
             this.$nextTick(() => this.$refs.composer?.focus());
+        },
+
+        conversationStorageKey() {
+            return `dexapp-home-agent:${API}`;
+        },
+
+        restoreConversation() {
+            try {
+                const stored = JSON.parse(sessionStorage.getItem(this.conversationStorageKey()) || '{}');
+                const messages = Array.isArray(stored.messages) ? stored.messages : [];
+                this.messages = messages
+                    .filter(message => ['user', 'assistant'].includes(message?.role) && message?.content)
+                    .slice(-30);
+                this.conversationId = String(stored.conversationId || '') || null;
+            } catch (error) {
+                console.warn('[HomeAgent] Conversation restore failed:', error);
+            }
+        },
+
+        saveConversation() {
+            try {
+                const messages = this.messages.slice(-30).map(message => ({
+                    id: message.id,
+                    role: message.role,
+                    content: String(message.content || '').slice(0, 12000),
+                    time: message.time,
+                    actions: message.actions || null,
+                    plan: message.plan || null
+                }));
+                sessionStorage.setItem(this.conversationStorageKey(), JSON.stringify({
+                    conversationId:this.conversationId,
+                    messages
+                }));
+            } catch (error) {
+                console.warn('[HomeAgent] Conversation save failed:', error);
+            }
         },
 
         get activeIntegrations() {
@@ -314,6 +351,7 @@ document.addEventListener('alpine:init', () => {
             this.messages = [];
             this.conversationId = null;
             this.draft = '';
+            sessionStorage.removeItem(this.conversationStorageKey());
             this.$nextTick(() => {
                 this.resizeComposer();
                 this.$refs.composer?.focus();
@@ -329,11 +367,12 @@ document.addEventListener('alpine:init', () => {
         async sendMessage() {
             const content = String(this.draft || '').trim();
             if (!content || this.sending) return;
-            const history = this.messages.map(message => ({ role:message.role, content:message.content }));
+            const history = this.messages.slice(-24).map(message => ({ role:message.role, content:message.content }));
             this.messages.push(this.makeMessage('user', content));
             this.draft = '';
             this.sending = true;
             this.liveSearchActive = this.isLiveSearchQuery(content);
+            this.saveConversation();
             this.resizeComposer();
             this.scrollToBottom();
 
@@ -358,9 +397,11 @@ document.addEventListener('alpine:init', () => {
                     actions:data.actions || null,
                     plan:data.plan || null
                 });
+                this.saveConversation();
             } catch (error) {
                 console.error('[HomeAgent] Chat error:', error);
                 this.messages.push(this.makeMessage('assistant', error.message || 'Une erreur est survenue. Réessayez dans un instant.'));
+                this.saveConversation();
             } finally {
                 this.sending = false;
                 this.liveSearchActive = false;
@@ -399,6 +440,7 @@ document.addEventListener('alpine:init', () => {
             const icons = {
                 navigate:'solar:arrow-right-up-linear',
                 create:'solar:add-circle-bold-duotone',
+                'agenda-create':'solar:calendar-add-bold-duotone',
                 search:'solar:magnifer-linear',
                 'email-search':'solar:letter-bold-duotone',
                 'email-detail':'solar:letter-opened-bold-duotone'
@@ -425,10 +467,12 @@ document.addEventListener('alpine:init', () => {
                 if (!res.ok) throw new Error(data.error || data.response || 'Action impossible.');
                 this.messages.push(this.makeMessage('assistant', data.response || 'Action terminée.'));
                 message.actions = null;
+                await this.loadContext();
             } catch (error) {
                 this.messages.push(this.makeMessage('assistant', error.message || 'Cette action n’a pas pu être exécutée.'));
             } finally {
                 this.executingAction = '';
+                this.saveConversation();
                 this.scrollToBottom();
             }
         },
@@ -457,6 +501,7 @@ document.addEventListener('alpine:init', () => {
                 this.messages.push(this.makeMessage('assistant', error.message || 'Le plan ne peut pas être exécuté.'));
             } finally {
                 this.executingPlan = '';
+                this.saveConversation();
                 this.scrollToBottom();
             }
         },

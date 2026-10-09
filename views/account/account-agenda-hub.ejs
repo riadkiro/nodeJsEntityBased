@@ -39,8 +39,15 @@
 .ah-sidebar-title { display:flex; align-items:center; gap:7px; min-width:0; font-size:14px; font-weight:800; }
 .ah-sidebar-title-icon { width:32px; height:32px; display:inline-flex; align-items:center; justify-content:center; flex:0 0 auto; border-radius:10px; color:var(--focus-brand,#634efb); background:var(--focus-brand-soft,#ebe8ff); }
 .ah-sidebar-header .ah-count-badge { min-width:20px; height:20px; padding:0 5px; font-size:10px; }
+.ah-sidebar-actions { display:flex; align-items:center; gap:7px; flex-shrink:0; }
 .ah-sidebar-header .ah-view-pills { flex-shrink:0; }
 .ah-sidebar-header .ah-vpill { padding:5px 8px; font-size:11px; }
+.ah-new-event-btn {
+    width:30px; height:30px; padding:0; border:0; border-radius:9px; display:inline-flex; align-items:center; justify-content:center;
+    color:#fff; background:var(--focus-brand,#634efb); cursor:pointer; box-shadow:0 4px 12px var(--focus-brand-ring);
+    transition:background .15s,transform .15s,box-shadow .15s;
+}
+.ah-new-event-btn:hover { background:var(--focus-brand-hover,#5742e8); transform:translateY(-1px); box-shadow:0 6px 15px rgba(99,78,251,.22); }
 .ah-sidebar-search {
     margin:10px 12px; padding:7px 10px; border:1px solid var(--focus-border,#e5e7eb);
     border-radius:var(--focus-control-radius,10px); font-size:12px; background:var(--focus-surface,#fff); color:var(--focus-text,#111827);
@@ -263,6 +270,33 @@
     background:#f9fafb; border-radius:8px; padding:10px 12px;
     border:1px solid #f1f5f9;
 }
+.ah-event-form { width:640px; }
+.ah-form-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:13px; }
+.ah-form-field { min-width:0; display:flex; flex-direction:column; gap:6px; }
+.ah-form-field.is-wide { grid-column:1/-1; }
+.ah-form-label { color:#69758a; font-size:10.5px; font-weight:850; text-transform:uppercase; letter-spacing:.045em; }
+.ah-form-control {
+    width:100%; min-height:40px; box-sizing:border-box; padding:9px 11px; border:1px solid var(--focus-border,#e5e7eb);
+    border-radius:var(--focus-control-radius,10px); outline:0; background:#fff; color:var(--focus-text,#111827);
+    font:inherit; font-size:12.5px; font-weight:650; transition:border-color .15s,box-shadow .15s,background .15s;
+}
+.ah-form-control:focus { border-color:var(--focus-brand,#634efb); box-shadow:0 0 0 3px var(--focus-brand-ring); }
+.ah-form-control:disabled { opacity:.72; cursor:not-allowed; background:#f6f8fb; }
+textarea.ah-form-control { min-height:86px; resize:vertical; line-height:1.45; }
+.ah-form-switches { grid-column:1/-1; display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:9px; }
+.ah-form-switch {
+    min-height:48px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 10px;
+    border:1px solid var(--focus-border,#e5e7eb); border-radius:11px; background:#fbfcfe; color:#42506a; cursor:pointer;
+}
+.ah-form-switch span { display:flex; flex-direction:column; gap:2px; min-width:0; font-size:11px; font-weight:800; }
+.ah-form-switch small { color:#98a4b8; font-size:9px; font-weight:650; }
+.ah-form-switch input { width:16px; height:16px; accent-color:var(--focus-brand,#634efb); }
+.ah-form-error { grid-column:1/-1; padding:9px 11px; border:1px solid #fecaca; border-radius:9px; background:#fff7f7; color:#b91c1c; font-size:11px; font-weight:750; }
+.ah-legacy-event-detail { display:none; }
+.ah-modal-footer-actions { margin-left:auto; display:flex; align-items:center; gap:8px; }
+.ah-modal-btn-danger { color:#ef4444; background:#fff; border:1px solid #fecaca; }
+.ah-modal-btn-danger:hover { background:#fff7f7; border-color:#fca5a5; }
+.ah-modal-btn:disabled { opacity:.55; cursor:not-allowed; transform:none; box-shadow:none; }
 
 .ah-modal-footer {
     display:flex; align-items:center; justify-content:space-between;
@@ -292,6 +326,12 @@
 .dark .ah-detail-label { color:#506690; }
 .dark .ah-detail-value { color:#e0e6ed; }
 .dark .ah-detail-notes { background:#1b2e4b; border-color:#253b5c; color:#888da8; }
+.dark .ah-form-control { background:#1b2e4b; border-color:#253b5c; color:#e0e6ed; }
+.dark .ah-form-label { color:#8ea0bd; }
+.dark .ah-form-switch { background:#111f35; border-color:#253b5c; color:#dbe5f3; }
+.dark .ah-form-switch small { color:#6f819f; }
+.dark .ah-form-error { background:rgba(127,29,29,.18); border-color:#7f1d1d; color:#fecaca; }
+.dark .ah-modal-btn-danger { background:#1b2e4b; border-color:#7f1d1d; color:#fca5a5; }
 .dark .ah-modal-footer { border-color:#253b5c; }
 .dark .ah-modal-btn-outline { background:#1b2e4b; border-color:#253b5c; color:#888da8; }
 
@@ -386,6 +426,7 @@
         font-size:11px !important;
     }
     .ah-list-container { overflow-x:auto; }
+    .ah-form-grid,.ah-form-switches { grid-template-columns:1fr; }
 }
 </style>
 
@@ -407,12 +448,17 @@ window.addEventListener('pagehide', () => {
                     Agenda
                     <span class="ah-count-badge" x-text="filteredEvents.length" x-show="!loading"></span>
                 </span>
-                <div class="ah-view-pills">
-                    <button class="ah-vpill" :class="viewMode==='calendar' && 'active'" @click="setView('calendar')" title="Calendrier">
-                        <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
-                    </button>
-                    <button class="ah-vpill" :class="viewMode==='list' && 'active'" @click="setView('list')" title="Liste">
-                        <iconify-icon icon="solar:list-bold" width="14"></iconify-icon>
+                <div class="ah-sidebar-actions">
+                    <div class="ah-view-pills">
+                        <button class="ah-vpill" :class="viewMode==='calendar' && 'active'" @click="setView('calendar')" title="Calendrier">
+                            <iconify-icon icon="solar:calendar-bold-duotone" width="14"></iconify-icon>
+                        </button>
+                        <button class="ah-vpill" :class="viewMode==='list' && 'active'" @click="setView('list')" title="Liste">
+                            <iconify-icon icon="solar:list-bold" width="14"></iconify-icon>
+                        </button>
+                    </div>
+                    <button type="button" class="ah-new-event-btn" title="Nouvel événement" aria-label="Nouvel événement" @click="openCreateEvent()">
+                        <iconify-icon icon="solar:add-circle-bold" width="16"></iconify-icon>
                     </button>
                 </div>
             </div>
@@ -558,22 +604,104 @@ window.addEventListener('pagehide', () => {
     </div>
 
     <!-- Event Detail Modal -->
-    <template x-if="selectedEvent">
-        <div class="ah-modal-overlay" @click="selectedEvent = null">
-            <div class="ah-modal" @click.stop>
+    <template x-if="eventModalOpen">
+        <div class="ah-modal-overlay" @click="closeEventModal()">
+            <div class="ah-modal ah-event-form" @click.stop>
                 <div class="ah-modal-header">
                     <div class="ah-modal-header-left">
                         <div class="ah-modal-icon">
-                            <iconify-icon icon="solar:calendar-bold-duotone" width="18"></iconify-icon>
+                            <iconify-icon :icon="eventMode === 'edit' ? 'solar:calendar-mark-bold-duotone' : 'solar:calendar-add-bold-duotone'" width="18"></iconify-icon>
                         </div>
-                        <h3 x-text="selectedEvent.title || 'Sans titre'"></h3>
+                        <h3 x-text="eventMode === 'edit' ? 'Modifier l\'événement' : 'Nouvel événement'"></h3>
                     </div>
-                    <button class="ah-modal-close" @click="selectedEvent = null">
+                    <button type="button" class="ah-modal-close" @click="closeEventModal()" aria-label="Fermer">
                         <iconify-icon icon="solar:close-circle-linear" width="18"></iconify-icon>
                     </button>
                 </div>
 
                 <div class="ah-modal-body">
+                    <div class="ah-form-grid">
+                        <div class="ah-form-error" x-show="eventError" x-text="eventError"></div>
+                        <label class="ah-form-field is-wide">
+                            <span class="ah-form-label">Titre</span>
+                            <input x-ref="eventTitleInput" class="ah-form-control" type="text" maxlength="180"
+                                   placeholder="Titre de l'événement" x-model="eventForm.title" @keydown.enter.prevent="saveEvent()">
+                        </label>
+                        <label class="ah-form-field is-wide">
+                            <span class="ah-form-label">Fiche associée</span>
+                            <select class="ah-form-control" x-model="eventForm.recordId" :disabled="eventMode === 'edit'">
+                                <option value="">Agenda général</option>
+                                <template x-for="record in recordOptions" :key="record.recordId">
+                                    <option :value="record.recordId" x-text="record.entityName + ' · ' + record.recordTitle"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Début</span>
+                            <input class="ah-form-control" type="datetime-local" step="300" x-model="eventForm.startAt">
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Fin</span>
+                            <input class="ah-form-control" type="datetime-local" step="300" x-model="eventForm.endAt">
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Type</span>
+                            <select class="ah-form-control" x-model="eventForm.type">
+                                <template x-for="type in eventTypeOptions" :key="type.value">
+                                    <option :value="type.value" x-text="type.label"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Statut</span>
+                            <select class="ah-form-control" x-model="eventForm.statusOptionId">
+                                <option value="">Statut par défaut</option>
+                                <template x-for="status in statusOptions" :key="status._id">
+                                    <option :value="String(status._id)" x-text="status.label"></option>
+                                </template>
+                            </select>
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Répétition</span>
+                            <select class="ah-form-control" x-model="eventForm.recurrence">
+                                <option value="none">Aucune</option>
+                                <option value="daily">Tous les jours</option>
+                                <option value="weekly">Toutes les semaines</option>
+                                <option value="monthly">Tous les mois</option>
+                                <option value="quarterly">Tous les 3 mois</option>
+                                <option value="yearly">Tous les ans</option>
+                            </select>
+                        </label>
+                        <label class="ah-form-field">
+                            <span class="ah-form-label">Lieu</span>
+                            <input class="ah-form-control" type="text" maxlength="240" placeholder="Ajouter un lieu" x-model="eventForm.location">
+                        </label>
+                        <label class="ah-form-field is-wide">
+                            <span class="ah-form-label">Étiquettes</span>
+                            <input class="ah-form-control" type="text" placeholder="Important, Client, Personnel..." x-model="eventForm.tags">
+                        </label>
+                        <label class="ah-form-field is-wide">
+                            <span class="ah-form-label">Notes</span>
+                            <textarea class="ah-form-control" maxlength="5000" placeholder="Ajouter des détails..." x-model="eventForm.notes"></textarea>
+                        </label>
+                        <div class="ah-form-switches">
+                            <label class="ah-form-switch">
+                                <span>Journée entière<small>Sans horaire précis</small></span>
+                                <input type="checkbox" x-model="eventForm.allDay">
+                            </label>
+                            <label class="ah-form-switch">
+                                <span>À venir<small>Afficher dans la sidebar</small></span>
+                                <input type="checkbox" x-model="eventForm.showInUpcoming">
+                            </label>
+                            <label class="ah-form-switch">
+                                <span>Date importante<small>Mettre en valeur</small></span>
+                                <input type="checkbox" x-model="eventForm.isImportant">
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="ah-modal-body ah-legacy-event-detail">
                     <!-- Date & Time -->
                     <div class="ah-detail-row">
                         <div class="ah-detail-icon">
@@ -673,13 +801,18 @@ window.addEventListener('pagehide', () => {
                 </div>
 
                 <div class="ah-modal-footer">
-                    <button class="ah-modal-btn ah-modal-btn-outline" @click="selectedEvent = null">
-                        Fermer
+                    <button type="button" class="ah-modal-btn ah-modal-btn-danger"
+                            x-show="eventMode === 'edit'" :disabled="eventSaving" @click="deleteEvent()">
+                        <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>
+                        Supprimer
                     </button>
-                    <a class="ah-modal-btn ah-modal-btn-primary" :href="getRecordLink(selectedEvent)" style="text-decoration:none">
-                        <iconify-icon icon="solar:arrow-right-linear" width="14"></iconify-icon>
-                        Ouvrir la fiche
-                    </a>
+                    <div class="ah-modal-footer-actions">
+                        <button type="button" class="ah-modal-btn ah-modal-btn-outline" :disabled="eventSaving" @click="closeEventModal()">Annuler</button>
+                        <button type="button" class="ah-modal-btn ah-modal-btn-primary" :disabled="eventSaving" @click="saveEvent()">
+                            <iconify-icon :icon="eventSaving ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold-duotone'" width="14"></iconify-icon>
+                            <span x-text="eventSaving ? 'Enregistrement...' : (eventMode === 'edit' ? 'Enregistrer' : 'Créer')"></span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -701,11 +834,46 @@ document.addEventListener('alpine:init', () => {
         search: '',
         calendar: null,
         selectedEvent: null,
+        eventModalOpen: false,
+        eventMode: 'create',
+        eventSaving: false,
+        eventError: '',
+        eventForm: {
+            title: '',
+            recordId: '',
+            startAt: '',
+            endAt: '',
+            type: 'autre',
+            statusOptionId: '',
+            recurrence: 'none',
+            location: '',
+            tags: '',
+            notes: '',
+            allDay: false,
+            showInUpcoming: true,
+            isImportant: false
+        },
+        fallbackEventTypeOptions: [
+            { value:'anniversaire', label:'Anniversaire' },
+            { value:'fete', label:'Fête' },
+            { value:'jour_ferie', label:'Jour férié' },
+            { value:'reunion', label:'Réunion' },
+            { value:'rendez_vous', label:'Rendez-vous' },
+            { value:'echeance', label:'Échéance' },
+            { value:'rappel', label:'Rappel' },
+            { value:'consultation', label:'Consultation' },
+            { value:'tache', label:'Tâche' },
+            { value:'personnel', label:'Personnel' },
+            { value:'autre', label:'Autre' }
+        ],
         _parentLookup: {},
 
         async init() {
             await this.fetchData();
             this.loading = false;
+            window.addEventListener('keydown', event => {
+                if (event.key === 'Escape' && this.eventModalOpen) this.closeEventModal();
+            });
             this.$nextTick(() => {
                 if (this.viewMode === 'calendar') this.initCalendar();
             });
@@ -719,6 +887,7 @@ document.addEventListener('alpine:init', () => {
                     this.allEvents = data.events || [];
                     this.entities = (data.entities || []).map(e => ({ ...e, _open: true }));
                     this.entityData = data.entityData;
+                    this._parentLookup = {};
 
                     // Build parent lookup from relations
                     this.entities.forEach(ent => {
@@ -750,7 +919,8 @@ document.addEventListener('alpine:init', () => {
             return this.filteredEvents
                 .filter(ev => {
                     const date = new Date(ev.date);
-                    return !Number.isNaN(date.getTime()) && date.getTime() >= today.getTime();
+                    const visible = this.booleanFieldValue(this.getFieldValue(ev, 'widget_prochains_evenements'), true);
+                    return visible && !Number.isNaN(date.getTime()) && date.getTime() >= today.getTime();
                 })
                 .slice()
                 .sort((a, b) => new Date(a.date) - new Date(b.date))
@@ -764,6 +934,35 @@ document.addEventListener('alpine:init', () => {
                 if (ent.entityName.toLowerCase().includes(q)) return true;
                 return ent.records.some(r => r.recordTitle.toLowerCase().includes(q));
             });
+        },
+
+        get statusOptions() {
+            return this.entityData?.statusClassification?.options || [];
+        },
+
+        get eventTypeOptions() {
+            const field = (this.entityData?.customFields || []).find(item => item.name === 'type_evenement');
+            const configured = field?.type_config?.options || field?.ui?.options || [];
+            const normalized = configured.map(option => ({
+                value: String(option?.value || option?.label || option || ''),
+                label: String(option?.label || option?.value || option || '')
+            })).filter(option => option.value);
+            const options = normalized.length ? normalized : this.fallbackEventTypeOptions.slice();
+            const current = String(this.eventForm.type || '');
+            if (current && !options.some(option => option.value === current)) {
+                options.push({ value:current, label:current.charAt(0).toUpperCase() + current.slice(1) });
+            }
+            return options;
+        },
+
+        get recordOptions() {
+            return (this.entities || []).flatMap(entity =>
+                (entity.records || []).map(record => ({
+                    recordId:String(record.recordId),
+                    recordTitle:record.recordTitle || 'Sans titre',
+                    entityName:entity.entityName || 'Fiche'
+                }))
+            ).sort((a, b) => (a.entityName + a.recordTitle).localeCompare(b.entityName + b.recordTitle, 'fr'));
         },
 
         setView(mode) {
@@ -806,7 +1005,7 @@ document.addEventListener('alpine:init', () => {
 
         getRecordTitle(ev) {
             const pid = this.getParentId(ev);
-            return this._parentLookup[pid]?.recordTitle || 'Sans titre';
+            return this._parentLookup[pid]?.recordTitle || 'Agenda';
         },
 
         getRecordLink(ev) {
@@ -822,7 +1021,197 @@ document.addEventListener('alpine:init', () => {
         },
 
         showDetail(ev) {
+            this.openEditEvent(ev);
+        },
+
+        toLocalDateTime(value) {
+            const date = value ? new Date(value) : new Date();
+            if (Number.isNaN(date.getTime())) return '';
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
+        },
+
+        emptyEventForm(startValue = null) {
+            const dateOnly = String(startValue || '').match(/^(\d{4})-(\d{2})-(\d{2})$/);
+            const start = dateOnly
+                ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]), 9, 0, 0, 0)
+                : (startValue ? new Date(startValue) : new Date());
+            if (Number.isNaN(start.getTime())) start.setTime(Date.now());
+            start.setMinutes(Math.ceil(start.getMinutes() / 5) * 5, 0, 0);
+            const end = new Date(start.getTime() + 30 * 60000);
+            return {
+                title: '',
+                recordId: this.filterRecordId || '',
+                startAt: this.toLocalDateTime(start),
+                endAt: this.toLocalDateTime(end),
+                type: 'autre',
+                statusOptionId: '',
+                recurrence: 'none',
+                location: '',
+                tags: '',
+                notes: '',
+                allDay: false,
+                showInUpcoming: true,
+                isImportant: false
+            };
+        },
+
+        booleanFieldValue(value, fallback = false) {
+            if (value === undefined || value === null || value === '') return fallback;
+            if (typeof value === 'boolean') return value;
+            if (typeof value === 'number') return value !== 0;
+            return ['true', '1', 'yes', 'oui', 'on'].includes(String(value).toLowerCase());
+        },
+
+        eventStatusOptionId(ev) {
+            const classificationId = this.entityData?.statusClassification?._id?.toString();
+            if (!classificationId) return '';
+            const value = (ev.classificationValues || []).find(item =>
+                item.classificationId?.toString() === classificationId
+            );
+            return value?.optionId?.toString() || '';
+        },
+
+        eventTagsText(ev) {
+            const value = this.getFieldValue(ev, 'tags_evenement');
+            const tags = Array.isArray(value) ? value : (typeof value === 'string' ? value.split(',') : []);
+            return tags.map(item => {
+                if (item && typeof item === 'object') return item.label || item.value || item.name || '';
+                return String(item || '');
+            }).filter(Boolean).join(', ');
+        },
+
+        openCreateEvent(startValue = null) {
+            this.eventMode = 'create';
+            this.selectedEvent = {};
+            this.eventError = '';
+            this.eventForm = this.emptyEventForm(startValue);
+            this.eventModalOpen = true;
+            this.$nextTick(() => this.$refs.eventTitleInput?.focus());
+        },
+
+        openEditEvent(ev) {
+            if (!ev) return;
+            this.eventMode = 'edit';
             this.selectedEvent = ev;
+            this.eventError = '';
+            this.eventForm = {
+                title: ev.title || '',
+                recordId: this.getParentId(ev) || '',
+                startAt: this.toLocalDateTime(ev.date),
+                endAt: ev.end_date ? this.toLocalDateTime(ev.end_date) : '',
+                type: this.getFieldValue(ev, 'type_evenement') || 'autre',
+                statusOptionId: this.eventStatusOptionId(ev),
+                recurrence: this.getFieldValue(ev, 'repetition_evenement') || 'none',
+                location: this.getFieldValue(ev, 'lieu_evenement') || '',
+                tags: this.eventTagsText(ev),
+                notes: this.getFieldValue(ev, 'notes_evenement') || ev.description || '',
+                allDay: this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false),
+                showInUpcoming: this.booleanFieldValue(this.getFieldValue(ev, 'widget_prochains_evenements'), true),
+                isImportant: this.booleanFieldValue(this.getFieldValue(ev, 'widget_date_importante'), false)
+            };
+            this.eventModalOpen = true;
+            this.$nextTick(() => this.$refs.eventTitleInput?.focus());
+        },
+
+        closeEventModal() {
+            if (this.eventSaving) return;
+            this.eventModalOpen = false;
+            this.selectedEvent = null;
+            this.eventError = '';
+        },
+
+        eventPayload() {
+            const title = String(this.eventForm.title || '').trim();
+            const start = new Date(this.eventForm.startAt);
+            const end = this.eventForm.endAt ? new Date(this.eventForm.endAt) : null;
+            if (!title) throw new Error('Le titre est requis.');
+            if (Number.isNaN(start.getTime())) throw new Error('La date de début est requise.');
+            if (end && Number.isNaN(end.getTime())) throw new Error('La date de fin est invalide.');
+            if (end && end.getTime() < start.getTime()) throw new Error('La fin doit être après le début.');
+            const payload = {
+                title,
+                startAt: start.toISOString(),
+                endAt: end ? end.toISOString() : null,
+                allDay: !!this.eventForm.allDay,
+                type: this.eventForm.type || 'autre',
+                recurrence: this.eventForm.recurrence || 'none',
+                location: String(this.eventForm.location || '').trim(),
+                tags: String(this.eventForm.tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
+                notes: String(this.eventForm.notes || '').trim(),
+                showInUpcoming: !!this.eventForm.showInUpcoming,
+                isImportant: !!this.eventForm.isImportant
+            };
+            if (this.eventMode === 'create' && this.eventForm.recordId) payload.recordId = this.eventForm.recordId;
+            if (this.eventForm.statusOptionId) payload.statusOptionId = this.eventForm.statusOptionId;
+            return payload;
+        },
+
+        refreshCalendarEvents() {
+            if (!this.calendar) return;
+            this.calendar.removeAllEvents();
+            this.calendar.addEventSource(this.toCalendarEvents(this.filteredEvents));
+        },
+
+        async saveEvent() {
+            if (this.eventSaving) return;
+            let payload;
+            try {
+                payload = this.eventPayload();
+            } catch (error) {
+                this.eventError = error.message;
+                return;
+            }
+            this.eventSaving = true;
+            this.eventError = '';
+            try {
+                const editing = this.eventMode === 'edit';
+                const eventId = this.selectedEvent?._id?.toString();
+                const url = '<%= _apiBase %>/api/agenda-hub/events' + (editing ? '/' + eventId : '');
+                const res = await fetch(url, {
+                    method: editing ? 'PATCH' : 'POST',
+                    headers: { 'Content-Type':'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.error || 'Enregistrement impossible.');
+                await this.fetchData();
+                this.refreshCalendarEvents();
+                this.eventModalOpen = false;
+                this.selectedEvent = null;
+                if (window.showMessage) window.showMessage(editing ? 'Événement modifié' : 'Événement créé', 'success');
+            } catch (error) {
+                console.error('[AgendaHub] Save event error:', error);
+                this.eventError = error.message || 'Enregistrement impossible.';
+            } finally {
+                this.eventSaving = false;
+            }
+        },
+
+        async deleteEvent() {
+            const eventId = this.selectedEvent?._id?.toString();
+            if (!eventId || this.eventSaving || !window.confirm('Supprimer cet événement ?')) return;
+            this.eventSaving = true;
+            this.eventError = '';
+            try {
+                const res = await fetch('<%= _apiBase %>/api/agenda-hub/events/' + eventId, {
+                    method: 'DELETE',
+                    credentials: 'include'
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.error || 'Suppression impossible.');
+                await this.fetchData();
+                this.refreshCalendarEvents();
+                this.eventModalOpen = false;
+                this.selectedEvent = null;
+                if (window.showMessage) window.showMessage('Événement supprimé', 'success');
+            } catch (error) {
+                console.error('[AgendaHub] Delete event error:', error);
+                this.eventError = error.message || 'Suppression impossible.';
+            } finally {
+                this.eventSaving = false;
+            }
         },
 
         getFieldValue(ev, fieldName) {
@@ -833,7 +1222,7 @@ document.addEventListener('alpine:init', () => {
                 const fid = c.field_id?._id || c.field_id;
                 return fid?.toString() === field._id?.toString();
             });
-            return cf?.value || null;
+            return cf ? cf.value : null;
         },
 
         getType(ev) {
@@ -900,6 +1289,7 @@ document.addEventListener('alpine:init', () => {
                     backgroundColor: status.color,
                     borderColor: status.color,
                     textColor: '#fff',
+                    allDay: this.booleanFieldValue(this.getFieldValue(ev, 'toute_la_journee'), false),
                     extendedProps: { _ev: ev }
                 };
             });
@@ -957,23 +1347,18 @@ document.addEventListener('alpine:init', () => {
                     self.showDetail(ev);
                 },
                 dateClick: (info) => {
-                    // Switch to day view for the clicked date
-                    if (self.calendar) {
-                        self.calendar.changeView('timeGridDay', info.dateStr);
-                    }
+                    self.openCreateEvent(info.dateStr);
                 },
                 eventDrop: async (info) => {
                     const ev = info.event.extendedProps._ev;
-                    const parentId = self.getParentId(ev);
-                    if (!parentId) { info.revert(); return; }
                     const newStart = info.event.start?.toISOString();
                     const newEnd = info.event.end?.toISOString();
                     try {
-                        const res = await fetch(`<%= _apiBase %>/api/records/${parentId}/events/${ev._id}/drag`, {
+                        const res = await fetch(`<%= _apiBase %>/api/agenda-hub/events/${ev._id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ newStart, newEnd })
+                            body: JSON.stringify({ startAt: newStart, endAt: newEnd })
                         });
                         const data = await res.json();
                         if (!data.success) { info.revert(); return; }
@@ -990,16 +1375,14 @@ document.addEventListener('alpine:init', () => {
                 },
                 eventResize: async (info) => {
                     const ev = info.event.extendedProps._ev;
-                    const parentId = self.getParentId(ev);
-                    if (!parentId) { info.revert(); return; }
                     const newStart = info.event.start?.toISOString();
                     const newEnd = info.event.end?.toISOString();
                     try {
-                        const res = await fetch(`<%= _apiBase %>/api/records/${parentId}/events/${ev._id}/drag`, {
+                        const res = await fetch(`<%= _apiBase %>/api/agenda-hub/events/${ev._id}`, {
                             method: 'PATCH',
                             headers: { 'Content-Type': 'application/json' },
                             credentials: 'include',
-                            body: JSON.stringify({ newStart, newEnd })
+                            body: JSON.stringify({ startAt: newStart, endAt: newEnd })
                         });
                         const data = await res.json();
                         if (!data.success) { info.revert(); return; }

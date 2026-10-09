@@ -82,6 +82,35 @@ test('rejects an end before the start', () => {
     );
 });
 
+test('applies a selected web status without changing event relations', () => {
+    const event = {
+        customFields: [],
+        relations: [{ relationKey: 'event_maison', value: 'record-1' }],
+        classificationValues: [{
+            classificationId: 'status-classification',
+            optionId: 'planned',
+        }],
+        markModified() {},
+    };
+    const entity = {
+        customFields: [],
+        statusClassification: {
+            _id: 'status-classification',
+            options: [
+                { _id: 'planned', label: 'Planifié', color: '#3b82f6' },
+                { _id: 'done', label: 'Terminé', color: '#22c55e' },
+            ],
+        },
+    };
+
+    Agenda.applyAgendaFields(event, { statusOptionId: 'done' }, entity);
+
+    assert.equal(event.classificationValues.length, 1);
+    assert.equal(event.classificationValues[0].optionId, 'done');
+    assert.equal(event.classificationValues[0].label, 'Terminé');
+    assert.deepEqual(event.relations, [{ relationKey: 'event_maison', value: 'record-1' }]);
+});
+
 test('serializes existing event entity fields for mobile', () => {
     const event = {
         _id: 'event-1',

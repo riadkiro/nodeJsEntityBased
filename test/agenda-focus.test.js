@@ -7,6 +7,7 @@ const puppeteer = require('puppeteer');
 
 const projectRoot = path.resolve(__dirname, '..');
 const viewPath = path.join(projectRoot, 'views', 'account', 'account-agenda-hub.ejs');
+const accountRoutesPath = path.join(projectRoot, 'routes', 'routes-inc-account.js');
 
 test('agenda removes its full-width header and fills the focus workspace', { timeout: 10_000 }, async (t) => {
     const view = fs.readFileSync(viewPath, 'utf8');
@@ -18,6 +19,12 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /class="ah-upcoming-sidebar"/);
     assert.match(view, /x-for="ev in upcomingEvents"/);
     assert.match(view, /class="ah-upcoming-delay" x-text="relativeDayBadge\(ev\.date\)"/);
+    assert.match(view, /class="ah-new-event-btn"/);
+    assert.match(view, /<template x-if="eventModalOpen">/);
+    assert.match(view, /async saveEvent\(\)/);
+    assert.match(view, /async deleteEvent\(\)/);
+    assert.match(view, /dateClick:\s*\(info\)\s*=>\s*\{\s*self\.openCreateEvent\(info\.dateStr\)/);
+    assert.match(view, /api\/agenda-hub\/events/);
     assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-main"'));
     assert.ok(view.indexOf('class="ah-main"') < view.indexOf('class="ah-upcoming-sidebar"'));
     assert.match(view, /syncCalendarToolbarButtons\(\)/);
@@ -71,4 +78,13 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         upcomingWidth: 320,
         overflow: 'hidden'
     });
+});
+
+test('agenda hub exposes account CRUD endpoints for create, edit and delete', () => {
+    const routes = fs.readFileSync(accountRoutesPath, 'utf8');
+    assert.match(routes, /router\.post\("\/api\/agenda-hub\/events"/);
+    assert.match(routes, /router\.patch\("\/api\/agenda-hub\/events\/:eventId"/);
+    assert.match(routes, /router\.delete\("\/api\/agenda-hub\/events\/:eventId"/);
+    assert.match(routes, /MobileAgendaService\.createAgendaEvent/);
+    assert.match(routes, /MobileAgendaService\.updateAgendaEvent/);
 });

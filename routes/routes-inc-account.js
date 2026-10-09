@@ -141,6 +141,36 @@ router.get("/api/agenda-hub", async (req, res) => {
     }
 });
 // Tasks Hub API — must be before api-account (has /:id catch-all)
+router.post("/api/agenda-hub/events", async (req, res) => {
+    try {
+        const MobileAgendaService = require('../services/mobile-agenda.service');
+        const event = await MobileAgendaService.createAgendaEvent(req, req.body || {});
+        res.status(201).json({ success: true, event });
+    } catch (error) {
+        console.error('[AgendaHub] Create event error:', error);
+        res.status(error.status || 500).json({ success: false, error: error.message });
+    }
+});
+router.patch("/api/agenda-hub/events/:eventId", async (req, res) => {
+    try {
+        const MobileAgendaService = require('../services/mobile-agenda.service');
+        const event = await MobileAgendaService.updateAgendaEvent(req, req.params.eventId, req.body || {});
+        res.json({ success: true, event });
+    } catch (error) {
+        console.error('[AgendaHub] Update event error:', error);
+        res.status(error.status || 500).json({ success: false, error: error.message });
+    }
+});
+router.delete("/api/agenda-hub/events/:eventId", async (req, res) => {
+    try {
+        const MobileAgendaService = require('../services/mobile-agenda.service');
+        await MobileAgendaService.deleteAgendaEvent(req, req.params.eventId);
+        res.json({ success: true });
+    } catch (error) {
+        console.error('[AgendaHub] Delete event error:', error);
+        res.status(error.status || 500).json({ success: false, error: error.message });
+    }
+});
 const ReminderService = require('../services/reminders/reminder.service');
 const { taskTenantModels } = require('../services/task-tenant-models.service');
 const TaskOverview = require('../services/task-overview.service');

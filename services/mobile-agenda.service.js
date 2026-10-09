@@ -148,6 +148,9 @@ function normalizeAgendaInput(input = {}, options = {}) {
     if (!partial || input.recurrence !== undefined) {
         normalized.recurrence = normalizeRecurrence(input.recurrence);
     }
+    if (input.statusOptionId !== undefined && cleanText(input.statusOptionId)) {
+        normalized.statusOptionId = cleanText(input.statusOptionId);
+    }
 
     return normalized;
 }
@@ -261,6 +264,27 @@ function applyAgendaFields(event, normalized, eventsEntity) {
     for (const [name, value] of mappings) {
         if (value !== undefined) setCustomField(event, idByName, name, value);
     }
+
+    if (normalized.statusOptionId !== undefined && eventsEntity.statusClassification?._id) {
+        const classification = eventsEntity.statusClassification;
+        const option = (classification.options || []).find(item =>
+            item?._id?.toString?.() === normalized.statusOptionId
+        );
+        if (!option) {
+            throw new AgendaValidationError('Le statut est invalide.');
+        }
+        event.classificationValues = (event.classificationValues || []).filter(item =>
+            item.classificationId?.toString?.() !== classification._id.toString()
+        );
+        event.classificationValues.push({
+            classificationId: classification._id,
+            optionId: option._id,
+            label: option.label || 'Planifie',
+            color: option.color || '#3b82f6',
+        });
+        if (event.markModified) event.markModified('classificationValues');
+    }
+
     if (event.markModified) event.markModified('customFields');
     return event;
 }
@@ -281,8 +305,9 @@ function defaultClassificationValues(eventsEntity) {
 
 async function agendaContext(req) {
     const Record = await tenantCollection(req, 'Record');
+    const Entity = await tenantCollection(req, 'Entity');
     const eventsEntity = await ensureEventsEntity(req);
-    return { Record, eventsEntity };
+    return { Record, Entity, eventsEntity };
 }
 
 async function listAgendaEvents(req, query = {}) {
@@ -337,7 +362,19 @@ function agendaEventListFilter(eventsEntity, query = {}) {
 
 async function createAgendaEvent(req, input = {}) {
     const normalized = normalizeAgendaInput(input);
-    const { Record, eventsEntity } = await agendaContext(req);
+    const { Record, Entity, eventsEntity } = await agendaContext(req);
+    const parentRecordId = cleanText(input.recordId ?? input.parentRecordId);
+    const relations = [];
+    if (parentRecordId) {
+        const parentRecord = await Record.findById(parentRecordId).select('entityId').lean();
+        if (!parentRecord) {
+            throw new AgendaValidationError('La fiche associée est introuvable.', 'AGENDA_PARENT_NOT_FOUND', 404);
+        }
+        const parentEntity = await Entity.findById(parentRecord.entityId).select('slug').lean();
+        if (parentEntity?.slug) {
+            relations.push({ relationKey:`event_${parentEntity.slug}`, value:parentRecordId });
+        }
+    }
     const event = new Record({
         entityId: eventsEntity._id,
         title: normalized.title,
@@ -348,6 +385,7 @@ async function createAgendaEvent(req, input = {}) {
         status: 'published',
         classificationValues: defaultClassificationValues(eventsEntity),
         customFields: [],
+        relations,
         createdBy: req.user?._id,
         updatedBy: req.user?._id,
     });

@@ -79,7 +79,7 @@
 /* ── Upcoming events sidebar ── */
 .ah-upcoming-sidebar {
     width:320px; flex:0 0 320px; min-width:0; display:flex; flex-direction:column; overflow:hidden;
-    border-right:1px solid var(--focus-border,#e5e7eb); background:#fbfcfe; box-sizing:border-box;
+    border-left:1px solid var(--focus-border,#e5e7eb); background:#fbfcfe; box-sizing:border-box;
 }
 .ah-upcoming-header {
     min-height:64px; padding:14px 16px; display:flex; align-items:center; justify-content:space-between; gap:10px;
@@ -359,7 +359,7 @@
         width:100%;
         max-height:360px;
         flex-basis:auto;
-        border-right:none;
+        border-left:none;
         border-bottom:1px solid #e8ecf1;
     }
     .ah-main { min-height:640px; overflow:visible; }
@@ -451,50 +451,6 @@ window.addEventListener('pagehide', () => {
             </div>
         </div>
 
-        <!-- Upcoming events -->
-        <aside class="ah-upcoming-sidebar" aria-label="Prochains événements">
-            <div class="ah-upcoming-header">
-                <div class="ah-upcoming-title">
-                    <span class="ah-upcoming-title-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone" width="16"></iconify-icon></span>
-                    <span>Prochains événements</span>
-                </div>
-                <button type="button" class="ah-upcoming-all" @click="showAllEvents()">Voir tout</button>
-            </div>
-            <div class="ah-upcoming-list">
-                <template x-for="ev in upcomingEvents" :key="'upcoming-' + ev._id">
-                    <div class="ah-upcoming-card"
-                         role="button"
-                         tabindex="0"
-                         @click="showDetail(ev)"
-                         @keydown.enter.prevent="showDetail(ev)"
-                         @keydown.space.prevent="showDetail(ev)">
-                        <span class="ah-upcoming-date">
-                            <span class="ah-upcoming-day" x-text="eventDay(ev.date)"></span>
-                            <span class="ah-upcoming-month" x-text="eventMonth(ev.date)"></span>
-                        </span>
-                        <span class="ah-upcoming-copy">
-                            <span class="ah-upcoming-name" x-text="ev.title || 'Sans titre'"></span>
-                            <span class="ah-upcoming-meta">
-                                <span x-text="formatTime(ev.date)"></span>
-                                <span>·</span>
-                                <span x-text="getStatus(ev).label"></span>
-                                <span class="ah-upcoming-delay" x-text="relativeDayBadge(ev.date)"></span>
-                            </span>
-                        </span>
-                        <button type="button" class="ah-upcoming-record" title="Ouvrir la fiche" @click.stop="openRecord(ev)">
-                            <iconify-icon icon="solar:folder-with-files-bold-duotone" width="15"></iconify-icon>
-                        </button>
-                    </div>
-                </template>
-                <div class="ah-upcoming-empty" x-show="!loading && upcomingEvents.length === 0">
-                    Aucun événement à venir
-                </div>
-            </div>
-            <div class="ah-upcoming-footer">
-                <button type="button" @click="setView('calendar')">Voir le calendrier complet →</button>
-            </div>
-        </aside>
-
         <!-- Main content -->
         <div class="ah-main">
             <!-- Loading -->
@@ -555,6 +511,50 @@ window.addEventListener('pagehide', () => {
                 </div>
             </template>
         </div>
+
+        <!-- Upcoming events -->
+        <aside class="ah-upcoming-sidebar" aria-label="Prochains événements">
+            <div class="ah-upcoming-header">
+                <div class="ah-upcoming-title">
+                    <span class="ah-upcoming-title-icon"><iconify-icon icon="solar:calendar-mark-bold-duotone" width="16"></iconify-icon></span>
+                    <span>Prochains événements</span>
+                </div>
+                <button type="button" class="ah-upcoming-all" @click="showAllEvents()">Voir tout</button>
+            </div>
+            <div class="ah-upcoming-list">
+                <template x-for="ev in upcomingEvents" :key="'upcoming-' + ev._id">
+                    <div class="ah-upcoming-card"
+                         role="button"
+                         tabindex="0"
+                         @click="showDetail(ev)"
+                         @keydown.enter.prevent="showDetail(ev)"
+                         @keydown.space.prevent="showDetail(ev)">
+                        <span class="ah-upcoming-date">
+                            <span class="ah-upcoming-day" x-text="eventDay(ev.date)"></span>
+                            <span class="ah-upcoming-month" x-text="eventMonth(ev.date)"></span>
+                        </span>
+                        <span class="ah-upcoming-copy">
+                            <span class="ah-upcoming-name" x-text="ev.title || 'Sans titre'"></span>
+                            <span class="ah-upcoming-meta">
+                                <span x-text="formatTime(ev.date)"></span>
+                                <span>·</span>
+                                <span x-text="getStatus(ev).label"></span>
+                                <span class="ah-upcoming-delay" x-text="relativeDayBadge(ev.date)"></span>
+                            </span>
+                        </span>
+                        <button type="button" class="ah-upcoming-record" title="Ouvrir la fiche" @click.stop="openRecord(ev)">
+                            <iconify-icon icon="solar:folder-with-files-bold-duotone" width="15"></iconify-icon>
+                        </button>
+                    </div>
+                </template>
+                <div class="ah-upcoming-empty" x-show="!loading && upcomingEvents.length === 0">
+                    Aucun événement à venir
+                </div>
+            </div>
+            <div class="ah-upcoming-footer">
+                <button type="button" @click="setView('calendar')">Voir le calendrier complet →</button>
+            </div>
+        </aside>
     </div>
 
     <!-- Event Detail Modal -->

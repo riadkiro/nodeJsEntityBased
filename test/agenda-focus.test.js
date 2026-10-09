@@ -18,8 +18,8 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
     assert.match(view, /class="ah-upcoming-sidebar"/);
     assert.match(view, /x-for="ev in upcomingEvents"/);
     assert.match(view, /class="ah-upcoming-delay" x-text="relativeDayBadge\(ev\.date\)"/);
-    assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-upcoming-sidebar"'));
-    assert.ok(view.indexOf('class="ah-upcoming-sidebar"') < view.indexOf('class="ah-main"'));
+    assert.ok(view.indexOf('class="ah-sidebar"') < view.indexOf('class="ah-main"'));
+    assert.ok(view.indexOf('class="ah-main"') < view.indexOf('class="ah-upcoming-sidebar"'));
     assert.match(view, /syncCalendarToolbarButtons\(\)/);
     assert.match(view, /datesSet:\s*\(\)\s*=>\s*self\.syncCalendarToolbarButtons\(\)/);
     assert.match(view, /style\.setProperty\('-webkit-text-fill-color',\s*color,\s*'important'\)/);
@@ -40,8 +40,8 @@ test('agenda removes its full-width header and fills the focus workspace', { tim
         <div class="ah-page">
             <div class="ah-body">
                 <aside class="ah-sidebar"></aside>
-                <aside class="ah-upcoming-sidebar"></aside>
                 <main class="ah-main"></main>
+                <aside class="ah-upcoming-sidebar"></aside>
             </div>
         </div>
     `);

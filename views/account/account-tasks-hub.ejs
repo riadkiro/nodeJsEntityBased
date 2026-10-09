@@ -297,6 +297,8 @@
 .th-today-body.is-compact .th-task-title-simple,.th-list-panel-body.is-compact .th-task-title-simple{font-size:12.5px}
 .th-list-panel-body{display:grid;grid-template-columns:minmax(0,1fr) 260px;gap:26px;align-items:start}
 .th-open-list{display:flex;flex-direction:column;gap:6px;min-width:0}
+.th-day-tasks-head{display:flex;align-items:center;gap:8px;margin-bottom:4px;color:#172033;font-size:12px;font-weight:850}
+.th-day-tasks-icon{width:27px;height:27px;display:inline-flex;align-items:center;justify-content:center;border-radius:8px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb);flex:0 0 auto}
 .th-open-task-rows{display:flex;flex-direction:column;gap:6px;min-width:0}
 .th-task-row-simple{display:grid;grid-template-columns:18px minmax(0,1fr) auto;gap:10px;align-items:center;min-height:28px;padding:1px 8px;border-radius:8px;position:relative}
 .th-task-row-simple:hover{background:#fbfcff}
@@ -444,6 +446,7 @@
 .dark .th-workload-bg,.dark .th-empty-simple{background:#111f35;border-color:#253b5c}
 .dark .th-day-events{border-color:#253b5c}
 .dark .th-day-events-head,.dark .th-day-event-name{color:#e0e6ed}
+.dark .th-day-tasks-head{color:#e0e6ed}
 .dark .th-day-event-card{background:#0e1726;border-color:#253b5c}
 .dark .th-day-event-card:hover{border-color:#4f46e5;box-shadow:0 5px 15px rgba(0,0,0,.18)}
 .dark .th-day-event-date,.dark .th-day-event-badge{background:#1b2447}
@@ -696,6 +699,12 @@ window.addEventListener('pagehide', () => {
                     <div class="th-today-body"
                          :class="{ 'is-completed-hidden': !todayPanelOption('showCompleted', true), 'is-compact': todayPanelOption('compactMode', false) }">
                         <div class="th-open-list">
+                            <div class="th-day-tasks-head">
+                                <span class="th-day-tasks-icon">
+                                    <iconify-icon icon="solar:checklist-minimalistic-bold-duotone" width="15"></iconify-icon>
+                                </span>
+                                <span>Tâches</span>
+                            </div>
                             <div class="th-open-task-rows" :data-task-widget-id="'tasks-page-today'" x-init="$nextTick(() => initTodaySortable($el))">
                                 <template x-for="task in selectedOpenTasks" :key="task._id || task.id">
                                     <div class="th-task-row-simple"
@@ -2093,10 +2102,11 @@ document.addEventListener('alpine:init', () => {
         },
         get selectedTasksTitle() {
             if (this.selectedMode === 'overdue') return 'Tâches en retard';
-            const dateLabel = this.formatDayKey(this.selectedDateKey, { weekday: true });
-            if (this.selectedIsToday) return `Tâches d'aujourd'hui · ${dateLabel}`;
-            if (this.selectedIsTomorrow) return `Tâches de demain · ${dateLabel}`;
-            return `Tâches du ${dateLabel}`;
+            const rawDateLabel = this.formatDayKey(this.selectedDateKey, { weekday: true });
+            const dateLabel = rawDateLabel.charAt(0).toUpperCase() + rawDateLabel.slice(1);
+            if (this.selectedIsToday) return `Aujourd'hui - ${dateLabel}`;
+            if (this.selectedIsTomorrow) return `Demain - ${dateLabel}`;
+            return dateLabel;
         },
         get selectedListIsToday() {
             return this.selectedListDateKey === this.todayKey();

@@ -20,8 +20,10 @@ test('task workspace keeps white list rows and aligned headers', { timeout: 10_0
     assert.match(view, /get selectedDayEvents\(\)/);
     assert.match(view, /return 'Événements du jour'/);
     assert.match(view, /x-text="selectedTasksTitle"/);
-    assert.match(view, /return `Tâches d'aujourd'hui · \$\{dateLabel\}`/);
-    assert.match(view, /return `Tâches du \$\{dateLabel\}`/);
+    assert.match(view, /return `Aujourd'hui - \$\{dateLabel\}`/);
+    assert.match(view, /return `Demain - \$\{dateLabel\}`/);
+    assert.match(view, /class="th-day-tasks-head"/);
+    assert.match(view, /<span>Tâches<\/span>/);
     assert.match(view, /weekday:\s*'long',[\s\S]*day:\s*'2-digit',[\s\S]*month:\s*'long'/);
     assert.ok(view.indexOf('class="th-open-task-rows"') < view.indexOf('class="th-day-events"'));
     assert.ok(view.indexOf('class="th-day-events"') < view.indexOf('class="th-task-composer"'));

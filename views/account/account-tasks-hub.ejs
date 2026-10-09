@@ -372,6 +372,54 @@
 .th-today-body.is-compact .th-day-event-name{font-size:12.5px;font-weight:750}
 .th-today-body.is-compact .th-day-event-meta{flex:0 0 auto;margin-top:0;font-size:9.5px}
 .th-today-body.is-compact .th-day-event-badge{display:none}
+.th-event-overlay{position:fixed;inset:0;z-index:10050;display:flex;align-items:center;justify-content:center;padding:32px;background:rgba(30,41,59,.32);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)}
+.th-event-modal{width:min(660px,calc(100vw - 64px));max-height:calc(100vh - 64px);display:flex;flex-direction:column;overflow:hidden;border:1px solid #e7eaf1;border-radius:18px;background:#fff;box-shadow:0 28px 80px rgba(15,23,42,.2)}
+.th-event-modal-head{min-height:68px;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:14px;border-bottom:1px solid #edf0f5}
+.th-event-modal-heading{min-width:0;display:flex;align-items:center;gap:11px}
+.th-event-modal-icon{width:38px;height:38px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border-radius:11px;background:var(--focus-brand-soft,#ebe8ff);color:var(--focus-brand,#634efb)}
+.th-event-modal-title{min-width:0}
+.th-event-modal-title h3{margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#172033;font-size:16px;font-weight:850}
+.th-event-modal-title span{display:block;margin-top:3px;color:#8a96aa;font-size:10.5px;font-weight:700}
+.th-event-close{width:34px;height:34px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border:1px solid #e4e9f1;border-radius:10px;background:#fff;color:#7c879c;cursor:pointer}
+.th-event-close:hover{background:#f7f8fb;color:#172033}
+.th-event-modal-body{min-height:0;overflow-y:auto;padding:20px}
+.th-event-preview{display:flex;flex-direction:column;gap:16px}
+.th-event-preview-hero{padding:18px;border:1px solid #eceff5;border-radius:14px;background:linear-gradient(135deg,#fbfaff,#fff)}
+.th-event-preview-hero h4{margin:0;color:#172033;font-size:20px;font-weight:850;line-height:1.3}
+.th-event-preview-hero p{margin:8px 0 0;color:#657188;font-size:12px;font-weight:700}
+.th-event-detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.th-event-detail{min-height:66px;padding:11px 12px;display:flex;align-items:flex-start;gap:9px;border:1px solid #eef1f5;border-radius:12px;background:#fff}
+.th-event-detail.is-wide{grid-column:1/-1}
+.th-event-detail-icon{width:29px;height:29px;flex:0 0 auto;display:inline-flex;align-items:center;justify-content:center;border-radius:9px;background:#f3f1ff;color:var(--focus-brand,#634efb)}
+.th-event-detail-copy{min-width:0}
+.th-event-detail-copy small{display:block;margin-bottom:3px;color:#9aa5b8;font-size:9px;font-weight:850;text-transform:uppercase;letter-spacing:.45px}
+.th-event-detail-copy strong,.th-event-detail-copy span{display:block;color:#2b3548;font-size:12px;font-weight:750;line-height:1.45;overflow-wrap:anywhere}
+.th-event-quick{padding-top:15px;border-top:1px solid #edf0f5}
+.th-event-quick-label{margin-bottom:9px;color:#8793a7;font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.5px}
+.th-event-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.th-event-action{min-height:46px;padding:8px 10px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px solid #e3e8f0;border-radius:11px;background:#fff;color:#42506a;font-family:inherit;font-size:11.5px;font-weight:850;cursor:pointer;transition:background .15s,border-color .15s,color .15s,transform .15s}
+.th-event-action:hover{border-color:#cfc8ff;background:#faf9ff;color:var(--focus-brand,#634efb);transform:translateY(-1px)}
+.th-event-action.is-primary{border-color:#d8d2ff;background:#f3f1ff;color:var(--focus-brand,#634efb)}
+.th-event-action:disabled{opacity:.55;cursor:not-allowed;transform:none}
+.th-event-postpone{margin-top:9px;padding:10px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;border:1px solid #e8e5ff;border-radius:11px;background:#faf9ff}
+.th-event-postpone input,.th-event-form-control{width:100%;min-height:40px;box-sizing:border-box;padding:8px 11px;border:1px solid #dfe5ed;border-radius:10px;background:#fff;color:#172033;font:inherit;font-size:12px;font-weight:700;outline:none}
+.th-event-postpone input:focus,.th-event-form-control:focus{border-color:var(--focus-brand,#634efb);box-shadow:0 0 0 3px var(--focus-brand-ring)}
+.th-event-postpone button{min-height:40px;padding:0 14px;border:0;border-radius:10px;background:var(--focus-brand,#634efb);color:#fff;font-family:inherit;font-size:11.5px;font-weight:850;cursor:pointer}
+.th-event-form{display:flex;flex-direction:column;gap:14px}
+.th-event-form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.th-event-field{min-width:0;display:flex;flex-direction:column;gap:6px}
+.th-event-field.is-wide{grid-column:1/-1}
+.th-event-field>span{color:#778398;font-size:9.5px;font-weight:850;text-transform:uppercase;letter-spacing:.45px}
+textarea.th-event-form-control{min-height:88px;resize:vertical;line-height:1.45}
+.th-event-switches{grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.th-event-switch{min-height:46px;padding:8px 10px;display:flex;align-items:center;justify-content:space-between;gap:9px;border:1px solid #e6eaf0;border-radius:11px;background:#fbfcfe;color:#48556b;font-size:11px;font-weight:800;cursor:pointer}
+.th-event-switch input{accent-color:var(--focus-brand,#634efb)}
+.th-event-error{padding:9px 11px;border:1px solid #fecaca;border-radius:10px;background:#fff7f7;color:#b91c1c;font-size:11px;font-weight:750}
+.th-event-modal-foot{min-height:66px;padding:12px 18px;display:flex;align-items:center;justify-content:flex-end;gap:8px;border-top:1px solid #edf0f5;background:#fff}
+.th-event-footer-btn{min-height:39px;padding:0 16px;display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid #dfe5ed;border-radius:10px;background:#fff;color:#536078;font-family:inherit;font-size:12px;font-weight:850;cursor:pointer}
+.th-event-footer-btn.is-primary{border-color:var(--focus-brand,#634efb);background:var(--focus-brand,#634efb);color:#fff}
+.th-event-footer-btn:disabled{opacity:.55;cursor:not-allowed}
+@media(max-width:700px){.th-event-overlay{padding:12px}.th-event-modal{width:100%;max-height:calc(100vh - 24px)}.th-event-detail-grid,.th-event-form-grid{grid-template-columns:1fr}.th-event-actions,.th-event-switches{grid-template-columns:1fr}.th-event-detail.is-wide,.th-event-field.is-wide{grid-column:auto}}
 .th-error-simple{margin-top:8px;color:#ef4444;font-size:12px;font-weight:750}
 .th-task-ctx{position:fixed;z-index:10020;width:240px;background:#fff;border:1px solid #e8ecf1;border-radius:13px;box-shadow:0 18px 46px rgba(15,23,42,.16);padding:8px}
 .th-task-ctx button{width:100%;min-height:32px;border:0;border-radius:9px;background:transparent;color:#475569;font-family:inherit;font-size:12px;font-weight:750;display:flex;align-items:center;gap:8px;padding:7px 9px;cursor:pointer;text-align:left;transition:background .14s,color .14s}
@@ -457,6 +505,12 @@
 .dark .th-day-event-card:hover{border-color:#4f46e5;box-shadow:0 5px 15px rgba(0,0,0,.18)}
 .dark .th-day-event-badge{background:#1b2447}
 .dark .th-day-event-meta{color:#8ea0bd}
+.dark .th-event-modal,.dark .th-event-modal-foot{background:#0e1726;border-color:#253b5c}
+.dark .th-event-modal-head,.dark .th-event-modal-foot,.dark .th-event-quick{border-color:#253b5c}
+.dark .th-event-modal-title h3,.dark .th-event-preview-hero h4{color:#e0e6ed}
+.dark .th-event-close,.dark .th-event-detail,.dark .th-event-action,.dark .th-event-form-control,.dark .th-event-postpone input{background:#111f35;border-color:#253b5c;color:#dbe5f3}
+.dark .th-event-preview-hero,.dark .th-event-postpone,.dark .th-event-switch{background:#0b1222;border-color:#253b5c;color:#dbe5f3}
+.dark .th-event-detail-copy strong,.dark .th-event-detail-copy span{color:#dbe5f3}
 .dark .th-task-row-simple:hover{background:#111f35}
 .dark .th-today-body:not(.is-compact) .th-task-row-simple,.dark .th-list-panel-body:not(.is-compact) .th-task-row-simple{background:#0e1726;border-color:#253b5c;box-shadow:none}
 .dark .th-today-body:not(.is-compact) .th-task-row-simple:hover,.dark .th-list-panel-body:not(.is-compact) .th-task-row-simple:hover{background:#111f35;border-color:#334b70;box-shadow:0 8px 20px rgba(0,0,0,.16)}
@@ -1310,6 +1364,158 @@ window.addEventListener('pagehide', () => {
         </button>
     </div>
 
+    <template x-if="eventModalOpen">
+        <div class="th-event-overlay" @click="closeDayEvent()">
+            <section class="th-event-modal" role="dialog" aria-modal="true" aria-label="Aperçu de l'événement" @click.stop>
+                <header class="th-event-modal-head">
+                    <div class="th-event-modal-heading">
+                        <span class="th-event-modal-icon">
+                            <iconify-icon :icon="eventEditing ? 'solar:pen-new-square-bold-duotone' : 'solar:calendar-mark-bold-duotone'" width="19"></iconify-icon>
+                        </span>
+                        <div class="th-event-modal-title">
+                            <h3 x-text="eventEditing ? 'Modifier l\'événement' : (selectedEvent?.title || 'Événement')"></h3>
+                            <span x-text="eventEditing ? 'Les changements sont enregistrés dans votre agenda' : 'Aperçu de l\'événement'"></span>
+                        </div>
+                    </div>
+                    <button type="button" class="th-event-close" @click="closeDayEvent()" aria-label="Fermer">
+                        <iconify-icon icon="solar:close-circle-linear" width="19"></iconify-icon>
+                    </button>
+                </header>
+
+                <div class="th-event-modal-body">
+                    <div class="th-event-error" x-show="eventError" x-text="eventError"></div>
+
+                    <div class="th-event-preview" x-show="!eventEditing">
+                        <div class="th-event-preview-hero">
+                            <h4 x-text="selectedEvent?.title || 'Sans titre'"></h4>
+                            <p x-text="formatEventPreviewDate(selectedEvent)"></p>
+                        </div>
+                        <div class="th-event-detail-grid">
+                            <div class="th-event-detail">
+                                <span class="th-event-detail-icon"><iconify-icon icon="solar:clock-circle-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-event-detail-copy">
+                                    <small>Horaire</small>
+                                    <strong x-text="eventTimeRange(selectedEvent)"></strong>
+                                </span>
+                            </div>
+                            <div class="th-event-detail">
+                                <span class="th-event-detail-icon"><iconify-icon icon="solar:folder-with-files-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-event-detail-copy">
+                                    <small>Agenda</small>
+                                    <strong x-text="eventRecordTitle(selectedEvent)"></strong>
+                                </span>
+                            </div>
+                            <div class="th-event-detail">
+                                <span class="th-event-detail-icon"><iconify-icon icon="solar:tag-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-event-detail-copy">
+                                    <small>Type</small>
+                                    <strong x-text="formatEventType(agendaFieldValue(selectedEvent, 'type_evenement'))"></strong>
+                                </span>
+                            </div>
+                            <div class="th-event-detail" x-show="agendaFieldValue(selectedEvent, 'lieu_evenement')">
+                                <span class="th-event-detail-icon"><iconify-icon icon="solar:map-point-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-event-detail-copy">
+                                    <small>Lieu</small>
+                                    <strong x-text="agendaFieldValue(selectedEvent, 'lieu_evenement')"></strong>
+                                </span>
+                            </div>
+                            <div class="th-event-detail is-wide" x-show="eventNotes(selectedEvent)">
+                                <span class="th-event-detail-icon"><iconify-icon icon="solar:notes-bold-duotone" width="16"></iconify-icon></span>
+                                <span class="th-event-detail-copy">
+                                    <small>Notes</small>
+                                    <span x-text="eventNotes(selectedEvent)"></span>
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="th-event-quick">
+                            <div class="th-event-quick-label">Actions rapides</div>
+                            <div class="th-event-actions">
+                                <button type="button" class="th-event-action is-primary" :disabled="eventSaving" @click="postponeDayEvent(eventNextDayKey(selectedEvent))">
+                                    <iconify-icon icon="solar:calendar-minimalistic-bold-duotone" width="17"></iconify-icon>
+                                    Reporter à demain
+                                </button>
+                                <button type="button" class="th-event-action" :disabled="eventSaving" @click="eventPostponeOpen = !eventPostponeOpen">
+                                    <iconify-icon icon="solar:calendar-search-bold-duotone" width="17"></iconify-icon>
+                                    Choisir une date
+                                </button>
+                                <button type="button" class="th-event-action" :disabled="eventSaving" @click="editDayEvent()">
+                                    <iconify-icon icon="solar:pen-new-square-bold-duotone" width="17"></iconify-icon>
+                                    Modifier
+                                </button>
+                            </div>
+                            <div class="th-event-postpone" x-show="eventPostponeOpen" x-transition>
+                                <input type="date" x-model="eventPostponeDate" aria-label="Nouvelle date">
+                                <button type="button" :disabled="eventSaving || !eventPostponeDate" @click="postponeDayEvent(eventPostponeDate)">Reporter</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form class="th-event-form" x-show="eventEditing" @submit.prevent="saveDayEvent()">
+                        <div class="th-event-form-grid">
+                            <label class="th-event-field is-wide">
+                                <span>Titre</span>
+                                <input x-ref="eventEditTitle" class="th-event-form-control" type="text" maxlength="180" x-model="eventForm.title" required>
+                            </label>
+                            <label class="th-event-field">
+                                <span x-text="eventForm.allDay ? 'Date' : 'Début'"></span>
+                                <input class="th-event-form-control" :type="eventForm.allDay ? 'date' : 'datetime-local'" :step="eventForm.allDay ? null : 300" x-model="eventForm.startAt" required>
+                            </label>
+                            <label class="th-event-field">
+                                <span x-text="eventForm.allDay ? 'Fin (optionnelle)' : 'Fin'"></span>
+                                <input class="th-event-form-control" :type="eventForm.allDay ? 'date' : 'datetime-local'" :step="eventForm.allDay ? null : 300" x-model="eventForm.endAt">
+                            </label>
+                            <label class="th-event-field">
+                                <span>Type</span>
+                                <select class="th-event-form-control" x-model="eventForm.type">
+                                    <template x-for="type in agendaEventTypeOptions" :key="type.value">
+                                        <option :value="type.value" x-text="type.label"></option>
+                                    </template>
+                                </select>
+                            </label>
+                            <label class="th-event-field">
+                                <span>Répétition</span>
+                                <select class="th-event-form-control" x-model="eventForm.recurrence">
+                                    <option value="none">Aucune</option>
+                                    <option value="daily">Tous les jours</option>
+                                    <option value="weekly">Toutes les semaines</option>
+                                    <option value="monthly">Tous les mois</option>
+                                    <option value="quarterly">Tous les 3 mois</option>
+                                    <option value="yearly">Tous les ans</option>
+                                </select>
+                            </label>
+                            <label class="th-event-field is-wide">
+                                <span>Lieu</span>
+                                <input class="th-event-form-control" type="text" maxlength="240" x-model="eventForm.location" placeholder="Ajouter un lieu">
+                            </label>
+                            <label class="th-event-field is-wide">
+                                <span>Étiquettes</span>
+                                <input class="th-event-form-control" type="text" x-model="eventForm.tags" placeholder="Important, Client, Personnel...">
+                            </label>
+                            <label class="th-event-field is-wide">
+                                <span>Notes</span>
+                                <textarea class="th-event-form-control" maxlength="5000" x-model="eventForm.notes" placeholder="Ajouter des détails..."></textarea>
+                            </label>
+                            <div class="th-event-switches">
+                                <label class="th-event-switch"><span>Journée entière</span><input type="checkbox" :checked="eventForm.allDay" @change="setDayEventAllDay($event.target.checked)"></label>
+                                <label class="th-event-switch"><span>À venir</span><input type="checkbox" x-model="eventForm.showInUpcoming"></label>
+                                <label class="th-event-switch"><span>Date importante</span><input type="checkbox" x-model="eventForm.isImportant"></label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <footer class="th-event-modal-foot" x-show="eventEditing">
+                    <button type="button" class="th-event-footer-btn" :disabled="eventSaving" @click="cancelDayEventEdit()">Retour à l’aperçu</button>
+                    <button type="button" class="th-event-footer-btn is-primary" :disabled="eventSaving" @click="saveDayEvent()">
+                        <iconify-icon :icon="eventSaving ? 'line-md:loading-twotone-loop' : 'solar:diskette-bold-duotone'" width="15"></iconify-icon>
+                        <span x-text="eventSaving ? 'Enregistrement...' : 'Enregistrer'"></span>
+                    </button>
+                </footer>
+            </section>
+        </div>
+    </template>
+
     <!-- ═══ Shared Task Detail Modal ═══ -->
     <%- include('../partials/task-detail-modal') %>
 </div>
@@ -1328,6 +1534,31 @@ document.addEventListener('alpine:init', () => {
         agendaEvents: [],
         agendaParentLookup: {},
         agendaLoading: true,
+        eventModalOpen: false,
+        selectedEvent: null,
+        eventEditing: false,
+        eventSaving: false,
+        eventError: '',
+        eventPostponeOpen: false,
+        eventPostponeDate: '',
+        eventForm: {
+            title: '', startAt: '', endAt: '', type: 'autre', recurrence: 'none',
+            location: '', tags: '', notes: '', allDay: false,
+            showInUpcoming: true, isImportant: false
+        },
+        agendaEventTypeOptions: [
+            { value:'anniversaire', label:'Anniversaire' },
+            { value:'fete', label:'Fête' },
+            { value:'jour_ferie', label:'Jour férié' },
+            { value:'reunion', label:'Réunion' },
+            { value:'rendez_vous', label:'Rendez-vous' },
+            { value:'echeance', label:'Échéance' },
+            { value:'rappel', label:'Rappel' },
+            { value:'consultation', label:'Consultation' },
+            { value:'tache', label:'Tâche' },
+            { value:'personnel', label:'Personnel' },
+            { value:'autre', label:'Autre' }
+        ],
         sideLoading: true,
         hubTab: 'today',
         selectedMyListId: '',
@@ -1429,7 +1660,11 @@ document.addEventListener('alpine:init', () => {
             this.selectedListDateKey = this.todayKey();
             this.calendarCursor = this.monthKeyFromDateKey(this.selectedDateKey);
             this.loadTodayPanelOptions();
-            window.addEventListener('keydown', e => { if (e.key === 'Escape') this.closeTask(); });
+            window.addEventListener('keydown', e => {
+                if (e.key !== 'Escape') return;
+                if (this.eventModalOpen) this.closeDayEvent();
+                else this.closeTask();
+            });
             await Promise.all([this.loadHub(), this.loadAgendaEvents()]);
         },
 
@@ -2210,22 +2445,242 @@ document.addEventListener('alpine:init', () => {
             );
             return field?.value;
         },
-        formatEventTime(ev = {}) {
-            const allDay = ['true', '1', 'yes', 'oui', 'on'].includes(
-                String(this.agendaFieldValue(ev, 'toute_la_journee') ?? false).toLowerCase()
+        eventIsAllDay(ev = {}) {
+            return ['true', '1', 'yes', 'oui', 'on'].includes(
+                String(this.agendaFieldValue(ev, 'toute_la_journee') ?? ev.allDay ?? false).toLowerCase()
             );
+        },
+        formatEventTime(ev = {}) {
+            const allDay = this.eventIsAllDay(ev);
             if (allDay) return 'Toute la journée';
             const date = new Date(ev.date);
             if (Number.isNaN(date.getTime())) return '';
             return date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
         },
+        formatEventPreviewDate(ev = {}) {
+            const date = new Date(ev.date || ev.startAt);
+            if (Number.isNaN(date.getTime())) return 'Date non définie';
+            const label = date.toLocaleDateString('fr-FR', {
+                weekday:'long', day:'2-digit', month:'long', year:'numeric'
+            });
+            return label.charAt(0).toUpperCase() + label.slice(1);
+        },
+        eventTimeRange(ev = {}) {
+            if (this.eventIsAllDay(ev)) return 'Toute la journée';
+            const start = new Date(ev.date || ev.startAt);
+            if (Number.isNaN(start.getTime())) return 'Horaire non défini';
+            const format = value => value.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit', hour12:false });
+            const end = new Date(ev.end_date || ev.endAt || '');
+            return Number.isNaN(end.getTime()) ? format(start) : `${format(start)} – ${format(end)}`;
+        },
+        formatEventType(value = '') {
+            const key = String(value || 'autre');
+            const known = this.agendaEventTypeOptions.find(type => type.value === key);
+            if (known) return known.label;
+            return key.replaceAll('_', ' ').replace(/^./, letter => letter.toUpperCase());
+        },
+        eventNotes(ev = {}) {
+            return this.agendaFieldValue(ev, 'notes_evenement') || ev.description || ev.notes || '';
+        },
+        eventTagsText(ev = {}) {
+            const value = this.agendaFieldValue(ev, 'tags_evenement') ?? ev.tags ?? [];
+            const tags = Array.isArray(value) ? value : String(value || '').split(',');
+            return tags.map(item => {
+                if (item && typeof item === 'object') return item.label || item.value || item.name || '';
+                return String(item || '').trim();
+            }).filter(Boolean).join(', ');
+        },
+        eventId(ev = {}) {
+            return String(ev._id || ev.id || '');
+        },
+        toEventLocalDateTime(value) {
+            const date = value ? new Date(value) : new Date();
+            if (Number.isNaN(date.getTime())) return '';
+            const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+            return local.toISOString().slice(0, 16);
+        },
         openDayEvent(ev = {}) {
-            const info = this.eventRecordInfo(ev);
-            if (info?.entitySlug && info.recordId) {
-                window.location.href = API + '/record/' + info.entitySlug + '/' + info.recordId + '/agenda';
+            if (!this.eventId(ev)) return;
+            this.selectedEvent = ev;
+            this.eventEditing = false;
+            this.eventSaving = false;
+            this.eventError = '';
+            this.eventPostponeOpen = false;
+            this.eventPostponeDate = this.eventNextDayKey(ev);
+            this.eventModalOpen = true;
+        },
+        closeDayEvent() {
+            if (this.eventSaving) return;
+            this.eventModalOpen = false;
+            this.selectedEvent = null;
+            this.eventEditing = false;
+            this.eventError = '';
+            this.eventPostponeOpen = false;
+        },
+        editDayEvent() {
+            const ev = this.selectedEvent;
+            if (!ev) return;
+            const allDay = this.eventIsAllDay(ev);
+            const type = this.agendaFieldValue(ev, 'type_evenement') || ev.type || 'autre';
+            if (type && !this.agendaEventTypeOptions.some(option => option.value === type)) {
+                this.agendaEventTypeOptions.push({ value:type, label:this.formatEventType(type) });
+            }
+            this.eventForm = {
+                title: ev.title || '',
+                startAt: allDay ? this.dateKeyFromValue(ev.date || ev.startAt) : this.toEventLocalDateTime(ev.date || ev.startAt),
+                endAt: (ev.end_date || ev.endAt)
+                    ? (allDay ? this.dateKeyFromValue(ev.end_date || ev.endAt) : this.toEventLocalDateTime(ev.end_date || ev.endAt))
+                    : '',
+                type,
+                recurrence: this.agendaFieldValue(ev, 'repetition_evenement') || ev.recurrence || 'none',
+                location: this.agendaFieldValue(ev, 'lieu_evenement') || ev.location || '',
+                tags: this.eventTagsText(ev),
+                notes: this.eventNotes(ev),
+                allDay,
+                showInUpcoming: this.eventBooleanValue(this.agendaFieldValue(ev, 'widget_prochains_evenements') ?? ev.showInUpcoming, true),
+                isImportant: this.eventBooleanValue(this.agendaFieldValue(ev, 'widget_date_importante') ?? ev.isImportant, false)
+            };
+            this.eventEditing = true;
+            this.eventError = '';
+            this.$nextTick(() => this.$refs.eventEditTitle?.focus());
+        },
+        cancelDayEventEdit() {
+            if (this.eventSaving) return;
+            this.eventEditing = false;
+            this.eventError = '';
+        },
+        eventBooleanValue(value, fallback = false) {
+            if (value === undefined || value === null || value === '') return fallback;
+            if (typeof value === 'boolean') return value;
+            if (typeof value === 'number') return value !== 0;
+            return ['true', '1', 'yes', 'oui', 'on'].includes(String(value).toLowerCase());
+        },
+        setDayEventAllDay(enabled) {
+            this.eventForm.allDay = !!enabled;
+            if (this.eventForm.allDay) {
+                this.eventForm.startAt = this.dateKeyFromValue(this.eventForm.startAt);
+                this.eventForm.endAt = this.eventForm.endAt ? this.dateKeyFromValue(this.eventForm.endAt) : '';
                 return;
             }
-            window.location.href = API + '/agenda';
+            const startKey = this.dateKeyFromValue(this.eventForm.startAt);
+            const endKey = this.dateKeyFromValue(this.eventForm.endAt);
+            this.eventForm.startAt = startKey ? `${startKey}T09:00` : '';
+            this.eventForm.endAt = endKey ? `${endKey}T09:30` : '';
+        },
+        eventNextDayKey(ev = {}) {
+            const key = this.dateKeyFromValue(ev.date || ev.startAt);
+            if (!key) return this.todayKey();
+            const date = new Date(`${key}T12:00:00.000Z`);
+            date.setUTCDate(date.getUTCDate() + 1);
+            return date.toISOString().slice(0, 10);
+        },
+        eventUpdatePayload() {
+            const title = String(this.eventForm.title || '').trim();
+            if (!title) throw new Error('Le titre est requis.');
+            const allDay = !!this.eventForm.allDay;
+            const startKey = this.dateKeyFromValue(this.eventForm.startAt);
+            const endKey = this.eventForm.endAt ? this.dateKeyFromValue(this.eventForm.endAt) : '';
+            const start = allDay
+                ? (startKey ? new Date(`${startKey}T12:00:00.000Z`) : new Date(NaN))
+                : new Date(this.eventForm.startAt);
+            const end = allDay
+                ? (endKey ? new Date(`${endKey}T12:00:00.000Z`) : null)
+                : (this.eventForm.endAt ? new Date(this.eventForm.endAt) : null);
+            if (Number.isNaN(start.getTime())) throw new Error('La date est requise.');
+            if (end && Number.isNaN(end.getTime())) throw new Error('La date de fin est invalide.');
+            if (end && end.getTime() < start.getTime()) throw new Error('La fin doit être après le début.');
+            const payload = {
+                title,
+                startAt:start.toISOString(),
+                endAt:end ? end.toISOString() : null,
+                allDay,
+                type:this.eventForm.type || 'autre',
+                recurrence:this.eventForm.recurrence || 'none',
+                location:String(this.eventForm.location || '').trim(),
+                tags:String(this.eventForm.tags || '').split(',').map(tag => tag.trim()).filter(Boolean),
+                notes:String(this.eventForm.notes || '').trim(),
+                showInUpcoming:!!this.eventForm.showInUpcoming,
+                isImportant:!!this.eventForm.isImportant
+            };
+            if (allDay) payload.dateKey = startKey;
+            return payload;
+        },
+        async saveDayEvent() {
+            if (this.eventSaving || !this.selectedEvent) return;
+            let payload;
+            try {
+                payload = this.eventUpdatePayload();
+            } catch (error) {
+                this.eventError = error.message;
+                return;
+            }
+            const id = this.eventId(this.selectedEvent);
+            this.eventSaving = true;
+            this.eventError = '';
+            try {
+                const res = await fetch(`${API}/api/agenda-hub/events/${id}`, {
+                    method:'PATCH',
+                    headers:{ 'Content-Type':'application/json' },
+                    credentials:'include',
+                    body:JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.error || 'Modification impossible.');
+                await this.loadAgendaEvents();
+                this.selectedEvent = this.agendaEvents.find(event => this.eventId(event) === id) || this.selectedEvent;
+                this.eventEditing = false;
+                if (window.showMessage) window.showMessage('Événement modifié', 'success');
+            } catch (error) {
+                console.error('[TasksHub] Save event error:', error);
+                this.eventError = error.message || 'Modification impossible.';
+            } finally {
+                this.eventSaving = false;
+            }
+        },
+        async postponeDayEvent(dateKey) {
+            if (this.eventSaving || !this.selectedEvent || !/^\d{4}-\d{2}-\d{2}$/.test(String(dateKey || ''))) return;
+            const ev = this.selectedEvent;
+            const id = this.eventId(ev);
+            const currentStart = new Date(ev.date || ev.startAt);
+            if (Number.isNaN(currentStart.getTime())) {
+                this.eventError = 'La date actuelle est invalide.';
+                return;
+            }
+            const allDay = this.eventIsAllDay(ev);
+            const [year, month, day] = String(dateKey).split('-').map(Number);
+            const nextStart = allDay
+                ? new Date(`${dateKey}T12:00:00.000Z`)
+                : new Date(year, month - 1, day, currentStart.getHours(), currentStart.getMinutes(), currentStart.getSeconds(), 0);
+            const currentEnd = new Date(ev.end_date || ev.endAt || '');
+            const nextEnd = Number.isNaN(currentEnd.getTime())
+                ? null
+                : new Date(nextStart.getTime() + Math.max(0, currentEnd.getTime() - currentStart.getTime()));
+            const payload = {
+                startAt:nextStart.toISOString(),
+                endAt:nextEnd ? nextEnd.toISOString() : null,
+                allDay
+            };
+            if (allDay) payload.dateKey = String(dateKey);
+            this.eventSaving = true;
+            this.eventError = '';
+            try {
+                const res = await fetch(`${API}/api/agenda-hub/events/${id}`, {
+                    method:'PATCH',
+                    headers:{ 'Content-Type':'application/json' },
+                    credentials:'include',
+                    body:JSON.stringify(payload)
+                });
+                const data = await res.json().catch(() => ({}));
+                if (!res.ok || !data.success) throw new Error(data.error || 'Report impossible.');
+                await this.loadAgendaEvents();
+                this.eventSaving = false;
+                this.closeDayEvent();
+                if (window.showMessage) window.showMessage('Événement reporté', 'success');
+            } catch (error) {
+                console.error('[TasksHub] Postpone event error:', error);
+                this.eventError = error.message || 'Report impossible.';
+                this.eventSaving = false;
+            }
         },
         get completedSelectedTasks() {
             if (this.selectedMode === 'overdue') return [];

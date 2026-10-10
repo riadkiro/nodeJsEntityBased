@@ -34,7 +34,7 @@ const {
     shouldUseOpenAIWebSearch
 } = require("../src/integrations/openaiActions");
 
-const AI_ASSISTANT_MODEL_OPTIONS = ["gpt-5.5", "gpt-4o", "gpt-4o-mini"];
+const AI_ASSISTANT_MODEL_OPTIONS = ["gpt-6.1-sol", "gpt-5.5", "gpt-4o", "gpt-4o-mini"];
 const AI_ASSISTANT_MODEL = normalizeAssistantModel(process.env.AI_ASSISTANT_MODEL || "gpt-4o-mini");
 const AI_ASSISTANT_WEB_SEARCH_MODEL = process.env.AI_ASSISTANT_WEB_SEARCH_MODEL ||
     process.env.OPENAI_WEB_SEARCH_MODEL ||
@@ -62,8 +62,8 @@ function getTenantIntegrationModels(req) {
     return { ConnectionModel, LogModel };
 }
 
-function isGpt5Model(model = "") {
-    return /^gpt-5(?:[.-]|$)/.test(String(model || ""));
+function isReasoningModel(model = "") {
+    return /^gpt-(?:5|6)(?:[.-]|$)/.test(String(model || ""));
 }
 
 function normalizeAssistantModel(value = "") {
@@ -1022,7 +1022,7 @@ async function callAI(req, messages, requestedModel = AI_ASSISTANT_MODEL) {
                 include: OPENAI_WEB_SEARCH_SOURCES_INCLUDE
             };
 
-            if (!isGpt5Model(input.model)) input.temperature = 0.4;
+            if (!isReasoningModel(input.model)) input.temperature = 0.4;
 
             const result = await IntegrationService.executeAction({
                 ProviderModel: IntegrationProvider,
@@ -1073,7 +1073,7 @@ async function callAI(req, messages, requestedModel = AI_ASSISTANT_MODEL) {
         const chatInput = {
             model: selectedModel,
             messages,
-            ...(isGpt5Model(selectedModel)
+            ...(isReasoningModel(selectedModel)
                 ? { max_completion_tokens: 2000 }
                 : { temperature: 0.4, max_tokens: 2000 }),
         };

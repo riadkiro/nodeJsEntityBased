@@ -116,6 +116,7 @@ test('system prompt authorizes drafts but explicitly forbids sending', () => {
 
 test('home AI model selection only accepts the supported model allowlist', () => {
     const normalizeModel = aiAssistant.__test.normalizeAssistantModel;
+    assert.equal(normalizeModel('gpt-6.1-sol'), 'gpt-6.1-sol');
     assert.equal(normalizeModel('gpt-5.5'), 'gpt-5.5');
     assert.equal(normalizeModel('GPT-4O'), 'gpt-4o');
     assert.equal(normalizeModel('gpt-4o-mini'), 'gpt-4o-mini');

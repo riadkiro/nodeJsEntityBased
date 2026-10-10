@@ -341,8 +341,9 @@ document.addEventListener('alpine:init', () => {
         conversations: [],
         historyOpen: false,
         modelMenuOpen: false,
-        selectedModel: 'gpt-5.5',
+        selectedModel: 'gpt-6.1-sol',
         modelOptions: [
+            { id:'gpt-6.1-sol', label:'GPT-6.1 Sol', description:'Recommandé · performant' },
             { id:'gpt-5.5', label:'GPT-5.5', description:'Le plus performant' },
             { id:'gpt-4o', label:'GPT-4o', description:'Rapide et polyvalent' },
             { id:'gpt-4o-mini', label:'GPT-4o Mini', description:'Léger et rapide' }
@@ -382,7 +383,7 @@ document.addEventListener('alpine:init', () => {
 
         allowedModel(value) {
             const model = String(value || '');
-            return this.modelOptions.some(option => option.id === model) ? model : 'gpt-5.5';
+            return this.modelOptions.some(option => option.id === model) ? model : 'gpt-6.1-sol';
         },
 
         normalizeStoredMessages(messages) {
@@ -532,7 +533,7 @@ document.addEventListener('alpine:init', () => {
         },
 
         modelLabel(model) {
-            return this.modelOptions.find(option => option.id === model)?.label || 'GPT-5.5';
+            return this.modelOptions.find(option => option.id === model)?.label || 'GPT-6.1 Sol';
         },
 
         conversationTime(value) {

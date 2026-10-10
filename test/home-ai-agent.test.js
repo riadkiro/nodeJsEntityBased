@@ -35,6 +35,7 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /restoreConversation\(\)/);
     assert.match(view, /this\.messages\.slice\(-24\)/);
     assert.match(view, /modelOptions:\s*\[/);
+    assert.match(view, /id:'gpt-6\.1-sol'/);
     assert.match(view, /id:'gpt-5\.5'/);
     assert.match(view, /id:'gpt-4o-mini'/);
     assert.match(view, /model:this\.selectedModel/);

@@ -53,7 +53,13 @@ function escapeHtml(value) {
 }
 
 function plainTextToHtml(value) {
-    return escapeHtml(value).replace(/\r?\n/g, '<br>');
+    const normalized = String(value || '')
+        .replace(/\r\n?/g, '\n')
+        .replace(/[\t ]+\n/g, '\n')
+        .replace(/\n[\t ]+/g, '\n')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+    return escapeHtml(normalized).replace(/\n/g, '<br>');
 }
 
 function escapeRegex(value = '') {

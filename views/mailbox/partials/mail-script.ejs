@@ -463,6 +463,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         // ===== EMAIL HTML RENDERING =====
+        compactAiMailHtml(rawHtml = '') {
+            return String(rawHtml || '')
+                .replace(/<p\b[^>]*>(?:\s|&nbsp;|<br\s*\/?\s*>)*<\/p>/gi, '')
+                .replace(/(?:\s*<br\s*\/?\s*>\s*){3,}/gi, '<br><br>')
+                .trim();
+        },
+
         extractMailHtml(rawHtml = '') {
             const fallback = String(rawHtml || '');
             if (!fallback.trim()) return { styles: '', body: '' };
@@ -483,8 +490,9 @@ document.addEventListener('alpine:init', () => {
             return { styles: '', body: fallback };
         },
 
-        mailIframeDoc(rawHtml = '') {
-            const { styles, body } = this.extractMailHtml(rawHtml);
+        mailIframeDoc(rawHtml = '', isAiMail = false) {
+            const source = isAiMail ? this.compactAiMailHtml(rawHtml) : rawHtml;
+            const { styles, body } = this.extractMailHtml(source);
             return `<!doctype html>
 <html>
 <head>
@@ -519,6 +527,14 @@ document.addEventListener('alpine:init', () => {
         a {
             color: #4361ee;
         }
+        ${isAiMail ? `
+        .mail-frame-root p {
+            margin: 0 0 12px !important;
+        }
+        .mail-frame-root p:last-child {
+            margin-bottom: 0 !important;
+        }
+        ` : ''}
         ${styles}
     </style>
 </head>
@@ -721,7 +737,9 @@ document.addEventListener('alpine:init', () => {
                     to: mail.to || '',
                     cc: mail.cc || '',
                     title: mail.title || '',
-                    description: mail.description || '',
+                    description: mail.isAiDraft
+                        ? this.compactAiMailHtml(mail.description || '')
+                        : (mail.description || ''),
                     attachments: mail.attachments ? [...mail.attachments] : [],
                 };
             } else if (type === 'reply') {

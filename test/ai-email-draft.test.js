@@ -99,6 +99,13 @@ test('rejects invalid recipients and keeps helper output safe', () => {
     assert.equal(plainTextToHtml('<b>Bonjour</b>'), '&lt;b&gt;Bonjour&lt;/b&gt;');
 });
 
+test('AI draft formatting collapses excessive blank lines', () => {
+    assert.equal(
+        plainTextToHtml('Bonjour,\n\n\n\nNous avons reçu votre facture.\n\n\nCordialement,'),
+        'Bonjour,<br><br>Nous avons reçu votre facture.<br><br>Cordialement,',
+    );
+});
+
 test('system prompt authorizes drafts but explicitly forbids sending', () => {
     const prompt = aiAssistant.__test.buildSystemPrompt({ accountNumber: '6804' }, {});
     assert.match(prompt, /action `email-create`/);
@@ -122,5 +129,7 @@ test('mailbox opens persisted drafts directly in the editor and saves through th
     assert.match(detail, /mailSenderName\(selectedMail\)/);
     assert.match(detail, /mailRecipient\(selectedMail\)/);
     assert.match(detail, /openMail\('draft', selectedMail\)/);
+    assert.match(detail, /mailIframeDoc\(selectedMail\.description, selectedMail\.isAiDraft\)/);
+    assert.match(script, /compactAiMailHtml\(rawHtml = ''\)/);
     assert.doesNotMatch(draftService, /nodemailer|sendMail\s*\(/);
 });

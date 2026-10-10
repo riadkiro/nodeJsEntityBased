@@ -87,7 +87,7 @@
                 <iframe
                     class="mail-html-frame mt-8 max-w-full"
                     title="Email content"
-                    :srcdoc="mailIframeDoc(selectedMail.description)"
+                    :srcdoc="mailIframeDoc(selectedMail.description, selectedMail.isAiDraft)"
                     sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
                     referrerpolicy="no-referrer"
                     @load="resizeMailFrame($event)"

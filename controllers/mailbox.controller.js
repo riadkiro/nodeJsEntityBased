@@ -3,7 +3,7 @@ const { mailboxData } = require('./mailbox.data');
 const imaps = require('imap-simple');
 const simpleParser = require('mailparser').simpleParser;
 const mailConfig = require('../config/mail.config');
-const { discoverEmailProvider, PROVIDERS } = require('../services/email-provider-discovery.service');
+const { discoverEmailProvider, listEmailProviders, PROVIDERS } = require('../services/email-provider-discovery.service');
 const MicrosoftMailOAuth = require('../services/microsoft-mail-oauth.service');
 const GoogleMailOAuth = require('../services/google-mail-oauth.service');
 
@@ -225,14 +225,22 @@ exports.discoverProvider = async (req, res) => {
         if (result.reason === 'invalid_email') {
             return res.status(400).json({ success: false, error: 'Adresse e-mail invalide' });
         }
-        if (result.provider?.key === 'microsoft') {
-            result.provider.oauthAvailable = MicrosoftMailOAuth.isConfigured();
-            result.provider.oauthStartUrl = `/account/${req.account_number}/mailbox/oauth/microsoft/start`;
-        }
-        if (result.provider?.key === 'gmail') {
-            result.provider.oauthAvailable = await GoogleMailOAuth.isConfigured();
-            result.provider.oauthStartUrl = `/account/${req.account_number}/mailbox/oauth/google/start`;
-        }
+        const googleOAuthAvailable = await GoogleMailOAuth.isConfigured();
+        const addOAuthDetails = provider => {
+            if (provider.key === 'microsoft') return {
+                ...provider,
+                oauthAvailable: MicrosoftMailOAuth.isConfigured(),
+                oauthStartUrl: `/account/${req.account_number}/mailbox/oauth/microsoft/start`
+            };
+            if (provider.key === 'gmail') return {
+                ...provider,
+                oauthAvailable: googleOAuthAvailable,
+                oauthStartUrl: `/account/${req.account_number}/mailbox/oauth/google/start`
+            };
+            return provider;
+        };
+        result.providers = listEmailProviders().map(addOAuthDetails);
+        if (result.provider) result.provider = addOAuthDetails(result.provider);
         res.json({ success: true, ...result });
     } catch (error) {
         console.error('discoverProvider Error:', error);

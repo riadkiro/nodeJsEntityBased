@@ -4912,6 +4912,10 @@ pre {
   max-height: 40vh;
 }
 
+.max-h-\[48vh\] {
+  max-height: 48vh;
+}
+
 .max-h-\[500px\] {
   max-height: 500px;
 }
@@ -6371,6 +6375,11 @@ pre {
   border-color: rgb(183 213 255 / var(--tw-border-opacity, 1));
 }
 
+.border-\[\#cfd6e4\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(207 214 228 / var(--tw-border-opacity, 1));
+}
+
 .border-\[\#dfe6f1\] {
   --tw-border-opacity: 1;
   border-color: rgb(223 230 241 / var(--tw-border-opacity, 1));
@@ -6379,6 +6388,11 @@ pre {
 .border-\[\#e0e6ed\] {
   --tw-border-opacity: 1;
   border-color: rgb(224 230 237 / var(--tw-border-opacity, 1));
+}
+
+.border-\[\#e5e9f2\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(229 233 242 / var(--tw-border-opacity, 1));
 }
 
 .border-\[\#e5eaf3\] {
@@ -10607,6 +10621,10 @@ pre {
   background-color: rgb(234 241 255 / var(--tw-bg-opacity, 1));
 }
 
+.hover\:bg-primary-light\/30:hover {
+  background-color: rgb(234 241 255 / 0.3);
+}
+
 .hover\:bg-primary\/10:hover {
   background-color: rgb(67 97 238 / 0.1);
 }
@@ -11510,6 +11528,11 @@ pre {
   border-color: rgb(30 41 59 / var(--tw-border-opacity, 1));
 }
 
+.dark\:border-\[\#233653\]:is(.dark *) {
+  --tw-border-opacity: 1;
+  border-color: rgb(35 54 83 / var(--tw-border-opacity, 1));
+}
+
 .dark\:border-\[\#253b5c\]:is(.dark *) {
   --tw-border-opacity: 1;
   border-color: rgb(37 59 92 / var(--tw-border-opacity, 1));
@@ -11523,6 +11546,11 @@ pre {
 .dark\:border-\[\#2a3f5f\]:is(.dark *) {
   --tw-border-opacity: 1;
   border-color: rgb(42 63 95 / var(--tw-border-opacity, 1));
+}
+
+.dark\:border-\[\#314564\]:is(.dark *) {
+  --tw-border-opacity: 1;
+  border-color: rgb(49 69 100 / var(--tw-border-opacity, 1));
 }
 
 .dark\:border-amber-700:is(.dark *) {
@@ -11723,6 +11751,11 @@ pre {
 .dark\:bg-\[\#111827\]:is(.dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(17 24 39 / var(--tw-bg-opacity, 1));
+}
+
+.dark\:bg-\[\#111c2d\]:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(17 28 45 / var(--tw-bg-opacity, 1));
 }
 
 .dark\:bg-\[\#121c2c\]:is(.dark *) {
@@ -12740,6 +12773,10 @@ pre {
 .dark\:hover\:bg-primary:hover:is(.dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(67 97 238 / var(--tw-bg-opacity, 1));
+}
+
+.dark\:hover\:bg-primary\/10:hover:is(.dark *) {
+  background-color: rgb(67 97 238 / 0.1);
 }
 
 .dark\:hover\:bg-primary\/20:hover:is(.dark *) {

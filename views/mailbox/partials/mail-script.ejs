@@ -64,6 +64,7 @@ document.addEventListener('alpine:init', () => {
         accountSetupStep: 'email',
         emailDiscovering: false,
         emailDiscovery: null,
+        emailProviderOptions: [],
         emailDiscoveryError: '',
         selectedAccountId: null, // Currently viewed account
         syncing: false, // Is currently syncing
@@ -937,6 +938,7 @@ document.addEventListener('alpine:init', () => {
             this.accountSetupStep = 'email';
             this.emailDiscovering = false;
             this.emailDiscovery = null;
+            this.emailProviderOptions = [];
             this.emailDiscoveryError = '';
             this.showAccountModal = true;
         },
@@ -949,6 +951,7 @@ document.addEventListener('alpine:init', () => {
             };
             this.accountSetupStep = 'manual';
             this.emailDiscovery = null;
+            this.emailProviderOptions = [];
             this.emailDiscoveryError = '';
             this.showAccountModal = true;
         },
@@ -973,31 +976,43 @@ document.addEventListener('alpine:init', () => {
                 if (!resp.ok || !data.success) throw new Error(data.error || 'Détection impossible');
 
                 this.editingAccount.email = email;
+                this.emailProviderOptions = Array.isArray(data.providers) ? data.providers : [];
                 if (!data.found || !data.provider) {
-                    this.useManualAccountSetup('Configuration automatique introuvable. Indiquez les serveurs de votre fournisseur.');
+                    if (this.emailProviderOptions.length) {
+                        this.emailDiscovery = null;
+                        this.accountSetupStep = 'provider';
+                    } else {
+                        this.useManualAccountSetup('Configuration automatique introuvable. Indiquez les serveurs de votre fournisseur.');
+                    }
                     return;
                 }
 
-                const provider = data.provider;
-                this.emailDiscovery = provider;
-                this.editingAccount.name = provider.name;
-                this.editingAccount.color = provider.color || '#4361ee';
-                this.editingAccount.imap = {
-                    ...provider.imap,
-                    user: email,
-                    password: '',
-                };
-                this.editingAccount.smtp = {
-                    ...provider.smtp,
-                    user: email,
-                    password: '',
-                };
-                this.accountSetupStep = 'credentials';
+                this.selectAccountProvider(data.provider);
             } catch (error) {
                 this.emailDiscoveryError = error.message || 'Détection impossible pour le moment.';
             } finally {
                 this.emailDiscovering = false;
             }
+        },
+
+        selectAccountProvider(provider) {
+            if (!provider) return;
+            const email = String(this.editingAccount.email || '').trim().toLowerCase();
+            this.emailDiscovery = provider;
+            this.editingAccount.name = provider.name;
+            this.editingAccount.color = provider.color || '#4361ee';
+            this.editingAccount.imap = {
+                ...provider.imap,
+                user: email,
+                password: '',
+            };
+            this.editingAccount.smtp = {
+                ...provider.smtp,
+                user: email,
+                password: '',
+            };
+            this.emailDiscoveryError = '';
+            this.accountSetupStep = 'credentials';
         },
 
         useManualAccountSetup(message = '') {

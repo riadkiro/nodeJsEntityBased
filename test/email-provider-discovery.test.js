@@ -6,6 +6,7 @@ const ejs = require('ejs');
 
 const {
     parseEmail,
+    listEmailProviders,
     discoverEmailProvider
 } = require('../services/email-provider-discovery.service');
 
@@ -47,6 +48,38 @@ test('custom professional domains detect Google Workspace and Microsoft 365 thro
     assert.equal(microsoft.provider.key, 'microsoft');
 });
 
+test('professional domains detect One.com, OVH, Hostinger and Titan through MX', async () => {
+    const cases = [
+        ['onecom', 'customer.example.mx.one.com'],
+        ['onecom', 'cluster42.mx.service.one'],
+        ['ovh', 'mx1.mail.ovh.net'],
+        ['hostinger', 'mx1.hostinger.com'],
+        ['titan', 'mx1.titan.email']
+    ];
+
+    for (const [expectedKey, exchange] of cases) {
+        const result = await discoverEmailProvider(`hello@${expectedKey}.test`, {
+            resolveMx: async () => [{ priority: 10, exchange }]
+        });
+        assert.equal(result.found, true, exchange);
+        assert.equal(result.provider.key, expectedKey, exchange);
+        assert.equal(result.provider.detectedBy, 'mx', exchange);
+    }
+});
+
+test('provider selection exposes ready-to-use IMAP and SMTP presets', () => {
+    const providers = listEmailProviders();
+    const byKey = Object.fromEntries(providers.map(provider => [provider.key, provider]));
+
+    assert.deepEqual(byKey.onecom.imap, { host: 'imap.one.com', port: 993, tls: true });
+    assert.deepEqual(byKey.onecom.smtp, { host: 'send.one.com', port: 587, secure: false });
+    assert.deepEqual(byKey.ovh.imap, { host: 'imap.mail.ovh.net', port: 993, tls: true });
+    assert.deepEqual(byKey.ovh.smtp, { host: 'smtp.mail.ovh.net', port: 587, secure: false });
+    assert.deepEqual(byKey.hostinger.smtp, { host: 'smtp.hostinger.com', port: 465, secure: true });
+    assert.deepEqual(byKey.titan.imap, { host: 'imap.titan.email', port: 993, tls: true });
+    assert.equal('domains' in byKey.onecom, false);
+});
+
 test('unknown and invalid addresses safely fall back to manual setup', async () => {
     assert.equal(parseEmail('not-an-email'), null);
     const invalid = await discoverEmailProvider('not-an-email', {
@@ -69,6 +102,10 @@ test('mail account modal uses the guided auto-detection flow before manual setti
 
     assert.match(view, /Configuration automatique/);
     assert.match(view, /Fournisseur détecté/);
+    assert.match(view, /Choisir votre fournisseur/);
+    assert.match(view, /Autre fournisseur/);
+    assert.match(view, /One\.com/);
+    assert.match(view, /Hostinger/);
     assert.match(view, /Continuer avec/);
     assert.match(view, /emailDiscovery\?\.key === 'gmail'.*'Google'.*'Microsoft'/s);
     assert.match(view, /Votre mot de passe ne transite jamais/);
@@ -77,6 +114,8 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     assert.match(view, /accountSetupStep === 'manual'/);
     assert.match(script, /accounts\/discover/);
     assert.match(script, /discoverAccountProvider\(\)/);
+    assert.match(script, /emailProviderOptions/);
+    assert.match(script, /selectAccountProvider\(provider\)/);
     assert.match(script, /connectDetectedAccount\(\)/);
     assert.match(script, /mailbox\/oauth\/microsoft\/start/);
     assert.match(routes, /oauth\/google\/start', mailboxController\.startGoogleOAuth/);

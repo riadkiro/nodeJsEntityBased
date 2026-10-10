@@ -91,6 +91,27 @@ const PROVIDERS = Object.freeze({
         smtp: { host: 'smtp.mail.com', port: 465, secure: true },
         passwordLabel: 'Mot de passe', helpText: 'Vérifiez que l’accès IMAP est activé sur votre compte Mail.com.'
     },
+    onecom: {
+        key: 'onecom', name: 'One.com', color: '#6c2cff', domains: [],
+        imap: { host: 'imap.one.com', port: 993, tls: true },
+        smtp: { host: 'send.one.com', port: 587, secure: false },
+        passwordLabel: 'Mot de passe de la messagerie',
+        helpText: 'Utilisez votre adresse e-mail complète et le mot de passe défini dans One.com.'
+    },
+    hostinger: {
+        key: 'hostinger', name: 'Hostinger Email', color: '#673de6', domains: [],
+        imap: { host: 'imap.hostinger.com', port: 993, tls: true },
+        smtp: { host: 'smtp.hostinger.com', port: 465, secure: true },
+        passwordLabel: 'Mot de passe de la messagerie',
+        helpText: 'Utilisez le mot de passe de votre boîte Hostinger Email.'
+    },
+    titan: {
+        key: 'titan', name: 'Titan Email', color: '#2f6fed', domains: [],
+        imap: { host: 'imap.titan.email', port: 993, tls: true },
+        smtp: { host: 'smtp.titan.email', port: 465, secure: true },
+        passwordLabel: 'Mot de passe de la messagerie',
+        helpText: 'Activez l’accès aux applications tierces dans Titan si nécessaire.'
+    },
     infomaniak: {
         key: 'infomaniak', name: 'Infomaniak Mail', color: '#0098ff', domains: [],
         imap: { host: 'mail.infomaniak.com', port: 993, tls: true },
@@ -99,8 +120,8 @@ const PROVIDERS = Object.freeze({
     },
     ovh: {
         key: 'ovh', name: 'OVHcloud Mail', color: '#0050d7', domains: [],
-        imap: { host: 'ssl0.ovh.net', port: 993, tls: true },
-        smtp: { host: 'ssl0.ovh.net', port: 465, secure: true },
+        imap: { host: 'imap.mail.ovh.net', port: 993, tls: true },
+        smtp: { host: 'smtp.mail.ovh.net', port: 587, secure: false },
         passwordLabel: 'Mot de passe', helpText: 'Utilisez le mot de passe de votre adresse OVHcloud.'
     }
 });
@@ -140,9 +161,22 @@ function providerFromMx(records = []) {
     if (has(/yahoodns\.net\.?$/)) return PROVIDERS.yahoo;
     if (has(/zoho\.(?:com|eu)\.?$/)) return PROVIDERS.zoho;
     if (has(/messagingengine\.com\.?$/)) return PROVIDERS.fastmail;
+    if (has(/\.one\.com\.?$/) || has(/\.mx\.service\.one\.?$/)) return PROVIDERS.onecom;
+    if (has(/(?:^|\.)mx\d*\.hostinger\.com\.?$/)) return PROVIDERS.hostinger;
+    if (has(/(?:^|\.)mx\d*\.titan\.email\.?$/)) return PROVIDERS.titan;
     if (has(/infomaniak\.(?:com|ch)\.?$/)) return PROVIDERS.infomaniak;
     if (has(/(?:mx\d*\.mail\.)?ovh\.net\.?$/) || has(/mx\.ovh\.com\.?$/)) return PROVIDERS.ovh;
     return null;
+}
+
+const PROVIDER_LIST_ORDER = [
+    'gmail', 'microsoft', 'onecom', 'ovh', 'hostinger', 'titan',
+    'yahoo', 'icloud', 'infomaniak', 'zoho', 'fastmail', 'gmx',
+    'aol', 'orange', 'free', 'laposte', 'mailcom'
+];
+
+function listEmailProviders() {
+    return PROVIDER_LIST_ORDER.map(key => publicProvider(PROVIDERS[key], 'selection'));
 }
 
 async function resolveMxWithTimeout(domain, resolveMx, timeoutMs) {
@@ -187,5 +221,6 @@ module.exports = {
     PROVIDERS,
     parseEmail,
     providerFromMx,
+    listEmailProviders,
     discoverEmailProvider
 };

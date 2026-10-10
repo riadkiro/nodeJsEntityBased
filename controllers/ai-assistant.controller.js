@@ -13,7 +13,7 @@
  */
 const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
-const Mail = require("../models/mail.model");
+require("../models/mail.model");
 const TaskOverview = require("../services/task-overview.service");
 const MobileAgendaService = require("../services/mobile-agenda.service");
 
@@ -360,16 +360,57 @@ async function buildWorkspaceContext(req) {
  *  - Email bodies are stripped to plain text and truncated
  *  - Only metadata + preview is included
  */
-async function buildEmailContext(options = {}) {
+function escapeRegex(value = "") {
+    return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function emailSearchTerms(searchQuery, maxTerms = 12) {
+    const query = String(searchQuery || "")
+        .replace(/[“”]/g, '"')
+        .replace(/[’]/g, "'")
+        .trim();
+    if (!query) return [];
+
+    const alternatives = query
+        .split(/\s+(?:OR|OU)\s+|[|;,]+/i)
+        .map(value => value.replace(/^["']+|["']+$/g, "").trim())
+        .filter(Boolean);
+    const terms = [];
+    for (const alternative of alternatives.length ? alternatives : [query]) {
+        terms.push(alternative);
+        if (/\s/.test(alternative)) {
+            terms.push(...alternative.split(/\s+/).filter(word => word.length >= 3));
+        }
+    }
+    return [...new Set(terms.map(term => term.toLocaleLowerCase("fr")).filter(Boolean))]
+        .slice(0, maxTerms);
+}
+
+function buildEmailSearchFilter(searchQuery) {
+    const terms = emailSearchTerms(searchQuery);
+    if (!terms.length) return null;
+    const fields = ["title", "email", "firstName", "lastName", "displayDescription", "description"];
+    return {
+        $or: terms.flatMap(term => fields.map(field => ({
+            [field]: { $regex: escapeRegex(term), $options: "i" },
+        }))),
+    };
+}
+
+async function buildEmailContext(req, options = {}) {
     const {
         limit = 20,
         searchQuery = null,
         emailId = null,
         type = "inbox",
         unreadOnly = false,
+        mailModel = null,
     } = options;
 
     try {
+        const Mail = mailModel || await tenantCollection(req, "Mail");
+        if (!Mail) return { error: "Boîte mail du workspace indisponible" };
+
         // Single email detail
         if (emailId) {
             const email = await Mail.findById(emailId).lean();
@@ -384,13 +425,7 @@ async function buildEmailContext(options = {}) {
         if (type) query.type = type;
         if (unreadOnly) query.isUnread = true;
         if (searchQuery) {
-            query.$or = [
-                { title: { $regex: searchQuery, $options: "i" } },
-                { email: { $regex: searchQuery, $options: "i" } },
-                { firstName: { $regex: searchQuery, $options: "i" } },
-                { lastName: { $regex: searchQuery, $options: "i" } },
-                { displayDescription: { $regex: searchQuery, $options: "i" } },
-            ];
+            Object.assign(query, buildEmailSearchFilter(searchQuery));
         }
 
         const emails = await Mail.find(query)
@@ -417,6 +452,7 @@ async function buildEmailContext(options = {}) {
             },
             emails: emails.map((e) => sanitizeEmail(e, false)),
             searchQuery: searchQuery || null,
+            searchTerms: emailSearchTerms(searchQuery),
             resultCount: emails.length,
         };
     } catch (error) {
@@ -1059,7 +1095,7 @@ module.exports = {
             if (needsEmailContext && !workspaceContext.emailContext) {
                 console.log("[AIAssistant] Email-related query detected, loading email context...");
                 try {
-                    workspaceContext.emailContext = await buildEmailContext({ limit: 20 });
+                    workspaceContext.emailContext = await buildEmailContext(req, { limit: 20 });
                 } catch (e) {
                     console.error("[AIAssistant] Failed to load email context:", e.message);
                 }
@@ -1361,7 +1397,7 @@ module.exports = {
                     const { query, type: mailType, unreadOnly } = action.data || {};
                     console.log("[AIAssistant] Execute email-search:", { query, mailType, unreadOnly });
 
-                    const emailContext = await buildEmailContext({
+                    const emailContext = await buildEmailContext(req, {
                         searchQuery: query || null,
                         type: mailType || "inbox",
                         unreadOnly: unreadOnly || false,
@@ -1409,7 +1445,8 @@ module.exports = {
 
                     if (!isValidObjectId) {
                         console.log("[AIAssistant] Invalid emailId, fetching latest email instead");
-                        const latestEmail = await Mail.findOne({ type: "inbox" })
+                        const Mail = await tenantCollection(req, "Mail");
+                        const latestEmail = Mail && await Mail.findOne({ type: "inbox" })
                             .sort({ date: -1 })
                             .lean();
                         if (!latestEmail) {
@@ -1419,7 +1456,7 @@ module.exports = {
                         emailId = latestEmail._id.toString();
                     }
 
-                    const emailDetail = await buildEmailContext({ emailId });
+                    const emailDetail = await buildEmailContext(req, { emailId });
 
                     if (emailDetail.error) {
                         response = `❌ ${emailDetail.error}`;
@@ -1526,7 +1563,10 @@ module.exports = {
 };
 
 module.exports.__test = {
+    buildEmailContext,
+    buildEmailSearchFilter,
     buildSystemPrompt,
+    emailSearchTerms,
     agendaContextPrompt,
     ensureImmediateAgendaResponse,
     normalizeConversationHistory,

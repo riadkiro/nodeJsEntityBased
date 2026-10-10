@@ -5953,6 +5953,10 @@ pre {
   align-items: center;
 }
 
+.items-baseline {
+  align-items: baseline;
+}
+
 .items-stretch {
   align-items: stretch;
 }
@@ -6027,6 +6031,11 @@ pre {
 
 .gap-px {
   gap: 1px;
+}
+
+.gap-x-1 {
+  -moz-column-gap: 0.25rem;
+       column-gap: 0.25rem;
 }
 
 .gap-x-2 {
@@ -6234,6 +6243,10 @@ pre {
 
 .break-words {
   overflow-wrap: break-word;
+}
+
+.break-all {
+  word-break: break-all;
 }
 
 .rounded {

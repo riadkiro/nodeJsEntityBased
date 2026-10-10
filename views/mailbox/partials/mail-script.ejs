@@ -414,10 +414,6 @@ document.addEventListener('alpine:init', () => {
 
         selectMail(mail) {
             if (mail) {
-                if (mail.type === 'draft') {
-                    this.openMail('draft', mail);
-                    return;
-                }
                 mail.isUnread = false;
                 this.selectedMail = mail;
                 this.isEdit = false;
@@ -893,6 +889,41 @@ document.addEventListener('alpine:init', () => {
             if (!label) return '?';
             const words = label.split(/\s+/).filter(Boolean);
             return (words[0]?.[0] || '') + (words.length > 1 ? words[1]?.[0] || '' : '');
+        },
+
+        mailAccountFor(mail) {
+            const accountId = String(mail?.accountId || '');
+            return this.mailAccounts.find((account) => String(account?._id || '') === accountId)
+                || this.activeAccount
+                || null;
+        },
+
+        mailSenderName(mail) {
+            if (mail?.type === 'sent_mail' || mail?.type === 'draft') {
+                return this.mailAccountFor(mail)?.name || 'Mon compte';
+            }
+            return mail?.firstName
+                ? `${mail.firstName} ${mail.lastName || ''}`.trim()
+                : (mail?.email || 'Expéditeur inconnu');
+        },
+
+        mailSenderEmail(mail) {
+            if (mail?.type === 'sent_mail' || mail?.type === 'draft') {
+                return mail?.from || this.mailAccountFor(mail)?.email || mail?.email || '';
+            }
+            return mail?.email || '';
+        },
+
+        mailRecipient(mail) {
+            if (mail?.type === 'sent_mail' || mail?.type === 'draft') return mail?.to || '';
+            return this.mailAccountFor(mail)?.email || this.activeAccount?.email || '';
+        },
+
+        mailSenderInitials(mail) {
+            const label = this.mailSenderName(mail).replace(/<[^>]+>/g, '').trim();
+            if (!label) return '?';
+            const words = label.split(/\s+/).filter(Boolean);
+            return ((words[0]?.[0] || '') + (words.length > 1 ? words[1]?.[0] || '' : '')).toUpperCase();
         },
 
         // ===== TEMPLATES =====

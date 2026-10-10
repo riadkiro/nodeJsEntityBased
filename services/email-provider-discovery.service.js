@@ -13,9 +13,10 @@ const PROVIDERS = Object.freeze({
         key: 'microsoft', name: 'Outlook / Hotmail', color: '#1473e6',
         domains: ['outlook.com', 'hotmail.com', 'hotmail.fr', 'live.com', 'live.fr', 'msn.com'],
         imap: { host: 'outlook.office365.com', port: 993, tls: true },
-        smtp: { host: 'smtp.office365.com', port: 587, secure: false },
-        passwordLabel: 'Mot de passe du compte',
-        helpText: "Selon la sécurité Microsoft de votre compte, un mot de passe d'application peut être nécessaire."
+        smtp: { host: 'smtp-mail.outlook.com', port: 587, secure: false },
+        authType: 'oauth2',
+        passwordLabel: 'Connexion Microsoft',
+        helpText: 'Microsoft exige une connexion OAuth2 sécurisée. Votre mot de passe ne sera jamais demandé par DexApp.'
     },
     yahoo: {
         key: 'yahoo', name: 'Yahoo Mail', color: '#6001d2',
@@ -125,6 +126,7 @@ function publicProvider(provider, detectedBy) {
         smtp: { ...provider.smtp },
         passwordLabel: provider.passwordLabel,
         helpText: provider.helpText,
+        authType: provider.authType || 'password',
         detectedBy
     };
 }

@@ -3,7 +3,8 @@ const { mailboxData } = require('./mailbox.data');
 const imaps = require('imap-simple');
 const simpleParser = require('mailparser').simpleParser;
 const mailConfig = require('../config/mail.config');
-const { discoverEmailProvider } = require('../services/email-provider-discovery.service');
+const { discoverEmailProvider, PROVIDERS } = require('../services/email-provider-discovery.service');
+const MicrosoftMailOAuth = require('../services/microsoft-mail-oauth.service');
 
 exports.sync = async (req, res) => {
     try {
@@ -24,7 +25,7 @@ exports.sync = async (req, res) => {
             return res.json({ success: false, error: 'No mail account configured' });
         }
 
-        if (!account.imap || !account.imap.user || !account.imap.password) {
+        if (!account.imap || !account.imap.user || (account.authType !== 'oauth2' && !account.imap.password)) {
             return res.json({ success: false, error: 'IMAP credentials missing for account: ' + account.name });
         }
 
@@ -32,13 +33,18 @@ exports.sync = async (req, res) => {
         const config = {
             imap: {
                 user: account.imap.user,
-                password: account.imap.password,
                 host: account.imap.host,
                 port: account.imap.port || 993,
                 tls: account.imap.tls !== false,
                 authTimeout: 10000,
             }
         };
+        if (account.authType === 'oauth2' && account.oauth?.provider === 'microsoft') {
+            const accessToken = await MicrosoftMailOAuth.getValidAccessToken(account);
+            config.imap.xoauth2 = MicrosoftMailOAuth.buildXoauth2(account.email, accessToken);
+        } else {
+            config.imap.password = account.imap.password;
+        }
 
         const connection = await imaps.connect(config);
         await connection.openBox('INBOX');
@@ -217,6 +223,10 @@ exports.discoverProvider = async (req, res) => {
         if (result.reason === 'invalid_email') {
             return res.status(400).json({ success: false, error: 'Adresse e-mail invalide' });
         }
+        if (result.provider?.key === 'microsoft') {
+            result.provider.oauthAvailable = MicrosoftMailOAuth.isConfigured();
+            result.provider.oauthStartUrl = `/account/${req.account_number}/mailbox/oauth/microsoft/start`;
+        }
         res.json({ success: true, ...result });
     } catch (error) {
         console.error('discoverProvider Error:', error);
@@ -233,11 +243,116 @@ exports.getAccounts = async (req, res) => {
             ...a,
             imap: { ...a.imap, password: '••••••••' },
             smtp: a.smtp ? { ...a.smtp, password: '••••••••' } : undefined,
+            oauth: a.oauth ? {
+                provider: a.oauth.provider,
+                expiresAt: a.oauth.expiresAt,
+                scope: a.oauth.scope
+            } : undefined,
         }));
         res.json({ success: true, accounts: safe });
     } catch (error) {
         console.error('getAccounts Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
+    }
+};
+
+function mailboxRedirect(req, params = {}) {
+    const search = new URLSearchParams(params);
+    return `/account/${req.account_number}/mailbox/inbox${search.size ? `?${search}` : ''}`;
+}
+
+function microsoftRedirectUri(req) {
+    if (process.env.MICROSOFT_MAIL_REDIRECT_URI) return process.env.MICROSOFT_MAIL_REDIRECT_URI;
+    const forwardedProtocol = String(req.get('x-forwarded-proto') || '').split(',')[0].trim();
+    const protocol = forwardedProtocol || req.protocol || 'https';
+    return `${protocol}://${req.get('host')}/account/${req.account_number}/mailbox/oauth/microsoft/callback`;
+}
+
+exports.startMicrosoftOAuth = async (req, res) => {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    try {
+        if (!MicrosoftMailOAuth.isConfigured()) {
+            return res.redirect(mailboxRedirect(req, {
+                connect: '1',
+                oauth_error: 'microsoft_not_configured',
+                oauth_email: email
+            }));
+        }
+        const state = MicrosoftMailOAuth.createState();
+        const pkce = MicrosoftMailOAuth.createPkce();
+        const redirectUri = microsoftRedirectUri(req);
+        req.session.mailboxMicrosoftOAuth = {
+            state,
+            verifier: pkce.verifier,
+            redirectUri,
+            email,
+            accountNumber: String(req.account_number),
+            createdAt: Date.now()
+        };
+        res.redirect(MicrosoftMailOAuth.getAuthorizationUrl({
+            redirectUri,
+            state,
+            challenge: pkce.challenge,
+            loginHint: email
+        }));
+    } catch (error) {
+        console.error('startMicrosoftOAuth Error:', error.message);
+        res.redirect(mailboxRedirect(req, { connect: '1', oauth_error: 'microsoft_start_failed', oauth_email: email }));
+    }
+};
+
+exports.finishMicrosoftOAuth = async (req, res) => {
+    const pending = req.session.mailboxMicrosoftOAuth;
+    const fallbackEmail = String(pending?.email || '').trim().toLowerCase();
+    try {
+        if (req.query.error) throw new Error(String(req.query.error));
+        if (!pending || !req.query.code || !req.query.state) throw new Error('invalid_oauth_session');
+        if (String(req.query.state) !== pending.state) throw new Error('invalid_oauth_state');
+        if (String(req.account_number) !== pending.accountNumber) throw new Error('invalid_oauth_account');
+        if (Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) throw new Error('expired_oauth_session');
+
+        delete req.session.mailboxMicrosoftOAuth;
+        const tokenSet = await MicrosoftMailOAuth.exchangeAuthorizationCode({
+            code: String(req.query.code),
+            redirectUri: pending.redirectUri,
+            verifier: pending.verifier
+        });
+        const identity = MicrosoftMailOAuth.identityFromTokenSet(tokenSet, fallbackEmail);
+        if (!identity.email) throw new Error('microsoft_email_missing');
+
+        const MailAccount = await tenantCollection(req, 'MailAccount');
+        const provider = PROVIDERS.microsoft;
+        let account = await MailAccount.findOne({ email: identity.email });
+        const isNew = !account;
+        if (!account) account = new MailAccount();
+
+        const storedTokens = MicrosoftMailOAuth.encryptedTokenData(tokenSet);
+        account.name = identity.name || provider.name;
+        account.email = identity.email;
+        account.authType = 'oauth2';
+        account.color = provider.color;
+        account.isActive = true;
+        account.imap = { ...provider.imap, user: identity.email, password: '' };
+        account.smtp = { ...provider.smtp, user: identity.email, password: '' };
+        account.oauth = {
+            provider: 'microsoft',
+            encryptedTokens: storedTokens.encryptedTokens,
+            expiresAt: storedTokens.expiresAt,
+            scope: storedTokens.scope
+        };
+        if (isNew) account.isDefault = (await MailAccount.countDocuments()) === 0;
+        account.markModified('oauth.encryptedTokens');
+        await account.save();
+
+        res.redirect(mailboxRedirect(req, { accountId: account._id.toString(), oauth_success: 'microsoft' }));
+    } catch (error) {
+        delete req.session.mailboxMicrosoftOAuth;
+        console.error('finishMicrosoftOAuth Error:', error.message);
+        res.redirect(mailboxRedirect(req, {
+            connect: '1',
+            oauth_error: 'microsoft_connection_failed',
+            oauth_email: fallbackEmail
+        }));
     }
 };
 

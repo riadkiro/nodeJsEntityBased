@@ -110,8 +110,30 @@ document.addEventListener('alpine:init', () => {
             this.$nextTick(() => {
                 this.armSearchAutofillGuard();
 
-                if (new URLSearchParams(window.location.search).get('connect') === '1') {
+                const mailboxParams = new URLSearchParams(window.location.search);
+                const oauthError = mailboxParams.get('oauth_error');
+                const oauthEmail = mailboxParams.get('oauth_email') || '';
+                if (mailboxParams.get('connect') === '1' || oauthError) {
                     this.openAccountModal();
+                    if (oauthError) {
+                        this.editingAccount.email = oauthEmail;
+                        this.emailDiscovery = {
+                            key: 'microsoft',
+                            name: 'Outlook / Hotmail',
+                            authType: 'oauth2',
+                            oauthAvailable: oauthError !== 'microsoft_not_configured',
+                            helpText: 'Microsoft exige une connexion OAuth2 sécurisée.'
+                        };
+                        this.accountSetupStep = 'credentials';
+                        this.emailDiscoveryError = oauthError === 'microsoft_not_configured'
+                            ? 'La connexion Microsoft doit encore être activée par l’administrateur DexApp.'
+                            : 'La connexion Microsoft a échoué ou a été annulée. Vous pouvez réessayer.';
+                    }
+                }
+                if (mailboxParams.get('oauth_success') === 'microsoft') {
+                    this.showMessage('Compte Microsoft connecté avec succès !');
+                }
+                if (mailboxParams.get('connect') === '1' || oauthError || mailboxParams.has('oauth_success')) {
                     window.history.replaceState({}, '', window.location.pathname);
                 }
 
@@ -990,6 +1012,15 @@ document.addEventListener('alpine:init', () => {
         },
 
         async connectDetectedAccount() {
+            if (this.emailDiscovery?.authType === 'oauth2') {
+                if (!this.emailDiscovery.oauthAvailable) {
+                    this.emailDiscoveryError = 'La connexion Microsoft doit être configurée par l’administrateur DexApp.';
+                    return;
+                }
+                const startUrl = this.emailDiscovery.oauthStartUrl || (this.accountBase + '/mailbox/oauth/microsoft/start');
+                window.location.assign(startUrl + '?email=' + encodeURIComponent(this.editingAccount.email));
+                return;
+            }
             const password = String(this.editingAccount.imap.password || '');
             if (!password) {
                 this.emailDiscoveryError = 'Saisissez votre mot de passe pour continuer.';

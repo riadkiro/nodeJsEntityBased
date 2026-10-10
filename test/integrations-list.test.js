@@ -51,6 +51,6 @@ test('integrations page includes email connection and corrected provider logos',
 
 test('email connection link opens the existing mailbox account setup', () => {
     const mailboxScript = fs.readFileSync(mailboxScriptPath, 'utf8');
-    assert.match(mailboxScript, /URLSearchParams\(window\.location\.search\)\.get\('connect'\) === '1'/);
+    assert.match(mailboxScript, /mailboxParams\.get\('connect'\) === '1'/);
     assert.match(mailboxScript, /this\.openAccountModal\(\)/);
 });

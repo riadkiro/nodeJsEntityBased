@@ -25,6 +25,8 @@ test('known personal email domains are configured without a DNS lookup', async (
 
     const hotmail = await discoverEmailProvider('hello@hotmail.fr', { resolveMx });
     assert.equal(hotmail.provider.name, 'Outlook / Hotmail');
+    assert.equal(hotmail.provider.authType, 'oauth2');
+    assert.equal(hotmail.provider.smtp.host, 'smtp-mail.outlook.com');
     assert.equal(hotmail.provider.smtp.port, 587);
     assert.equal(dnsCalls, 0);
 });
@@ -66,12 +68,16 @@ test('mail account modal uses the guided auto-detection flow before manual setti
 
     assert.match(view, /Configuration automatique/);
     assert.match(view, /Fournisseur détecté/);
+    assert.match(view, /Continuer avec Microsoft/);
+    assert.match(view, /Votre mot de passe ne transite jamais/);
     assert.match(view, /accountSetupStep === 'credentials'/);
     assert.match(view, /accountSetupStep === 'manual'/);
     assert.match(script, /accounts\/discover/);
     assert.match(script, /discoverAccountProvider\(\)/);
     assert.match(script, /connectDetectedAccount\(\)/);
+    assert.match(script, /mailbox\/oauth\/microsoft\/start/);
     assert.match(routes, /accounts\/discover', mailboxController\.discoverProvider/);
+    assert.match(routes, /oauth\/microsoft\/callback', mailboxController\.finishMicrosoftOAuth/);
 
     const rendered = await ejs.renderFile(path.join(root, 'views', 'mailbox', 'mailbox.ejs'), {
         account_number: '6804',

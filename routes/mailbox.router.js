@@ -22,6 +22,10 @@ router.delete('/api/accounts/:accountId', mailboxController.deleteAccount);
 router.post('/api/accounts/:accountId/default', mailboxController.setDefaultAccount);
 router.post('/api/accounts/test-connection', mailboxController.testConnection);
 
+// Microsoft modern authentication for Outlook / Hotmail mailboxes
+router.get('/oauth/microsoft/start', mailboxController.startMicrosoftOAuth);
+router.get('/oauth/microsoft/callback', mailboxController.finishMicrosoftOAuth);
+
 // Main mailbox views
 router.get('/inbox', mailboxController.index);
 router.get('/sent', mailboxController.index);

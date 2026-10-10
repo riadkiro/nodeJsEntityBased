@@ -6366,6 +6366,11 @@ pre {
   border-color: rgb(14 23 38 / var(--tw-border-opacity, 1));
 }
 
+.border-\[\#b7d5ff\] {
+  --tw-border-opacity: 1;
+  border-color: rgb(183 213 255 / var(--tw-border-opacity, 1));
+}
+
 .border-\[\#dfe6f1\] {
   --tw-border-opacity: 1;
   border-color: rgb(223 230 241 / var(--tw-border-opacity, 1));
@@ -6717,6 +6722,11 @@ pre {
   background-color: transparent !important;
 }
 
+.bg-\[\#1473e6\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(20 115 230 / var(--tw-bg-opacity, 1));
+}
+
 .bg-\[\#1b2e4b\] {
   --tw-bg-opacity: 1;
   background-color: rgb(27 46 75 / var(--tw-bg-opacity, 1));
@@ -6755,6 +6765,11 @@ pre {
 .bg-\[\#ef4444\] {
   --tw-bg-opacity: 1;
   background-color: rgb(239 68 68 / var(--tw-bg-opacity, 1));
+}
+
+.bg-\[\#f3f8ff\] {
+  --tw-bg-opacity: 1;
+  background-color: rgb(243 248 255 / var(--tw-bg-opacity, 1));
 }
 
 .bg-\[\#f4f4f4\] {
@@ -8525,6 +8540,11 @@ pre {
 .text-\[\#0e1726\] {
   --tw-text-opacity: 1;
   color: rgb(14 23 38 / var(--tw-text-opacity, 1));
+}
+
+.text-\[\#125bb4\] {
+  --tw-text-opacity: 1;
+  color: rgb(18 91 180 / var(--tw-text-opacity, 1));
 }
 
 .text-\[\#334155\] {
@@ -11500,6 +11520,11 @@ pre {
   border-color: rgb(37 59 92 / var(--tw-border-opacity, 1));
 }
 
+.dark\:border-\[\#28466d\]:is(.dark *) {
+  --tw-border-opacity: 1;
+  border-color: rgb(40 70 109 / var(--tw-border-opacity, 1));
+}
+
 .dark\:border-\[\#2a3f5f\]:is(.dark *) {
   --tw-border-opacity: 1;
   border-color: rgb(42 63 95 / var(--tw-border-opacity, 1));
@@ -11718,6 +11743,11 @@ pre {
 .dark\:bg-\[\#132238\]:is(.dark *) {
   --tw-bg-opacity: 1;
   background-color: rgb(19 34 56 / var(--tw-bg-opacity, 1));
+}
+
+.dark\:bg-\[\#13243a\]:is(.dark *) {
+  --tw-bg-opacity: 1;
+  background-color: rgb(19 36 58 / var(--tw-bg-opacity, 1));
 }
 
 .dark\:bg-\[\#17243a\]:is(.dark *) {
@@ -12176,6 +12206,11 @@ pre {
 .dark\:text-\[\#506690\]:is(.dark *) {
   --tw-text-opacity: 1;
   color: rgb(80 102 144 / var(--tw-text-opacity, 1));
+}
+
+.dark\:text-\[\#73aeff\]:is(.dark *) {
+  --tw-text-opacity: 1;
+  color: rgb(115 174 255 / var(--tw-text-opacity, 1));
 }
 
 .dark\:text-\[\#888ea8\]:is(.dark *) {

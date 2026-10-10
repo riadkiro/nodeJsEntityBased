@@ -26,7 +26,7 @@ async function seedOpenAI() {
         const providerData = {
             key: 'openai',
             name: 'OpenAI',
-            logo: 'https://openai.com/favicon.ico',
+            logo: '/logos/ChatGPT-Logo.png',
             category: 'AI',
             baseUrl: 'https://api.openai.com/v1',
             authType: 'bearer',

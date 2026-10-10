@@ -15,7 +15,7 @@ const IntegrationAction = require('../src/integrations/models/IntegrationAction.
 const PROVIDER = {
     key: 'app',
     name: 'App (Internal)',
-    logo: '⚡',
+    logo: '/assets/images/logo.svg',
     category: 'internal',
     baseUrl: 'internal://',
     authType: 'none',

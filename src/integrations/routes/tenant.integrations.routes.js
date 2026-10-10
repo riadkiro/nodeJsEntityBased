@@ -13,6 +13,8 @@ const IntegrationConnectionSchema = require('../models/IntegrationConnection.mod
 const IntegrationLogSchema = require('../models/IntegrationLog.model').schema;
 const IntegrationService = require('../services/IntegrationService');
 const PlatformIntegrations = require('../../../services/platform-integrations.service');
+const { tenantCollection } = require('../../../middleware/tenant');
+const { withProviderPresentation } = require('../provider-presentation');
 
 /**
  * Middleware to load tenant models
@@ -74,7 +76,7 @@ router.get('/', async (req, res) => {
                 configured: false,
                 available: false
             };
-            return {
+            return withProviderPresentation({
                 ...provider,
                 connection: connectionMap[provider.key] || null,
                 platformAccess,
@@ -84,17 +86,38 @@ router.get('/', async (req, res) => {
                         ? 'platform'
                         : null,
                 isConnected: personalConnected || platformAccess.available
-            };
+            });
         });
+
+        let emailAccountCount = 0;
+        try {
+            const MailAccount = await tenantCollection(req, 'MailAccount');
+            if (MailAccount) {
+                emailAccountCount = await MailAccount.countDocuments({ isActive: { $ne: false } });
+            }
+        } catch (emailError) {
+            console.warn('[Tenant Integrations] Unable to read email accounts:', emailError.message);
+        }
+
+        const emailIntegration = {
+            key: 'email',
+            name: 'E-mails',
+            category: 'Communication',
+            description: 'Connectez Gmail, Outlook ou toute boite compatible IMAP/SMTP.',
+            accountCount: emailAccountCount,
+            isConnected: emailAccountCount > 0,
+            href: `/account/${req.account_number}/mailbox/inbox${emailAccountCount > 0 ? '' : '?connect=1'}`
+        };
 
         if (req.accepts('html')) {
             res.render('integrations/tenant/integrations-list', {
                 layout: 'layout-app',
                 integrations,
+                emailIntegration,
                 account_number: req.account_number
             });
         } else {
-            res.json({ success: true, integrations });
+            res.json({ success: true, integrations, emailIntegration });
         }
     } catch (error) {
         console.error('[Tenant Integrations] List error:', error);

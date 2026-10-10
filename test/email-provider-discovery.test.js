@@ -20,6 +20,7 @@ test('known personal email domains are configured without a DNS lookup', async (
     assert.equal(gmail.found, true);
     assert.equal(gmail.email, 'user.name@gmail.com');
     assert.equal(gmail.provider.name, 'Gmail');
+    assert.equal(gmail.provider.authType, 'oauth2');
     assert.deepEqual(gmail.provider.imap, { host: 'imap.gmail.com', port: 993, tls: true });
     assert.equal(gmail.provider.smtp.host, 'smtp.gmail.com');
 
@@ -68,7 +69,8 @@ test('mail account modal uses the guided auto-detection flow before manual setti
 
     assert.match(view, /Configuration automatique/);
     assert.match(view, /Fournisseur détecté/);
-    assert.match(view, /Continuer avec Microsoft/);
+    assert.match(view, /Continuer avec/);
+    assert.match(view, /emailDiscovery\?\.key === 'gmail'.*'Google'.*'Microsoft'/s);
     assert.match(view, /Votre mot de passe ne transite jamais/);
     assert.match(view, /accountSetupStep === 'credentials'/);
     assert.match(view, /accountSetupStep === 'manual'/);
@@ -76,6 +78,7 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     assert.match(script, /discoverAccountProvider\(\)/);
     assert.match(script, /connectDetectedAccount\(\)/);
     assert.match(script, /mailbox\/oauth\/microsoft\/start/);
+    assert.match(routes, /oauth\/google\/start', mailboxController\.startGoogleOAuth/);
     assert.match(routes, /accounts\/discover', mailboxController\.discoverProvider/);
     assert.match(routes, /oauth\/microsoft\/callback', mailboxController\.finishMicrosoftOAuth/);
 

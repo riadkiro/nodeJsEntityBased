@@ -25,6 +25,7 @@ router.post('/api/accounts/test-connection', mailboxController.testConnection);
 // Microsoft modern authentication for Outlook / Hotmail mailboxes
 router.get('/oauth/microsoft/start', mailboxController.startMicrosoftOAuth);
 router.get('/oauth/microsoft/callback', mailboxController.finishMicrosoftOAuth);
+router.get('/oauth/google/start', mailboxController.startGoogleOAuth);
 
 // Main mailbox views
 router.get('/inbox', mailboxController.index);

@@ -5,6 +5,7 @@ const simpleParser = require('mailparser').simpleParser;
 const mailConfig = require('../config/mail.config');
 const { discoverEmailProvider, PROVIDERS } = require('../services/email-provider-discovery.service');
 const MicrosoftMailOAuth = require('../services/microsoft-mail-oauth.service');
+const GoogleMailOAuth = require('../services/google-mail-oauth.service');
 
 exports.sync = async (req, res) => {
     try {
@@ -39,9 +40,10 @@ exports.sync = async (req, res) => {
                 authTimeout: 10000,
             }
         };
-        if (account.authType === 'oauth2' && account.oauth?.provider === 'microsoft') {
-            const accessToken = await MicrosoftMailOAuth.getValidAccessToken(account);
-            config.imap.xoauth2 = MicrosoftMailOAuth.buildXoauth2(account.email, accessToken);
+        if (account.authType === 'oauth2') {
+            const oauthService = account.oauth?.provider === 'google' ? GoogleMailOAuth : MicrosoftMailOAuth;
+            const accessToken = await oauthService.getValidAccessToken(account);
+            config.imap.xoauth2 = oauthService.buildXoauth2(account.email, accessToken);
         } else {
             config.imap.password = account.imap.password;
         }
@@ -227,6 +229,10 @@ exports.discoverProvider = async (req, res) => {
             result.provider.oauthAvailable = MicrosoftMailOAuth.isConfigured();
             result.provider.oauthStartUrl = `/account/${req.account_number}/mailbox/oauth/microsoft/start`;
         }
+        if (result.provider?.key === 'gmail') {
+            result.provider.oauthAvailable = await GoogleMailOAuth.isConfigured();
+            result.provider.oauthStartUrl = `/account/${req.account_number}/mailbox/oauth/google/start`;
+        }
         res.json({ success: true, ...result });
     } catch (error) {
         console.error('discoverProvider Error:', error);
@@ -267,6 +273,100 @@ function microsoftRedirectUri(req) {
     const protocol = forwardedProtocol || req.protocol || 'https';
     return `${protocol}://${req.get('host')}/account/${req.account_number}/mailbox/oauth/microsoft/callback`;
 }
+
+function googleRedirectUri(req) {
+    const forwardedProtocol = String(req.get('x-forwarded-proto') || '').split(',')[0].trim();
+    const protocol = forwardedProtocol || req.protocol || 'https';
+    return `${protocol}://${req.get('host')}/account/${req.account_number}/integrations/google/oauth/callback`;
+}
+
+exports.startGoogleOAuth = async (req, res) => {
+    const email = String(req.query.email || '').trim().toLowerCase();
+    try {
+        const provider = await GoogleMailOAuth.getProvider();
+        if (!provider?.oauthClientSecrets?.ciphertext) {
+            return res.redirect(mailboxRedirect(req, {
+                connect: '1', oauth_provider: 'google', oauth_error: 'google_not_configured', oauth_email: email
+            }));
+        }
+        const state = GoogleMailOAuth.createState();
+        const pkce = GoogleMailOAuth.createPkce();
+        const redirectUri = googleRedirectUri(req);
+        req.session.mailboxGoogleOAuth = {
+            state,
+            verifier: pkce.codeVerifier,
+            redirectUri,
+            email,
+            accountNumber: String(req.account_number),
+            createdAt: Date.now()
+        };
+        res.redirect(GoogleMailOAuth.getAuthorizationUrl({
+            provider,
+            redirectUri,
+            state,
+            challenge: pkce.codeChallenge,
+            loginHint: email
+        }));
+    } catch (error) {
+        console.error('startGoogleOAuth Error:', error.message);
+        res.redirect(mailboxRedirect(req, {
+            connect: '1', oauth_provider: 'google', oauth_error: 'google_start_failed', oauth_email: email
+        }));
+    }
+};
+
+exports.finishGoogleOAuth = async (req, res) => {
+    const pending = req.session.mailboxGoogleOAuth;
+    const fallbackEmail = String(pending?.email || '').trim().toLowerCase();
+    try {
+        if (req.query.error) throw new Error(String(req.query.error));
+        if (!pending || !req.query.code || !req.query.state) throw new Error('invalid_oauth_session');
+        if (String(req.query.state) !== pending.state) throw new Error('invalid_oauth_state');
+        if (String(req.account_number) !== pending.accountNumber) throw new Error('invalid_oauth_account');
+        if (Date.now() - Number(pending.createdAt || 0) > 10 * 60 * 1000) throw new Error('expired_oauth_session');
+
+        delete req.session.mailboxGoogleOAuth;
+        const providerConfig = await GoogleMailOAuth.getProvider();
+        const tokenSet = await GoogleMailOAuth.exchangeAuthorizationCode({
+            provider: providerConfig,
+            code: String(req.query.code),
+            redirectUri: pending.redirectUri,
+            verifier: pending.verifier
+        });
+        const identity = await GoogleMailOAuth.identityFromTokenSet(tokenSet, fallbackEmail);
+        const MailAccount = await tenantCollection(req, 'MailAccount');
+        const provider = PROVIDERS.gmail;
+        let account = await MailAccount.findOne({ email: identity.email });
+        const isNew = !account;
+        if (!account) account = new MailAccount();
+
+        const storedTokens = GoogleMailOAuth.encryptedTokenData(tokenSet);
+        account.name = identity.name || provider.name;
+        account.email = identity.email;
+        account.authType = 'oauth2';
+        account.color = provider.color;
+        account.isActive = true;
+        account.imap = { ...provider.imap, user: identity.email, password: '' };
+        account.smtp = { ...provider.smtp, user: identity.email, password: '' };
+        account.oauth = {
+            provider: 'google',
+            encryptedTokens: storedTokens.encryptedTokens,
+            expiresAt: storedTokens.expiresAt,
+            scope: storedTokens.scope
+        };
+        if (isNew) account.isDefault = (await MailAccount.countDocuments()) === 0;
+        account.markModified('oauth.encryptedTokens');
+        await account.save();
+
+        res.redirect(mailboxRedirect(req, { accountId: account._id.toString(), oauth_success: 'google' }));
+    } catch (error) {
+        delete req.session.mailboxGoogleOAuth;
+        console.error('finishGoogleOAuth Error:', error.message);
+        res.redirect(mailboxRedirect(req, {
+            connect: '1', oauth_provider: 'google', oauth_error: 'google_connection_failed', oauth_email: fallbackEmail
+        }));
+    }
+};
 
 exports.startMicrosoftOAuth = async (req, res) => {
     const email = String(req.query.email || '').trim().toLowerCase();

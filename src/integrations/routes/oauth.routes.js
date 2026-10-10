@@ -76,6 +76,12 @@ router.get('/:providerKey/oauth/callback', async (req, res) => {
         const { code, state, error: oauthError, error_description } = req.query;
         const workspaceId = req.account_number;
 
+        // Gmail mailbox setup reuses the Google callback URI already registered
+        // for integrations. Its state is isolated in the authenticated session.
+        if (providerKey === 'google' && req.session?.mailboxGoogleOAuth?.state === String(state || '')) {
+            return require('../../../controllers/mailbox.controller').finishGoogleOAuth(req, res);
+        }
+
         // Handle OAuth error
         if (oauthError) {
             console.error('[OAuth] Provider error:', oauthError, error_description);

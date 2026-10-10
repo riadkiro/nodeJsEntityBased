@@ -112,26 +112,30 @@ document.addEventListener('alpine:init', () => {
 
                 const mailboxParams = new URLSearchParams(window.location.search);
                 const oauthError = mailboxParams.get('oauth_error');
+                const oauthProvider = mailboxParams.get('oauth_provider') || 'microsoft';
                 const oauthEmail = mailboxParams.get('oauth_email') || '';
                 if (mailboxParams.get('connect') === '1' || oauthError) {
                     this.openAccountModal();
                     if (oauthError) {
                         this.editingAccount.email = oauthEmail;
+                        const isGoogle = oauthProvider === 'google';
                         this.emailDiscovery = {
-                            key: 'microsoft',
-                            name: 'Outlook / Hotmail',
+                            key: isGoogle ? 'gmail' : 'microsoft',
+                            name: isGoogle ? 'Gmail' : 'Outlook / Hotmail',
                             authType: 'oauth2',
-                            oauthAvailable: oauthError !== 'microsoft_not_configured',
-                            helpText: 'Microsoft exige une connexion OAuth2 sécurisée.'
+                            oauthAvailable: !oauthError.endsWith('_not_configured'),
+                            helpText: (isGoogle ? 'Google' : 'Microsoft') + ' exige une connexion OAuth2 sécurisée.'
                         };
                         this.accountSetupStep = 'credentials';
-                        this.emailDiscoveryError = oauthError === 'microsoft_not_configured'
-                            ? 'La connexion Microsoft doit encore être activée par l’administrateur DexApp.'
-                            : 'La connexion Microsoft a échoué ou a été annulée. Vous pouvez réessayer.';
+                        const brand = isGoogle ? 'Google' : 'Microsoft';
+                        this.emailDiscoveryError = oauthError.endsWith('_not_configured')
+                            ? `La connexion ${brand} doit encore être activée par l’administrateur DexApp.`
+                            : `La connexion ${brand} a échoué ou a été annulée. Vous pouvez réessayer.`;
                     }
                 }
-                if (mailboxParams.get('oauth_success') === 'microsoft') {
-                    this.showMessage('Compte Microsoft connecté avec succès !');
+                if (mailboxParams.has('oauth_success')) {
+                    const brand = mailboxParams.get('oauth_success') === 'google' ? 'Google' : 'Microsoft';
+                    this.showMessage(`Compte ${brand} connecté avec succès !`);
                 }
                 if (mailboxParams.get('connect') === '1' || oauthError || mailboxParams.has('oauth_success')) {
                     window.history.replaceState({}, '', window.location.pathname);
@@ -1014,7 +1018,8 @@ document.addEventListener('alpine:init', () => {
         async connectDetectedAccount() {
             if (this.emailDiscovery?.authType === 'oauth2') {
                 if (!this.emailDiscovery.oauthAvailable) {
-                    this.emailDiscoveryError = 'La connexion Microsoft doit être configurée par l’administrateur DexApp.';
+                    const brand = this.emailDiscovery?.key === 'gmail' ? 'Google' : 'Microsoft';
+                    this.emailDiscoveryError = `La connexion ${brand} doit être configurée par l’administrateur DexApp.`;
                     return;
                 }
                 const startUrl = this.emailDiscovery.oauthStartUrl || (this.accountBase + '/mailbox/oauth/microsoft/start');

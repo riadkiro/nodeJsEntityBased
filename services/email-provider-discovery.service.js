@@ -6,8 +6,9 @@ const PROVIDERS = Object.freeze({
         domains: ['gmail.com', 'googlemail.com'],
         imap: { host: 'imap.gmail.com', port: 993, tls: true },
         smtp: { host: 'smtp.gmail.com', port: 465, secure: true },
-        passwordLabel: "Mot de passe d'application",
-        helpText: "Gmail exige généralement un mot de passe d'application si la validation en deux étapes est activée."
+        authType: 'oauth2',
+        passwordLabel: 'Connexion Google',
+        helpText: 'Google exige une connexion OAuth2 sécurisée. Votre mot de passe ne sera jamais demandé par DexApp.'
     },
     microsoft: {
         key: 'microsoft', name: 'Outlook / Hotmail', color: '#1473e6',

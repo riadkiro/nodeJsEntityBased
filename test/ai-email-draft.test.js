@@ -114,6 +114,14 @@ test('system prompt authorizes drafts but explicitly forbids sending', () => {
     assert.match(prompt, /l'utilisateur doit toujours ouvrir, relire et envoyer lui-même/);
 });
 
+test('home AI model selection only accepts the supported model allowlist', () => {
+    const normalizeModel = aiAssistant.__test.normalizeAssistantModel;
+    assert.equal(normalizeModel('gpt-5.5'), 'gpt-5.5');
+    assert.equal(normalizeModel('GPT-4O'), 'gpt-4o');
+    assert.equal(normalizeModel('gpt-4o-mini'), 'gpt-4o-mini');
+    assert.equal(normalizeModel('untrusted-model'), 'gpt-4o-mini');
+});
+
 test('mailbox opens persisted drafts directly in the editor and saves through the draft-only endpoint', () => {
     const root = path.join(__dirname, '..');
     const routes = fs.readFileSync(path.join(root, 'routes', 'mailbox.router.js'), 'utf8');

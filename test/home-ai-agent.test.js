@@ -27,9 +27,18 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /Recherche web en direct/);
     assert.match(view, /isLiveSearchQuery\(value\)/);
     assert.match(view, /rel="noopener noreferrer"/);
-    assert.match(view, /sessionStorage\.setItem/);
+    assert.match(view, /class="ai-conversation-sidebar"/);
+    assert.match(view, />Conversations</);
+    assert.match(view, /localStorage\.setItem/);
+    assert.match(view, /conversations\.slice\(0, 50\)/);
+    assert.match(view, /migrateLegacyConversation\(\)/);
     assert.match(view, /restoreConversation\(\)/);
     assert.match(view, /this\.messages\.slice\(-24\)/);
+    assert.match(view, /modelOptions:\s*\[/);
+    assert.match(view, /id:'gpt-5\.5'/);
+    assert.match(view, /id:'gpt-4o-mini'/);
+    assert.match(view, /model:this\.selectedModel/);
+    assert.match(view, /\.ai-composer textarea\{[^}]*margin:0;padding:0;[^}]*line-height:22px/);
     assert.match(view, /'agenda-create':'solar:calendar-add-bold-duotone'/);
     assert.doesNotMatch(view, /home-overview-shell|homeOverviewHub|api\/home-overview/);
 

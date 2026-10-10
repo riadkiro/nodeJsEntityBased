@@ -34,7 +34,8 @@ const {
     shouldUseOpenAIWebSearch
 } = require("../src/integrations/openaiActions");
 
-const AI_ASSISTANT_MODEL = process.env.AI_ASSISTANT_MODEL || "gpt-4o-mini";
+const AI_ASSISTANT_MODEL_OPTIONS = ["gpt-5.5", "gpt-4o", "gpt-4o-mini"];
+const AI_ASSISTANT_MODEL = normalizeAssistantModel(process.env.AI_ASSISTANT_MODEL || "gpt-4o-mini");
 const AI_ASSISTANT_WEB_SEARCH_MODEL = process.env.AI_ASSISTANT_WEB_SEARCH_MODEL ||
     process.env.OPENAI_WEB_SEARCH_MODEL ||
     process.env.RECORD_AI_WEB_SEARCH_MODEL ||
@@ -63,6 +64,11 @@ function getTenantIntegrationModels(req) {
 
 function isGpt5Model(model = "") {
     return /^gpt-5(?:[.-]|$)/.test(String(model || ""));
+}
+
+function normalizeAssistantModel(value = "") {
+    const model = String(value || "").trim().toLowerCase();
+    return AI_ASSISTANT_MODEL_OPTIONS.includes(model) ? model : "gpt-4o-mini";
 }
 
 function latestUserContent(messages = []) {
@@ -983,11 +989,12 @@ function parseAIResponse(text) {
 }
 
 // ── Call OpenAI via Integration Engine ────────────────────────
-async function callAI(req, messages) {
+async function callAI(req, messages, requestedModel = AI_ASSISTANT_MODEL) {
     try {
         // Provider & Action are GLOBAL models (not in tenant DB)
         // Connection & Log are TENANT models (registered on tenant connection)
         const { ConnectionModel, LogModel } = getTenantIntegrationModels(req);
+        const selectedModel = normalizeAssistantModel(requestedModel);
         const shouldSearchWeb = AI_ASSISTANT_WEB_SEARCH_ENABLED &&
             shouldUseOpenAIWebSearch(latestUserContent(messages));
 
@@ -1063,6 +1070,13 @@ async function callAI(req, messages) {
         }
 
         // Execute via Integration Service
+        const chatInput = {
+            model: selectedModel,
+            messages,
+            ...(isGpt5Model(selectedModel)
+                ? { max_completion_tokens: 2000 }
+                : { temperature: 0.4, max_tokens: 2000 }),
+        };
         const result = await IntegrationService.executeAction({
             ProviderModel: IntegrationProvider,   // Global
             ActionModel: IntegrationAction,       // Global
@@ -1071,12 +1085,7 @@ async function callAI(req, messages) {
             workspaceId: req.account_number,
             providerKey: "openai",
             actionId: action._id.toString(),
-            input: {
-                model: AI_ASSISTANT_MODEL,
-                messages,
-                temperature: 0.4,
-                max_tokens: 2000,
-            },
+            input: chatInput,
         });
 
         if (!result.success) {
@@ -1114,7 +1123,8 @@ module.exports = {
     // ── POST /api/ai-assistant/chat ───────────────────────────
     chat: async (req, res) => {
         try {
-            const { message, conversationId, context: clientContext, history } = req.body;
+            const { message, conversationId, context: clientContext, history, model } = req.body;
+            const selectedModel = normalizeAssistantModel(model || AI_ASSISTANT_MODEL);
 
             if (!message?.trim()) {
                 return res.status(400).json({ error: "Message required" });
@@ -1167,7 +1177,7 @@ module.exports = {
 
             // Call AI
             console.log("[AIAssistant] Sending chat to AI, message:", message.substring(0, 80));
-            const aiResponse = await callAI(req, aiMessages);
+            const aiResponse = await callAI(req, aiMessages, selectedModel);
             console.log("[AIAssistant] Raw AI response:", aiResponse.substring(0, 300));
 
             // Parse response for actions/plans
@@ -1249,6 +1259,7 @@ module.exports = {
                 actions: parsed.actions,
                 plan: parsed.plan,
                 conversationId: newConversationId,
+                model: selectedModel,
             };
             console.log("[AIAssistant] Sending response — hasActions:", !!parsed.actions, "| hasPlan:", !!parsed.plan, "| responseLength:", parsed.response.length);
 
@@ -1263,6 +1274,7 @@ module.exports = {
                 actions: null,
                 plan: null,
                 conversationId: req.body.conversationId || `conv_${Date.now()}`,
+                model: normalizeAssistantModel(req.body.model || AI_ASSISTANT_MODEL),
             });
         }
     },
@@ -1556,7 +1568,7 @@ module.exports = {
     // ── POST /api/ai-assistant/validate-plan ──────────────────
     validatePlan: async (req, res) => {
         try {
-            const { plan, modifications, conversationId, context: clientContext } = req.body;
+            const { plan, modifications, conversationId, context: clientContext, model } = req.body;
 
             if (modifications) {
                 // Re-send to AI with modifications
@@ -1571,7 +1583,7 @@ module.exports = {
                     },
                 ];
 
-                const aiResponse = await callAI(req, aiMessages);
+                const aiResponse = await callAI(req, aiMessages, model);
                 const parsed = parseAIResponse(aiResponse);
 
                 return res.json({
@@ -1627,6 +1639,7 @@ module.exports.__test = {
     agendaContextPrompt,
     ensureImmediateAgendaResponse,
     normalizeConversationHistory,
+    normalizeAssistantModel,
     summarizeAgendaForAssistant,
     summarizeTaskBoardForAssistant,
     taskContextPrompt,

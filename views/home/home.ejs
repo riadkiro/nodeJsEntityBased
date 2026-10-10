@@ -2,7 +2,26 @@
 
 <style>
 .ai-home{height:calc(100dvh - 86px);min-height:0;overflow:hidden;color:#172033;font-family:inherit}
-.ai-home-shell{height:100%;display:grid;grid-template-columns:minmax(520px,1.08fr) minmax(430px,.92fr);overflow:hidden;border:1px solid var(--focus-border,#e5e7eb);border-radius:var(--focus-radius,14px);background:#fff;box-shadow:var(--focus-shadow-soft,0 8px 30px rgba(15,23,42,.05))}
+.ai-home-shell{position:relative;height:100%;display:grid;grid-template-columns:230px minmax(480px,1.08fr) minmax(350px,.82fr);overflow:hidden;border:1px solid var(--focus-border,#e5e7eb);border-radius:var(--focus-radius,14px);background:#fff;box-shadow:var(--focus-shadow-soft,0 8px 30px rgba(15,23,42,.05))}
+.ai-conversation-sidebar{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr);border-right:1px solid #e8edf4;background:#fbfcff}
+.ai-history-head{height:68px;padding:0 14px 0 17px;display:flex;align-items:center;justify-content:space-between;gap:10px;border-bottom:1px solid #e8edf4}
+.ai-history-title{display:flex;align-items:center;gap:8px;color:#263146;font-size:12.5px;font-weight:900}
+.ai-history-title span:first-child{width:30px;height:30px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#efedff;color:#634efb}
+.ai-history-new{width:32px;height:32px;display:flex;align-items:center;justify-content:center;border:1px solid #ded9ff;border-radius:10px;background:#fff;color:#634efb;cursor:pointer;transition:.15s}
+.ai-history-new:hover{background:#f1efff;border-color:#c9c1ff}
+.ai-history-list{min-height:0;overflow-y:auto;padding:10px 8px 16px}
+.ai-history-list::-webkit-scrollbar{width:5px}.ai-history-list::-webkit-scrollbar-thumb{border-radius:999px;background:#dfe5ee}
+.ai-history-empty{padding:36px 13px;text-align:center;color:#96a1b3;font-size:10.5px;font-weight:700;line-height:1.55}
+.ai-history-empty iconify-icon{display:block;margin:0 auto 8px;color:#b9b1ff}
+.ai-history-item{position:relative;margin-bottom:4px;border-radius:11px;transition:.15s}
+.ai-history-item:hover,.ai-history-item.is-active{background:#f0edff}
+.ai-history-open{width:100%;min-width:0;padding:10px 31px 10px 10px;display:block;border:0;background:transparent;text-align:left;font:inherit;cursor:pointer}
+.ai-history-label{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#3c4659;font-size:10.8px;font-weight:850}
+.ai-history-meta{margin-top:4px;display:flex;align-items:center;gap:6px;color:#9aa5b5;font-size:8.5px;font-weight:750}
+.ai-history-meta i{width:3px;height:3px;border-radius:50%;background:#c2cad6}
+.ai-history-remove{position:absolute;right:6px;top:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;transform:translateY(-50%);border:0;border-radius:7px;background:transparent;color:#a6afbe;opacity:0;cursor:pointer}
+.ai-history-item:hover .ai-history-remove,.ai-history-item.is-active .ai-history-remove{opacity:1}.ai-history-remove:hover{background:#fff;color:#ef4444}
+.ai-history-backdrop{display:none}
 .ai-chat{min-width:0;min-height:0;display:grid;grid-template-rows:68px minmax(0,1fr) auto;border-right:1px solid #e8edf4;background:#fff}
 .ai-chat-head{padding:0 22px;display:flex;align-items:center;justify-content:space-between;gap:16px;border-bottom:1px solid #e8edf4}
 .ai-chat-identity{min-width:0;display:flex;align-items:center;gap:11px}
@@ -11,6 +30,13 @@
 .ai-chat-title{min-width:0}
 .ai-chat-title h1{margin:0;color:#172033;font-size:15px;font-weight:850;letter-spacing:-.01em}
 .ai-chat-title p{margin:3px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b97aa;font-size:10.5px;font-weight:700}
+.ai-chat-tools{display:flex;align-items:center;gap:8px}
+.ai-history-toggle{display:none;width:34px;height:34px;align-items:center;justify-content:center;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#657187;cursor:pointer}
+.ai-model-picker{position:relative;height:36px;display:flex;align-items:center;gap:7px;padding:0 27px 0 10px;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#566176;transition:.15s}
+.ai-model-picker:focus-within{border-color:#c8c0ff;box-shadow:0 0 0 3px rgba(99,78,251,.08)}
+.ai-model-picker>iconify-icon:first-child{color:#725dff}
+.ai-model-picker select{max-width:112px;padding:0;border:0;outline:0;appearance:none;background:transparent;color:#3b465a;font:inherit;font-size:10.5px;font-weight:850;cursor:pointer}
+.ai-model-picker .ai-model-chevron{position:absolute;right:8px;pointer-events:none;color:#9aa5b5}
 .ai-new-chat{height:36px;padding:0 12px;display:inline-flex;align-items:center;gap:7px;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#647086;font:inherit;font-size:11px;font-weight:800;cursor:pointer;transition:.15s}
 .ai-new-chat:hover{border-color:#cec7ff;background:#faf9ff;color:var(--focus-brand,#634efb)}
 .ai-messages{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:24px 24px 18px;scroll-behavior:smooth}
@@ -51,15 +77,15 @@
 .ai-live-search-status{display:inline-flex;align-items:center;gap:7px;color:#6355d9;font-size:10.5px;font-weight:850}
 .ai-live-search-status iconify-icon{color:#6c56ff}
 @keyframes aiTyping{0%,60%,100%{transform:translateY(0);opacity:.45}30%{transform:translateY(-4px);opacity:1}}
-.ai-composer-wrap{padding:12px 20px 15px;border-top:1px solid #edf0f5;background:#fff}
-.ai-composer{display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:end;gap:9px;padding:7px 7px 7px 14px;border:1px solid #dfe5ee;border-radius:17px;background:#f8f9fc;transition:border-color .15s,box-shadow .15s,background .15s}
-.ai-composer:focus-within{border-color:var(--focus-brand,#634efb);background:#fff;box-shadow:0 0 0 3px var(--focus-brand-ring,rgba(99,78,251,.12))}
-.ai-composer textarea{width:100%;min-height:28px;max-height:120px;padding:5px 0;resize:none;border:0;outline:0;background:transparent;color:#172033;font:inherit;font-size:12.5px;font-weight:650;line-height:1.45}
+.ai-composer-wrap{padding:10px 18px 12px;border-top:1px solid #edf0f5;background:#fff}
+.ai-composer{min-height:54px;display:grid;grid-template-columns:minmax(0,1fr) 42px;align-items:center;gap:10px;padding:5px 6px 5px 17px;border:1px solid #dce3ed;border-radius:18px;background:#fff;box-shadow:0 6px 22px rgba(26,38,64,.045);transition:border-color .15s,box-shadow .15s,background .15s}
+.ai-composer:focus-within{border-color:var(--focus-brand,#634efb);background:#fff;box-shadow:0 0 0 3px var(--focus-brand-ring,rgba(99,78,251,.11)),0 8px 24px rgba(36,44,78,.06)}
+.ai-composer textarea{display:block;width:100%;min-height:22px;max-height:120px;margin:0;padding:0;resize:none;border:0;outline:0;overflow-y:auto;background:transparent;color:#172033;font:inherit;font-size:12.5px;font-weight:650;line-height:22px}
 .ai-composer textarea::placeholder{color:#a2adbf}
 .ai-send{width:42px;height:42px;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:13px;background:var(--focus-brand,#634efb);color:#fff;cursor:pointer;box-shadow:0 6px 15px rgba(99,78,251,.2);transition:transform .15s,background .15s}
 .ai-send:hover{background:var(--focus-brand-hover,#5742e8);transform:translateY(-1px)}
 .ai-send:disabled{opacity:.48;cursor:not-allowed;transform:none;box-shadow:none}
-.ai-composer-note{margin:6px 3px 0;text-align:center;color:#a3adbd;font-size:8.5px;font-weight:650}
+.ai-composer-note{margin:5px 3px 0;text-align:center;color:#a3adbd;font-size:8.5px;font-weight:650;line-height:1.2}
 .ai-connections{min-width:0;min-height:0;display:grid;grid-template-rows:auto minmax(0,1fr) auto;overflow:hidden;background:linear-gradient(180deg,#fbfaff 0%,#f8fbff 56%,#fff 100%)}
 .ai-connections-head{padding:18px 22px 6px;display:flex;align-items:center;justify-content:space-between;gap:14px}
 .ai-connections-title h2{margin:0;color:#172033;font-size:14px;font-weight:900}
@@ -81,15 +107,16 @@
 .ai-add-integration{width:100%;height:40px;margin-top:2px;display:flex;align-items:center;justify-content:center;gap:7px;border:1px dashed #cfc8ff;border-radius:11px;background:#faf9ff;color:var(--focus-brand,#634efb);font-size:11px;font-weight:900;text-decoration:none;transition:.15s}
 .ai-add-integration:hover{border-style:solid;background:#f0edff;color:#5040df}
 .dark .ai-home-shell,.dark .ai-chat,.dark .ai-composer-wrap{background:#060818;border-color:#253b5c}
+.dark .ai-conversation-sidebar{background:#090e1b;border-color:#253b5c}.dark .ai-history-head{border-color:#253b5c}.dark .ai-history-title,.dark .ai-history-label{color:#dbe5f2}.dark .ai-history-item:hover,.dark .ai-history-item.is-active{background:#171b35}
 .dark .ai-chat-head,.dark .ai-composer-wrap{border-color:#253b5c}
 .dark .ai-chat-title h1,.dark .ai-welcome h2,.dark .ai-connections-title h2{color:#e4eaf4}
-.dark .ai-new-chat,.dark .ai-suggestion,.dark .ai-composer,.dark .ai-integration-chip{background:#0e1726;border-color:#253b5c;color:#aab8ce}
+.dark .ai-new-chat,.dark .ai-suggestion,.dark .ai-composer,.dark .ai-integration-chip,.dark .ai-model-picker,.dark .ai-history-new,.dark .ai-history-toggle{background:#0e1726;border-color:#253b5c;color:#aab8ce}
 .dark .ai-bubble{background:#111f35;border-color:#253b5c;color:#dce5f2}
 .dark .ai-connections{background:linear-gradient(180deg,#0b1020,#080d19)}
 .dark .ai-visual-card,.dark .ai-integrations{background:rgba(14,23,38,.82);border-color:#253b5c}
 .dark .ai-visual-card img{mix-blend-mode:normal;opacity:.9}
-@media(max-width:1180px) and (min-width:761px){.ai-home-shell{grid-template-columns:minmax(0,1.06fr) minmax(300px,.94fr)}.ai-chat-head{padding:0 16px}.ai-messages{padding:20px 16px 16px}.ai-connections-head{padding:15px 15px 4px}.ai-visual{padding:4px 10px 7px}.ai-integrations{padding:11px 12px 13px}}
-@media(max-width:760px){.ai-home{height:calc(100dvh - 80px)}.ai-home-shell{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 210px;border-radius:10px}.ai-chat{min-height:0;height:auto;border-right:0;border-bottom:1px solid #e8edf4}.ai-chat-head{padding:0 14px}.ai-chat-title p,.ai-new-chat span{display:none}.ai-messages{padding:16px 12px}.ai-suggestions{grid-template-columns:1fr}.ai-suggestion{min-height:50px}.ai-bubble{max-width:88%}.ai-connections{min-height:0;display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);grid-template-rows:50px minmax(0,1fr)}.ai-connections-head{grid-column:1/-1;padding:8px 12px 4px}.ai-connections-title p{display:none}.ai-live-badge{min-height:24px}.ai-visual{grid-column:1;grid-row:2;padding:5px 3px 8px 8px;min-width:0}.ai-visual-card{height:100%;border-radius:13px}.ai-visual-card img{width:100%;height:100%;object-fit:cover}.ai-integrations{grid-column:2;grid-row:2;min-width:0;padding:6px 8px 8px;border-top:0;background:transparent}.ai-integrations-head{margin-bottom:5px}.ai-integration-row{padding-bottom:5px}.ai-integration-chip{height:30px}.ai-add-integration{height:34px;margin-top:0}.ai-response-actions,.ai-plan{margin-left:39px}}
+@media(max-width:1320px) and (min-width:761px){.ai-home-shell{grid-template-columns:215px minmax(0,1fr)}.ai-connections{display:none}.ai-chat-head{padding:0 16px}.ai-messages{padding:20px 16px 16px}}
+@media(max-width:760px){.ai-home{height:calc(100dvh - 80px)}.ai-home-shell{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 210px;border-radius:10px}.ai-conversation-sidebar{position:absolute;z-index:32;inset:0 auto 0 0;width:min(86vw,310px);transform:translateX(-105%);box-shadow:18px 0 45px rgba(15,23,42,.16);transition:transform .2s}.ai-conversation-sidebar.is-open{transform:translateX(0)}.ai-history-backdrop{position:absolute;z-index:31;inset:0;display:block;background:rgba(15,23,42,.24);backdrop-filter:blur(2px)}.ai-chat{min-height:0;height:auto;border-right:0;border-bottom:1px solid #e8edf4}.ai-chat-head{padding:0 10px}.ai-chat-title p,.ai-new-chat span,.ai-model-picker>iconify-icon:first-child{display:none}.ai-chat-identity{gap:7px}.ai-agent-avatar{width:35px;height:35px;border-radius:11px}.ai-chat-tools{gap:5px}.ai-history-toggle{display:flex}.ai-model-picker{padding-left:8px}.ai-model-picker select{max-width:88px}.ai-messages{padding:16px 12px}.ai-suggestions{grid-template-columns:1fr}.ai-suggestion{min-height:50px}.ai-bubble{max-width:88%}.ai-composer-wrap{padding:8px 10px 10px}.ai-connections{min-height:0;display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);grid-template-rows:50px minmax(0,1fr)}.ai-connections-head{grid-column:1/-1;padding:8px 12px 4px}.ai-connections-title p{display:none}.ai-live-badge{min-height:24px}.ai-visual{grid-column:1;grid-row:2;padding:5px 3px 8px 8px;min-width:0}.ai-visual-card{height:100%;border-radius:13px}.ai-visual-card img{width:100%;height:100%;object-fit:cover}.ai-integrations{grid-column:2;grid-row:2;min-width:0;padding:6px 8px 8px;border-top:0;background:transparent}.ai-integrations-head{margin-bottom:5px}.ai-integration-row{padding-bottom:5px}.ai-integration-chip{height:30px}.ai-add-integration{height:34px;margin-top:0}.ai-response-actions,.ai-plan{margin-left:39px}}
 </style>
 
 <script>
@@ -101,6 +128,40 @@ window.addEventListener('pagehide', () => {
 
 <main class="ai-home" x-data="homeAgentApp()">
     <div class="ai-home-shell">
+        <aside class="ai-conversation-sidebar" :class="{ 'is-open': historyOpen }" aria-label="Historique des conversations">
+            <header class="ai-history-head">
+                <div class="ai-history-title">
+                    <span><iconify-icon icon="solar:chat-round-dots-bold-duotone" width="17"></iconify-icon></span>
+                    <span>Conversations</span>
+                </div>
+                <button type="button" class="ai-history-new" @click="newConversation()" :disabled="sending" aria-label="Nouvelle conversation">
+                    <iconify-icon icon="solar:add-circle-linear" width="18"></iconify-icon>
+                </button>
+            </header>
+            <div class="ai-history-list">
+                <div class="ai-history-empty" x-show="conversations.length === 0" x-cloak>
+                    <iconify-icon icon="solar:chat-round-line-linear" width="28"></iconify-icon>
+                    Vos conversations apparaîtront ici après votre premier message.
+                </div>
+                <template x-for="conversation in conversations" :key="conversation.id">
+                    <div class="ai-history-item" :class="{ 'is-active': conversation.id === conversationId }">
+                        <button type="button" class="ai-history-open" @click="selectConversation(conversation.id)">
+                            <span class="ai-history-label" x-text="conversation.title"></span>
+                            <span class="ai-history-meta">
+                                <span x-text="modelLabel(conversation.model)"></span>
+                                <i></i>
+                                <span x-text="conversationTime(conversation.updatedAt)"></span>
+                            </span>
+                        </button>
+                        <button type="button" class="ai-history-remove" @click.stop="removeConversation(conversation.id)" aria-label="Supprimer la conversation">
+                            <iconify-icon icon="solar:trash-bin-trash-linear" width="14"></iconify-icon>
+                        </button>
+                    </div>
+                </template>
+            </div>
+        </aside>
+        <div class="ai-history-backdrop" x-show="historyOpen" x-cloak @click="historyOpen = false"></div>
+
         <section class="ai-chat" aria-label="Agent IA DexApp">
             <header class="ai-chat-head">
                 <div class="ai-chat-identity">
@@ -110,10 +171,24 @@ window.addEventListener('pagehide', () => {
                         <p>Votre espace, vos données et vos outils réunis</p>
                     </span>
                 </div>
-                <button type="button" class="ai-new-chat" @click="newConversation()" :disabled="sending">
-                    <iconify-icon icon="solar:chat-round-plus-linear" width="16"></iconify-icon>
-                    <span>Nouvelle conversation</span>
-                </button>
+                <div class="ai-chat-tools">
+                    <button type="button" class="ai-history-toggle" @click="historyOpen = true" aria-label="Afficher les conversations">
+                        <iconify-icon icon="solar:hamburger-menu-linear" width="17"></iconify-icon>
+                    </button>
+                    <label class="ai-model-picker" title="Choisir le modèle IA">
+                        <iconify-icon icon="solar:cpu-bolt-bold-duotone" width="16"></iconify-icon>
+                        <select x-model="selectedModel" @change="changeModel()" aria-label="Modèle IA">
+                            <template x-for="model in modelOptions" :key="model.id">
+                                <option :value="model.id" x-text="model.label"></option>
+                            </template>
+                        </select>
+                        <iconify-icon class="ai-model-chevron" icon="solar:alt-arrow-down-linear" width="13"></iconify-icon>
+                    </label>
+                    <button type="button" class="ai-new-chat" @click="newConversation()" :disabled="sending">
+                        <iconify-icon icon="solar:chat-round-plus-linear" width="16"></iconify-icon>
+                        <span>Nouvelle conversation</span>
+                    </button>
+                </div>
             </header>
 
             <div class="ai-messages" x-ref="messageScroll">
@@ -244,6 +319,14 @@ document.addEventListener('alpine:init', () => {
         liveSearchActive: false,
         conversationId: null,
         messages: [],
+        conversations: [],
+        historyOpen: false,
+        selectedModel: 'gpt-5.5',
+        modelOptions: [
+            { id:'gpt-5.5', label:'GPT-5.5' },
+            { id:'gpt-4o', label:'GPT-4o' },
+            { id:'gpt-4o-mini', label:'GPT-4o Mini' }
+        ],
         workspaceContext: null,
         executingAction: '',
         executingPlan: '',
@@ -262,39 +345,177 @@ document.addEventListener('alpine:init', () => {
         },
 
         conversationStorageKey() {
+            return `dexapp-home-agent:${API}:conversations:v2`;
+        },
+
+        legacyConversationStorageKey() {
             return `dexapp-home-agent:${API}`;
+        },
+
+        activeConversationStorageKey() {
+            return `${this.conversationStorageKey()}:active`;
+        },
+
+        modelStorageKey() {
+            return `${this.conversationStorageKey()}:model`;
+        },
+
+        allowedModel(value) {
+            const model = String(value || '');
+            return this.modelOptions.some(option => option.id === model) ? model : 'gpt-5.5';
+        },
+
+        normalizeStoredMessages(messages) {
+            return (Array.isArray(messages) ? messages : [])
+                .filter(message => ['user', 'assistant'].includes(message?.role) && message?.content)
+                .slice(-40)
+                .map(message => ({
+                    id:message.id || `message-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+                    role:message.role,
+                    content:String(message.content || '').slice(0, 12000),
+                    time:message.time || '',
+                    actions:message.actions || null,
+                    plan:message.plan || null
+                }));
         },
 
         restoreConversation() {
             try {
-                const stored = JSON.parse(sessionStorage.getItem(this.conversationStorageKey()) || '{}');
-                const messages = Array.isArray(stored.messages) ? stored.messages : [];
-                this.messages = messages
-                    .filter(message => ['user', 'assistant'].includes(message?.role) && message?.content)
-                    .slice(-30);
-                this.conversationId = String(stored.conversationId || '') || null;
+                this.selectedModel = this.allowedModel(localStorage.getItem(this.modelStorageKey()));
+                const stored = JSON.parse(localStorage.getItem(this.conversationStorageKey()) || '[]');
+                this.conversations = (Array.isArray(stored) ? stored : [])
+                    .map(conversation => ({
+                        id:String(conversation?.id || ''),
+                        title:String(conversation?.title || 'Nouvelle conversation').slice(0, 90),
+                        model:this.allowedModel(conversation?.model),
+                        messages:this.normalizeStoredMessages(conversation?.messages),
+                        createdAt:conversation?.createdAt || new Date().toISOString(),
+                        updatedAt:conversation?.updatedAt || conversation?.createdAt || new Date().toISOString()
+                    }))
+                    .filter(conversation => conversation.id && conversation.messages.length)
+                    .sort((a, b) => new Date(b.updatedAt) - new Date(a.updatedAt))
+                    .slice(0, 50);
+
+                if (!this.conversations.length) this.migrateLegacyConversation();
+
+                const activeId = localStorage.getItem(this.activeConversationStorageKey());
+                const active = this.conversations.find(conversation => conversation.id === activeId)
+                    || this.conversations[0];
+                if (active) this.activateConversation(active);
             } catch (error) {
                 console.warn('[HomeAgent] Conversation restore failed:', error);
             }
         },
 
+        migrateLegacyConversation() {
+            try {
+                const legacy = JSON.parse(sessionStorage.getItem(this.legacyConversationStorageKey()) || '{}');
+                const messages = this.normalizeStoredMessages(legacy.messages);
+                if (!messages.length) return;
+                const now = new Date().toISOString();
+                const conversation = {
+                    id:String(legacy.conversationId || `conv_${Date.now()}`),
+                    title:this.conversationTitle(messages),
+                    model:this.selectedModel,
+                    messages,
+                    createdAt:now,
+                    updatedAt:now
+                };
+                this.conversations = [conversation];
+                this.persistConversations();
+                sessionStorage.removeItem(this.legacyConversationStorageKey());
+            } catch (error) {
+                console.warn('[HomeAgent] Legacy conversation migration failed:', error);
+            }
+        },
+
+        activateConversation(conversation) {
+            this.conversationId = conversation.id;
+            this.messages = this.normalizeStoredMessages(conversation.messages);
+            this.selectedModel = this.allowedModel(conversation.model);
+            localStorage.setItem(this.activeConversationStorageKey(), conversation.id);
+            localStorage.setItem(this.modelStorageKey(), this.selectedModel);
+            this.$nextTick(() => this.scrollToBottom());
+        },
+
+        persistConversations() {
+            localStorage.setItem(this.conversationStorageKey(), JSON.stringify(this.conversations.slice(0, 50)));
+            localStorage.setItem(this.modelStorageKey(), this.selectedModel);
+            if (this.conversationId) localStorage.setItem(this.activeConversationStorageKey(), this.conversationId);
+        },
+
         saveConversation() {
             try {
-                const messages = this.messages.slice(-30).map(message => ({
-                    id: message.id,
-                    role: message.role,
-                    content: String(message.content || '').slice(0, 12000),
-                    time: message.time,
-                    actions: message.actions || null,
-                    plan: message.plan || null
-                }));
-                sessionStorage.setItem(this.conversationStorageKey(), JSON.stringify({
-                    conversationId:this.conversationId,
-                    messages
-                }));
+                if (!this.messages.length) return;
+                if (!this.conversationId) this.conversationId = `conv_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+                const existing = this.conversations.find(conversation => conversation.id === this.conversationId);
+                const now = new Date().toISOString();
+                const conversation = {
+                    id:this.conversationId,
+                    title:this.conversationTitle(this.messages),
+                    model:this.selectedModel,
+                    messages:this.normalizeStoredMessages(this.messages),
+                    createdAt:existing?.createdAt || now,
+                    updatedAt:now
+                };
+                this.conversations = [conversation, ...this.conversations.filter(item => item.id !== conversation.id)]
+                    .slice(0, 50);
+                this.persistConversations();
             } catch (error) {
                 console.warn('[HomeAgent] Conversation save failed:', error);
             }
+        },
+
+        conversationTitle(messages = this.messages) {
+            const firstUserMessage = messages.find(message => message?.role === 'user')?.content || 'Nouvelle conversation';
+            const title = String(firstUserMessage).replace(/\s+/g, ' ').trim();
+            return title.length > 48 ? `${title.slice(0, 48).trim()}…` : title;
+        },
+
+        selectConversation(id) {
+            if (this.sending) return;
+            const conversation = this.conversations.find(item => item.id === id);
+            if (!conversation) return;
+            if (this.conversationId && this.messages.length) this.saveConversation();
+            this.activateConversation(conversation);
+            this.draft = '';
+            this.historyOpen = false;
+            this.$nextTick(() => {
+                this.resizeComposer();
+                this.$refs.composer?.focus();
+            });
+        },
+
+        removeConversation(id) {
+            if (this.sending) return;
+            this.conversations = this.conversations.filter(conversation => conversation.id !== id);
+            if (this.conversationId === id) {
+                this.conversationId = null;
+                this.messages = [];
+                const nextConversation = this.conversations[0];
+                if (nextConversation) this.activateConversation(nextConversation);
+                else localStorage.removeItem(this.activeConversationStorageKey());
+            }
+            this.persistConversations();
+        },
+
+        changeModel() {
+            this.selectedModel = this.allowedModel(this.selectedModel);
+            localStorage.setItem(this.modelStorageKey(), this.selectedModel);
+            if (this.conversationId && this.messages.length) this.saveConversation();
+        },
+
+        modelLabel(model) {
+            return this.modelOptions.find(option => option.id === model)?.label || 'GPT-5.5';
+        },
+
+        conversationTime(value) {
+            const date = new Date(value);
+            if (Number.isNaN(date.getTime())) return '';
+            const today = new Date();
+            return date.toDateString() === today.toDateString()
+                ? date.toLocaleTimeString('fr-FR', { hour:'2-digit', minute:'2-digit' })
+                : date.toLocaleDateString('fr-FR', { day:'2-digit', month:'short' });
         },
 
         get activeIntegrations() {
@@ -348,10 +569,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         newConversation() {
+            if (this.sending) return;
+            if (this.conversationId && this.messages.length) this.saveConversation();
             this.messages = [];
             this.conversationId = null;
             this.draft = '';
-            sessionStorage.removeItem(this.conversationStorageKey());
+            this.historyOpen = false;
+            localStorage.removeItem(this.activeConversationStorageKey());
             this.$nextTick(() => {
                 this.resizeComposer();
                 this.$refs.composer?.focus();
@@ -385,6 +609,7 @@ document.addEventListener('alpine:init', () => {
                     body:JSON.stringify({
                         message:content,
                         conversationId:this.conversationId,
+                        model:this.selectedModel,
                         history,
                         context:{ page:'home-agent', workspace:this.workspaceContext }
                     })
@@ -392,6 +617,7 @@ document.addEventListener('alpine:init', () => {
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'L’agent ne peut pas répondre pour le moment.');
                 this.conversationId = data.conversationId || this.conversationId;
+                this.selectedModel = this.allowedModel(data.model || this.selectedModel);
                 this.messages.push({
                     ...this.makeMessage('assistant', data.response || 'Je suis prêt à vous aider.'),
                     actions:data.actions || null,
@@ -502,7 +728,7 @@ document.addEventListener('alpine:init', () => {
                     method:'POST',
                     headers:{ 'Content-Type':'application/json' },
                     credentials:'include',
-                    body:JSON.stringify({ plan:message.plan, conversationId:this.conversationId, context:{ page:'home-agent', workspace:this.workspaceContext } })
+                    body:JSON.stringify({ plan:message.plan, conversationId:this.conversationId, model:this.selectedModel, context:{ page:'home-agent', workspace:this.workspaceContext } })
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || 'Le plan ne peut pas être exécuté.');

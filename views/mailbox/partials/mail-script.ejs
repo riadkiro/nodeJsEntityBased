@@ -61,6 +61,10 @@ document.addEventListener('alpine:init', () => {
         showAccountModal: false,
         editingAccount: { name: '', email: '', color: '#4361ee', imap: { host: '', port: 993, user: '', password: '', tls: true }, smtp: { host: '', port: 587, user: '', password: '' } },
         accountTesting: false,
+        accountSetupStep: 'email',
+        emailDiscovering: false,
+        emailDiscovery: null,
+        emailDiscoveryError: '',
         selectedAccountId: null, // Currently viewed account
         syncing: false, // Is currently syncing
         syncInterval: null, // Auto-sync interval ref
@@ -900,8 +904,12 @@ document.addEventListener('alpine:init', () => {
             this.editingAccount = {
                 name: '', email: '', color: '#4361ee',
                 imap: { host: '', port: 993, user: '', password: '', tls: true },
-                smtp: { host: '', port: 587, user: '', password: '' },
+                smtp: { host: '', port: 587, user: '', password: '', secure: false },
             };
+            this.accountSetupStep = 'email';
+            this.emailDiscovering = false;
+            this.emailDiscovery = null;
+            this.emailDiscoveryError = '';
             this.showAccountModal = true;
         },
 
@@ -911,7 +919,90 @@ document.addEventListener('alpine:init', () => {
                 imap: { host: '', port: 993, user: '', password: '', tls: true, ...(acc.imap || {}) },
                 smtp: { host: '', port: 587, user: '', password: '', ...(acc.smtp || {}) },
             };
+            this.accountSetupStep = 'manual';
+            this.emailDiscovery = null;
+            this.emailDiscoveryError = '';
             this.showAccountModal = true;
+        },
+
+        async discoverAccountProvider() {
+            const email = String(this.editingAccount.email || '').trim().toLowerCase();
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+                this.emailDiscoveryError = 'Saisissez une adresse e-mail valide.';
+                return;
+            }
+
+            this.emailDiscovering = true;
+            this.emailDiscoveryError = '';
+            try {
+                const resp = await fetch(this.apiBase + '/accounts/discover', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ email }),
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.error || 'Détection impossible');
+
+                this.editingAccount.email = email;
+                if (!data.found || !data.provider) {
+                    this.useManualAccountSetup('Configuration automatique introuvable. Indiquez les serveurs de votre fournisseur.');
+                    return;
+                }
+
+                const provider = data.provider;
+                this.emailDiscovery = provider;
+                this.editingAccount.name = provider.name;
+                this.editingAccount.color = provider.color || '#4361ee';
+                this.editingAccount.imap = {
+                    ...provider.imap,
+                    user: email,
+                    password: '',
+                };
+                this.editingAccount.smtp = {
+                    ...provider.smtp,
+                    user: email,
+                    password: '',
+                };
+                this.accountSetupStep = 'credentials';
+            } catch (error) {
+                this.emailDiscoveryError = error.message || 'Détection impossible pour le moment.';
+            } finally {
+                this.emailDiscovering = false;
+            }
+        },
+
+        useManualAccountSetup(message = '') {
+            const email = String(this.editingAccount.email || '').trim().toLowerCase();
+            const localPart = email.includes('@') ? email.split('@')[0] : '';
+            if (!this.editingAccount.name) this.editingAccount.name = localPart || 'Ma messagerie';
+            this.editingAccount.email = email;
+            this.editingAccount.imap.user = this.editingAccount.imap.user || email;
+            this.editingAccount.smtp.user = this.editingAccount.smtp.user || email;
+            this.accountSetupStep = 'manual';
+            this.emailDiscoveryError = message;
+        },
+
+        changeAccountEmail() {
+            const email = this.editingAccount.email;
+            this.openAccountModal();
+            this.editingAccount.email = email;
+        },
+
+        async connectDetectedAccount() {
+            const password = String(this.editingAccount.imap.password || '');
+            if (!password) {
+                this.emailDiscoveryError = 'Saisissez votre mot de passe pour continuer.';
+                return;
+            }
+            this.emailDiscoveryError = '';
+            this.editingAccount.smtp.password = password;
+            const isValid = await this.testAccountConnection(false);
+            if (!isValid) {
+                this.emailDiscoveryError = "Connexion impossible. Vérifiez le mot de passe ou ouvrez les réglages manuels.";
+                return;
+            }
+            await this.saveAccount();
         },
 
         async saveAccount() {
@@ -982,11 +1073,11 @@ document.addEventListener('alpine:init', () => {
             }
         },
 
-        async testAccountConnection() {
+        async testAccountConnection(showSuccess = true) {
             const imap = this.editingAccount.imap;
             if (!imap.host || !imap.user || !imap.password) {
-                this.showMessage('Fill in IMAP credentials first', 'error');
-                return;
+                if (showSuccess) this.showMessage('Complétez les identifiants IMAP', 'error');
+                return false;
             }
             this.accountTesting = true;
             try {
@@ -998,12 +1089,15 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await resp.json();
                 if (data.success) {
-                    this.showMessage('Connection successful!');
+                    if (showSuccess) this.showMessage('Connexion réussie !');
+                    return true;
                 } else {
-                    this.showMessage(data.error || 'Connection failed', 'error');
+                    if (showSuccess) this.showMessage(data.error || 'Connexion impossible', 'error');
+                    return false;
                 }
             } catch (e) {
-                this.showMessage('Connection failed: ' + e.message, 'error');
+                if (showSuccess) this.showMessage('Connexion impossible : ' + e.message, 'error');
+                return false;
             } finally {
                 this.accountTesting = false;
             }

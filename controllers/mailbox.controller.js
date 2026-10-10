@@ -3,6 +3,7 @@ const { mailboxData } = require('./mailbox.data');
 const imaps = require('imap-simple');
 const simpleParser = require('mailparser').simpleParser;
 const mailConfig = require('../config/mail.config');
+const { discoverEmailProvider } = require('../services/email-provider-discovery.service');
 
 exports.sync = async (req, res) => {
     try {
@@ -210,6 +211,19 @@ exports.deleteMails = async (req, res) => {
 };
 
 // ===== MAIL ACCOUNTS CRUD =====
+exports.discoverProvider = async (req, res) => {
+    try {
+        const result = await discoverEmailProvider(req.body?.email);
+        if (result.reason === 'invalid_email') {
+            return res.status(400).json({ success: false, error: 'Adresse e-mail invalide' });
+        }
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('discoverProvider Error:', error);
+        res.status(500).json({ success: false, error: 'Détection temporairement indisponible' });
+    }
+};
+
 exports.getAccounts = async (req, res) => {
     try {
         const MailAccount = await tenantCollection(req, "MailAccount");

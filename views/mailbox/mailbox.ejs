@@ -258,28 +258,88 @@
     <div x-show="showAccountModal" x-cloak class="fixed inset-0 z-[999] flex items-center justify-center bg-black/60 p-4" @click.self="showAccountModal = false">
         <div class="w-full max-w-lg rounded-lg bg-white p-6 shadow-2xl dark:bg-[#0e1726]" @click.stop>
             <div class="mb-5 flex items-center justify-between">
-                <h3 class="text-lg font-bold" x-text="editingAccount && editingAccount._id ? 'Edit Account' : 'Add Email Account'"></h3>
+                <h3 class="text-lg font-bold" x-text="editingAccount && editingAccount._id ? 'Modifier le compte' : 'Connecter une messagerie'"></h3>
                 <button type="button" class="text-white-dark hover:text-dark" @click="showAccountModal = false">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
                 </button>
             </div>
 
-            <div class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+            <!-- Guided setup: email first, configuration stays invisible when detected -->
+            <div x-show="!editingAccount._id && accountSetupStep === 'email'" class="py-2">
+                <div class="mb-5 rounded-xl border border-primary/15 bg-primary-light/40 p-4 dark:bg-primary/10">
+                    <div class="flex items-start gap-3">
+                        <span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-primary shadow-sm dark:bg-[#17243a]">
+                            <iconify-icon icon="solar:magic-stick-3-bold-duotone" width="23"></iconify-icon>
+                        </span>
+                        <div>
+                            <div class="font-bold text-gray-900 dark:text-white">Configuration automatique</div>
+                            <p class="mt-1 text-xs leading-5 text-white-dark">Saisissez simplement votre adresse. DexApp détecte Gmail, Outlook, Yahoo, iCloud et les principaux fournisseurs professionnels.</p>
+                        </div>
+                    </div>
+                </div>
+                <label class="mb-2 block text-sm font-bold">Votre adresse e-mail</label>
+                <div class="relative">
+                    <iconify-icon icon="solar:letter-bold-duotone" width="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-primary"></iconify-icon>
+                    <input type="email" class="form-input h-12 pl-11 text-sm" placeholder="vous@entreprise.com" x-model="editingAccount.email" @keydown.enter.prevent="discoverAccountProvider()" autocomplete="email" autofocus />
+                </div>
+                <p x-show="emailDiscoveryError" x-text="emailDiscoveryError" class="mt-2 text-xs font-semibold text-danger"></p>
+                <div class="mt-5 flex flex-wrap items-center gap-2 text-[11px] text-white-dark">
+                    <span>Détection intégrée :</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-1 dark:bg-[#17243a]">Gmail</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-1 dark:bg-[#17243a]">Outlook / Hotmail</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-1 dark:bg-[#17243a]">Yahoo</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-1 dark:bg-[#17243a]">iCloud</span>
+                    <span class="rounded-full bg-gray-100 px-2 py-1 dark:bg-[#17243a]">+ autres</span>
+                </div>
+            </div>
+
+            <div x-show="!editingAccount._id && accountSetupStep === 'credentials'" class="py-1">
+                <div class="mb-5 flex items-center gap-3 rounded-xl border border-success/25 bg-success-light p-4 dark:bg-success/10">
+                    <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-success shadow-sm dark:bg-[#17243a]">
+                        <iconify-icon icon="solar:check-circle-bold-duotone" width="25"></iconify-icon>
+                    </span>
+                    <div class="min-w-0 flex-1">
+                        <div class="text-xs font-bold uppercase tracking-wide text-success">Fournisseur détecté</div>
+                        <div class="mt-0.5 truncate text-base font-bold" x-text="emailDiscovery ? emailDiscovery.name : ''"></div>
+                        <div class="truncate text-xs text-white-dark" x-text="editingAccount.email"></div>
+                    </div>
+                    <button type="button" class="text-xs font-bold text-primary" @click="changeAccountEmail()">Modifier</button>
+                </div>
+
+                <label class="mb-2 block text-sm font-bold" x-text="emailDiscovery?.passwordLabel || 'Mot de passe'"></label>
+                <div class="relative">
+                    <iconify-icon icon="solar:lock-password-bold-duotone" width="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-primary"></iconify-icon>
+                    <input type="password" class="form-input h-12 pl-11" placeholder="Votre mot de passe" x-model="editingAccount.imap.password" @keydown.enter.prevent="connectDetectedAccount()" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                </div>
+                <p class="mt-2 text-xs leading-5 text-white-dark" x-text="emailDiscovery?.helpText || ''"></p>
+                <p x-show="emailDiscoveryError" x-text="emailDiscoveryError" class="mt-2 text-xs font-semibold text-danger"></p>
+
+                <div class="mt-5 flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2.5 text-xs dark:bg-[#17243a]">
+                    <span class="flex items-center gap-2 text-white-dark">
+                        <iconify-icon icon="solar:shield-check-bold-duotone" width="18" class="text-success"></iconify-icon>
+                        Serveurs IMAP et SMTP configurés
+                    </span>
+                    <button type="button" class="font-bold text-primary" @click="useManualAccountSetup()">Réglages manuels</button>
+                </div>
+            </div>
+
+            <div x-show="accountSetupStep === 'manual'" class="space-y-4 max-h-[60vh] overflow-y-auto pr-2">
+                <div x-show="emailDiscoveryError" class="rounded-lg border border-warning/25 bg-warning-light px-3 py-2 text-xs text-warning" x-text="emailDiscoveryError"></div>
                 <!-- Account name + email -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="mb-1 block text-sm font-semibold">Account Name *</label>
-                        <input type="text" class="form-input" placeholder="e.g. Work Gmail" x-model="editingAccount.name" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                        <label class="mb-1 block text-sm font-semibold">Nom du compte *</label>
+                        <input type="text" class="form-input" placeholder="Ex. Gmail professionnel" x-model="editingAccount.name" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                     </div>
                     <div>
-                        <label class="mb-1 block text-sm font-semibold">Email Address *</label>
-                        <input type="email" class="form-input" placeholder="you@example.com" x-model="editingAccount.email" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                        <label class="mb-1 block text-sm font-semibold">Adresse e-mail *</label>
+                        <input type="email" class="form-input" placeholder="vous@exemple.com" x-model="editingAccount.email" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                     </div>
                 </div>
 
                 <!-- Color picker -->
                 <div>
-                    <label class="mb-1 block text-sm font-semibold">Account Color</label>
+                    <label class="mb-1 block text-sm font-semibold">Couleur du compte</label>
                     <div class="flex items-center gap-3">
                         <template x-for="c in ['#4361ee', '#e7515a', '#00ab55', '#e2a03f', '#805dca', '#2196f3', '#1abc9c']" :key="c">
                             <button type="button" class="h-7 w-7 rounded-full border-2 transition-all" :class="editingAccount.color === c ? 'border-dark dark:border-white scale-110 shadow-lg' : 'border-transparent'" :style="'background:' + c" @click="editingAccount.color = c"></button>
@@ -291,11 +351,11 @@
                 <div class="rounded-md border border-[#e0e6ed] p-4 dark:border-[#1b2e4b]">
                     <h4 class="mb-3 flex items-center gap-2 font-bold">
                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M2 12C2 8.229 2 6.343 3.172 5.172C4.343 4 6.229 4 10 4H14C17.771 4 19.657 4 20.828 5.172C22 6.343 22 8.229 22 12C22 15.771 22 17.657 20.828 18.828C19.657 20 17.771 20 14 20H10C6.229 20 4.343 20 3.172 18.828C2 17.657 2 15.771 2 12Z" stroke="currentColor" stroke-width="1.5"/><path d="M6 8L8.159 9.799C9.996 11.33 10.914 12.095 12 12.095C13.086 12.095 14.005 11.33 15.841 9.799L18 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-                        IMAP Settings (Incoming)
+                        Serveur entrant (IMAP)
                     </h4>
                     <div class="grid grid-cols-2 gap-3">
                         <div>
-                            <label class="mb-1 block text-xs text-white-dark">IMAP Host *</label>
+                            <label class="mb-1 block text-xs text-white-dark">Serveur IMAP *</label>
                             <input type="text" class="form-input form-input-sm" placeholder="imap.gmail.com" x-model="editingAccount.imap.host" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
@@ -303,17 +363,17 @@
                             <input type="number" class="form-input form-input-sm" placeholder="993" x-model="editingAccount.imap.port" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs text-white-dark">Username *</label>
-                            <input type="text" class="form-input form-input-sm" placeholder="you@example.com" x-model="editingAccount.imap.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                            <label class="mb-1 block text-xs text-white-dark">Identifiant *</label>
+                            <input type="text" class="form-input form-input-sm" placeholder="vous@exemple.com" x-model="editingAccount.imap.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                         <div>
-                            <label class="mb-1 block text-xs text-white-dark">Password *</label>
-                            <input type="password" class="form-input form-input-sm" placeholder="App password" x-model="editingAccount.imap.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                            <label class="mb-1 block text-xs text-white-dark">Mot de passe *</label>
+                            <input type="password" class="form-input form-input-sm" placeholder="Mot de passe d’application" x-model="editingAccount.imap.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                         </div>
                     </div>
                     <label class="mt-2 flex items-center gap-2 text-xs">
                         <input type="checkbox" class="form-checkbox h-4 w-4" x-model="editingAccount.imap.tls" />
-                        Use TLS/SSL
+                        Utiliser TLS/SSL
                     </label>
                 </div>
 
@@ -321,16 +381,16 @@
                 <div x-data="{ showSmtp: false }">
                     <button type="button" class="mb-2 flex items-center gap-2 text-sm font-semibold text-primary" @click="showSmtp = !showSmtp">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M19 9L12 15L5 9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                        <span x-text="showSmtp ? 'Hide SMTP Settings' : 'Show SMTP Settings (Optional)'"></span>
+                        <span x-text="showSmtp ? 'Masquer les réglages SMTP' : 'Afficher le serveur sortant (facultatif)'"></span>
                     </button>
                     <div x-cloak x-show="showSmtp" class="rounded-md border border-[#e0e6ed] p-4 dark:border-[#1b2e4b]">
                         <h4 class="mb-3 flex items-center gap-2 font-bold">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M17.498 18.485L20.628 9.094C21.876 5.349 22.5 3.476 21.512 2.488C20.524 1.499 18.651 2.124 14.906 3.372L5.575 6.482C3.493 7.176 2.452 7.523 2.136 8.286C2.062 8.466 2.017 8.656 2.003 8.85C1.944 9.674 2.72 10.449 4.272 12.001L4.555 12.284C4.809 12.538 4.937 12.666 5.033 12.808C5.223 13.087 5.33 13.414 5.344 13.752C5.351 13.923 5.324 14.101 5.271 14.457C5.075 15.761 4.977 16.413 5.092 16.915C5.322 17.915 6.096 18.7 7.093 18.943C7.593 19.066 8.246 18.977 9.552 18.8L9.624 18.79C9.992 18.74 10.176 18.715 10.353 18.726C10.674 18.745 10.984 18.85 11.251 19.029C11.398 19.127 11.53 19.259 11.792 19.521L12.044 19.773C13.554 21.283 14.309 22.038 15.11 21.999C15.331 21.988 15.548 21.937 15.75 21.847C16.484 21.524 16.822 20.511 17.498 18.485Z" stroke="currentColor" stroke-width="1.5"/></svg>
-                            SMTP Settings (Outgoing)
+                            Serveur sortant (SMTP)
                         </h4>
                         <div class="grid grid-cols-2 gap-3">
                             <div>
-                                <label class="mb-1 block text-xs text-white-dark">SMTP Host</label>
+                                <label class="mb-1 block text-xs text-white-dark">Serveur SMTP</label>
                                 <input type="text" class="form-input form-input-sm" placeholder="smtp.gmail.com" x-model="editingAccount.smtp.host" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
@@ -338,12 +398,12 @@
                                 <input type="number" class="form-input form-input-sm" placeholder="587" x-model="editingAccount.smtp.port" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
-                                <label class="mb-1 block text-xs text-white-dark">Username</label>
-                                <input type="text" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                                <label class="mb-1 block text-xs text-white-dark">Identifiant</label>
+                                <input type="text" class="form-input form-input-sm" placeholder="Identique à IMAP" x-model="editingAccount.smtp.user" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                             <div>
-                                <label class="mb-1 block text-xs text-white-dark">Password</label>
-                                <input type="password" class="form-input form-input-sm" placeholder="Same as IMAP" x-model="editingAccount.smtp.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                                <label class="mb-1 block text-xs text-white-dark">Mot de passe</label>
+                                <input type="password" class="form-input form-input-sm" placeholder="Identique à IMAP" x-model="editingAccount.smtp.password" autocomplete="new-password" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
                             </div>
                         </div>
                     </div>
@@ -354,20 +414,30 @@
             <div class="mt-5 flex items-center justify-between border-t border-[#e0e6ed] pt-4 dark:border-[#1b2e4b]">
                 <div class="flex items-center gap-2">
                     <!-- Test Connection -->
-                    <button type="button" class="btn btn-outline-info btn-sm gap-1" @click="testAccountConnection()" :disabled="accountTesting">
+                    <button x-show="accountSetupStep === 'manual'" type="button" class="btn btn-outline-info btn-sm gap-1" @click="testAccountConnection()" :disabled="accountTesting">
                         <svg x-show="!accountTesting" width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12.0789 3V2.25V3ZM3.67981 11.3333H2.92981H3.67981Z" fill="currentColor"/><path d="M19.8934 6.607C18.287 3.994 15.387 2.25 12.079 2.25V3.75C14.848 3.75 17.273 5.208 18.616 7.393L19.893 6.607Z" fill="currentColor"/></svg>
                         <svg x-show="accountTesting" class="animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="62.83" stroke-dashoffset="20" stroke-linecap="round"/></svg>
-                        <span x-text="accountTesting ? 'Testing...' : 'Test Connection'"></span>
+                        <span x-text="accountTesting ? 'Test...' : 'Tester la connexion'"></span>
                     </button>
                     <!-- Delete (only when editing) -->
                     <template x-if="editingAccount && editingAccount._id">
-                        <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteAccount()">Delete</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" @click="deleteAccount()">Supprimer</button>
                     </template>
                 </div>
                 <div class="flex items-center gap-2">
-                    <button type="button" class="btn btn-outline-dark btn-sm" @click="showAccountModal = false">Cancel</button>
-                    <button type="button" class="btn btn-primary btn-sm" @click="saveAccount()">
-                        <span x-text="editingAccount && editingAccount._id ? 'Update' : 'Add Account'"></span>
+                    <button type="button" class="btn btn-outline-dark btn-sm" @click="showAccountModal = false">Annuler</button>
+                    <button x-show="accountSetupStep === 'email'" type="button" class="btn btn-primary btn-sm min-w-[130px]" @click="discoverAccountProvider()" :disabled="emailDiscovering">
+                        <iconify-icon x-show="!emailDiscovering" icon="solar:magic-stick-3-bold-duotone" width="17" class="mr-1"></iconify-icon>
+                        <svg x-show="emailDiscovering" class="mr-1 animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="62.83" stroke-dashoffset="20" stroke-linecap="round"/></svg>
+                        <span x-text="emailDiscovering ? 'Détection...' : 'Continuer'"></span>
+                    </button>
+                    <button x-show="accountSetupStep === 'credentials'" type="button" class="btn btn-primary btn-sm min-w-[150px]" @click="connectDetectedAccount()" :disabled="accountTesting">
+                        <svg x-show="accountTesting" class="mr-1 animate-spin" width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="62.83" stroke-dashoffset="20" stroke-linecap="round"/></svg>
+                        <iconify-icon x-show="!accountTesting" icon="solar:link-circle-bold-duotone" width="18" class="mr-1"></iconify-icon>
+                        <span x-text="accountTesting ? 'Connexion...' : 'Connecter'"></span>
+                    </button>
+                    <button x-show="accountSetupStep === 'manual'" type="button" class="btn btn-primary btn-sm" @click="saveAccount()">
+                        <span x-text="editingAccount && editingAccount._id ? 'Enregistrer' : 'Ajouter le compte'"></span>
                     </button>
                 </div>
             </div>

@@ -15,6 +15,7 @@ router.post('/api/delete', mailboxController.deleteMails);
 
 // API routes - Mail accounts
 router.get('/api/accounts', mailboxController.getAccounts);
+router.post('/api/accounts/discover', mailboxController.discoverProvider);
 router.post('/api/accounts', mailboxController.createAccount);
 router.put('/api/accounts/:accountId', mailboxController.updateAccount);
 router.delete('/api/accounts/:accountId', mailboxController.deleteAccount);

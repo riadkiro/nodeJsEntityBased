@@ -32,11 +32,19 @@
 .ai-chat-title p{margin:3px 0 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#8b97aa;font-size:10.5px;font-weight:700}
 .ai-chat-tools{display:flex;align-items:center;gap:8px}
 .ai-history-toggle{display:none;width:34px;height:34px;align-items:center;justify-content:center;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#657187;cursor:pointer}
-.ai-model-picker{position:relative;height:36px;display:flex;align-items:center;gap:7px;padding:0 27px 0 10px;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#566176;transition:.15s}
-.ai-model-picker:focus-within{border-color:#c8c0ff;box-shadow:0 0 0 3px rgba(99,78,251,.08)}
-.ai-model-picker>iconify-icon:first-child{color:#725dff}
-.ai-model-picker select{max-width:112px;padding:0;border:0;outline:0;appearance:none;background:transparent;color:#3b465a;font:inherit;font-size:10.5px;font-weight:850;cursor:pointer}
-.ai-model-picker .ai-model-chevron{position:absolute;right:8px;pointer-events:none;color:#9aa5b5}
+.ai-model-picker{position:relative}
+.ai-model-trigger{height:36px;min-width:126px;padding:0 10px;display:flex;align-items:center;gap:8px;border:1px solid #e1e6ef;border-radius:10px;background:#f9fafc;color:#536075;font:inherit;cursor:pointer;transition:.15s}
+.ai-model-trigger:hover,.ai-model-trigger.is-open{border-color:#cfc8ff;background:#f7f5ff;color:#4f3fe2}
+.ai-model-trigger:focus-visible{outline:0;border-color:#bfb5ff;box-shadow:0 0 0 3px rgba(99,78,251,.1)}
+.ai-model-trigger>iconify-icon:first-child{color:#725dff}
+.ai-model-trigger-label{min-width:0;flex:1;text-align:left;color:#313b4e;font-size:10.5px;font-weight:900;white-space:nowrap}
+.ai-model-chevron{color:#98a3b5;transition:transform .16s}.ai-model-chevron.is-open{transform:rotate(180deg)}
+.ai-model-menu{position:absolute;z-index:60;top:calc(100% + 8px);right:0;width:210px;padding:6px;border:1px solid #e1e5ee;border-radius:13px;background:#fff;box-shadow:0 16px 42px rgba(28,35,58,.16)}
+.ai-model-option{width:100%;padding:9px 10px;display:grid;grid-template-columns:28px minmax(0,1fr) 18px;align-items:center;gap:8px;border:0;border-radius:9px;background:transparent;color:#4c586c;text-align:left;font:inherit;cursor:pointer;transition:.14s}
+.ai-model-option:hover,.ai-model-option.is-active{background:#f2efff;color:#4f3fe2}
+.ai-model-option-icon{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#efedff;color:#6852f6}
+.ai-model-option-copy{min-width:0}.ai-model-option-copy strong{display:block;color:#273246;font-size:10.5px;font-weight:900}.ai-model-option-copy small{display:block;margin-top:2px;color:#97a2b3;font-size:8.5px;font-weight:700}
+.ai-model-check{color:#624cf4}
 .ai-new-chat{height:36px;padding:0 12px;display:inline-flex;align-items:center;gap:7px;border:1px solid #e0e6ef;border-radius:10px;background:#fff;color:#647086;font:inherit;font-size:11px;font-weight:800;cursor:pointer;transition:.15s}
 .ai-new-chat:hover{border-color:#cec7ff;background:#faf9ff;color:var(--focus-brand,#634efb)}
 .ai-messages{min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:24px 24px 18px;scroll-behavior:smooth}
@@ -110,13 +118,14 @@
 .dark .ai-conversation-sidebar{background:#090e1b;border-color:#253b5c}.dark .ai-history-head{border-color:#253b5c}.dark .ai-history-title,.dark .ai-history-label{color:#dbe5f2}.dark .ai-history-item:hover,.dark .ai-history-item.is-active{background:#171b35}
 .dark .ai-chat-head,.dark .ai-composer-wrap{border-color:#253b5c}
 .dark .ai-chat-title h1,.dark .ai-welcome h2,.dark .ai-connections-title h2{color:#e4eaf4}
-.dark .ai-new-chat,.dark .ai-suggestion,.dark .ai-composer,.dark .ai-integration-chip,.dark .ai-model-picker,.dark .ai-history-new,.dark .ai-history-toggle{background:#0e1726;border-color:#253b5c;color:#aab8ce}
+.dark .ai-new-chat,.dark .ai-suggestion,.dark .ai-composer,.dark .ai-integration-chip,.dark .ai-model-trigger,.dark .ai-history-new,.dark .ai-history-toggle{background:#0e1726;border-color:#253b5c;color:#aab8ce}
+.dark .ai-model-menu{background:#0c1422;border-color:#253b5c}.dark .ai-model-option:hover,.dark .ai-model-option.is-active{background:#171b35}.dark .ai-model-option-copy strong,.dark .ai-model-trigger-label{color:#dce5f2}
 .dark .ai-bubble{background:#111f35;border-color:#253b5c;color:#dce5f2}
 .dark .ai-connections{background:linear-gradient(180deg,#0b1020,#080d19)}
 .dark .ai-visual-card,.dark .ai-integrations{background:rgba(14,23,38,.82);border-color:#253b5c}
 .dark .ai-visual-card img{mix-blend-mode:normal;opacity:.9}
 @media(max-width:1320px) and (min-width:761px){.ai-home-shell{grid-template-columns:215px minmax(0,1fr)}.ai-connections{display:none}.ai-chat-head{padding:0 16px}.ai-messages{padding:20px 16px 16px}}
-@media(max-width:760px){.ai-home{height:calc(100dvh - 80px)}.ai-home-shell{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 210px;border-radius:10px}.ai-conversation-sidebar{position:absolute;z-index:32;inset:0 auto 0 0;width:min(86vw,310px);transform:translateX(-105%);box-shadow:18px 0 45px rgba(15,23,42,.16);transition:transform .2s}.ai-conversation-sidebar.is-open{transform:translateX(0)}.ai-history-backdrop{position:absolute;z-index:31;inset:0;display:block;background:rgba(15,23,42,.24);backdrop-filter:blur(2px)}.ai-chat{min-height:0;height:auto;border-right:0;border-bottom:1px solid #e8edf4}.ai-chat-head{padding:0 10px}.ai-chat-title p,.ai-new-chat span,.ai-model-picker>iconify-icon:first-child{display:none}.ai-chat-identity{gap:7px}.ai-agent-avatar{width:35px;height:35px;border-radius:11px}.ai-chat-tools{gap:5px}.ai-history-toggle{display:flex}.ai-model-picker{padding-left:8px}.ai-model-picker select{max-width:88px}.ai-messages{padding:16px 12px}.ai-suggestions{grid-template-columns:1fr}.ai-suggestion{min-height:50px}.ai-bubble{max-width:88%}.ai-composer-wrap{padding:8px 10px 10px}.ai-connections{min-height:0;display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);grid-template-rows:50px minmax(0,1fr)}.ai-connections-head{grid-column:1/-1;padding:8px 12px 4px}.ai-connections-title p{display:none}.ai-live-badge{min-height:24px}.ai-visual{grid-column:1;grid-row:2;padding:5px 3px 8px 8px;min-width:0}.ai-visual-card{height:100%;border-radius:13px}.ai-visual-card img{width:100%;height:100%;object-fit:cover}.ai-integrations{grid-column:2;grid-row:2;min-width:0;padding:6px 8px 8px;border-top:0;background:transparent}.ai-integrations-head{margin-bottom:5px}.ai-integration-row{padding-bottom:5px}.ai-integration-chip{height:30px}.ai-add-integration{height:34px;margin-top:0}.ai-response-actions,.ai-plan{margin-left:39px}}
+@media(max-width:760px){.ai-home{height:calc(100dvh - 80px)}.ai-home-shell{grid-template-columns:1fr;grid-template-rows:minmax(0,1fr) 210px;border-radius:10px}.ai-conversation-sidebar{position:absolute;z-index:32;inset:0 auto 0 0;width:min(86vw,310px);transform:translateX(-105%);box-shadow:18px 0 45px rgba(15,23,42,.16);transition:transform .2s}.ai-conversation-sidebar.is-open{transform:translateX(0)}.ai-history-backdrop{position:absolute;z-index:31;inset:0;display:block;background:rgba(15,23,42,.24);backdrop-filter:blur(2px)}.ai-chat{min-height:0;height:auto;border-right:0;border-bottom:1px solid #e8edf4}.ai-chat-head{padding:0 10px}.ai-chat-title p,.ai-new-chat span,.ai-model-trigger>iconify-icon:first-child{display:none}.ai-chat-identity{gap:7px}.ai-agent-avatar{width:35px;height:35px;border-radius:11px}.ai-chat-tools{gap:5px}.ai-history-toggle{display:flex}.ai-model-trigger{min-width:96px}.ai-model-menu{right:0;width:200px}.ai-messages{padding:16px 12px}.ai-suggestions{grid-template-columns:1fr}.ai-suggestion{min-height:50px}.ai-bubble{max-width:88%}.ai-composer-wrap{padding:8px 10px 10px}.ai-connections{min-height:0;display:grid;grid-template-columns:minmax(120px,.8fr) minmax(0,1.2fr);grid-template-rows:50px minmax(0,1fr)}.ai-connections-head{grid-column:1/-1;padding:8px 12px 4px}.ai-connections-title p{display:none}.ai-live-badge{min-height:24px}.ai-visual{grid-column:1;grid-row:2;padding:5px 3px 8px 8px;min-width:0}.ai-visual-card{height:100%;border-radius:13px}.ai-visual-card img{width:100%;height:100%;object-fit:cover}.ai-integrations{grid-column:2;grid-row:2;min-width:0;padding:6px 8px 8px;border-top:0;background:transparent}.ai-integrations-head{margin-bottom:5px}.ai-integration-row{padding-bottom:5px}.ai-integration-chip{height:30px}.ai-add-integration{height:34px;margin-top:0}.ai-response-actions,.ai-plan{margin-left:39px}}
 </style>
 
 <script>
@@ -175,15 +184,25 @@ window.addEventListener('pagehide', () => {
                     <button type="button" class="ai-history-toggle" @click="historyOpen = true" aria-label="Afficher les conversations">
                         <iconify-icon icon="solar:hamburger-menu-linear" width="17"></iconify-icon>
                     </button>
-                    <label class="ai-model-picker" title="Choisir le modèle IA">
-                        <iconify-icon icon="solar:cpu-bolt-bold-duotone" width="16"></iconify-icon>
-                        <select x-model="selectedModel" @change="changeModel()" aria-label="Modèle IA">
+                    <div class="ai-model-picker" @click.outside="modelMenuOpen = false">
+                        <button type="button" class="ai-model-trigger" :class="{ 'is-open': modelMenuOpen }" @click="modelMenuOpen = !modelMenuOpen" :aria-expanded="modelMenuOpen" aria-haspopup="listbox" title="Choisir le modèle IA">
+                            <iconify-icon icon="solar:cpu-bolt-bold-duotone" width="16"></iconify-icon>
+                            <span class="ai-model-trigger-label" x-text="modelLabel(selectedModel)"></span>
+                            <iconify-icon class="ai-model-chevron" :class="{ 'is-open': modelMenuOpen }" icon="solar:alt-arrow-down-linear" width="13"></iconify-icon>
+                        </button>
+                        <div class="ai-model-menu" x-show="modelMenuOpen" x-cloak x-transition.origin.top.right role="listbox" aria-label="Modèle IA">
                             <template x-for="model in modelOptions" :key="model.id">
-                                <option :value="model.id" x-text="model.label"></option>
+                                <button type="button" class="ai-model-option" :class="{ 'is-active': selectedModel === model.id }" @click="selectModel(model.id)" role="option" :aria-selected="selectedModel === model.id">
+                                    <span class="ai-model-option-icon"><iconify-icon icon="solar:stars-minimalistic-bold-duotone" width="15"></iconify-icon></span>
+                                    <span class="ai-model-option-copy">
+                                        <strong x-text="model.label"></strong>
+                                        <small x-text="model.description"></small>
+                                    </span>
+                                    <iconify-icon class="ai-model-check" x-show="selectedModel === model.id" icon="solar:check-circle-bold" width="16"></iconify-icon>
+                                </button>
                             </template>
-                        </select>
-                        <iconify-icon class="ai-model-chevron" icon="solar:alt-arrow-down-linear" width="13"></iconify-icon>
-                    </label>
+                        </div>
+                    </div>
                     <button type="button" class="ai-new-chat" @click="newConversation()" :disabled="sending">
                         <iconify-icon icon="solar:chat-round-plus-linear" width="16"></iconify-icon>
                         <span>Nouvelle conversation</span>
@@ -321,11 +340,12 @@ document.addEventListener('alpine:init', () => {
         messages: [],
         conversations: [],
         historyOpen: false,
+        modelMenuOpen: false,
         selectedModel: 'gpt-5.5',
         modelOptions: [
-            { id:'gpt-5.5', label:'GPT-5.5' },
-            { id:'gpt-4o', label:'GPT-4o' },
-            { id:'gpt-4o-mini', label:'GPT-4o Mini' }
+            { id:'gpt-5.5', label:'GPT-5.5', description:'Le plus performant' },
+            { id:'gpt-4o', label:'GPT-4o', description:'Rapide et polyvalent' },
+            { id:'gpt-4o-mini', label:'GPT-4o Mini', description:'Léger et rapide' }
         ],
         workspaceContext: null,
         executingAction: '',
@@ -503,6 +523,12 @@ document.addEventListener('alpine:init', () => {
             this.selectedModel = this.allowedModel(this.selectedModel);
             localStorage.setItem(this.modelStorageKey(), this.selectedModel);
             if (this.conversationId && this.messages.length) this.saveConversation();
+        },
+
+        selectModel(model) {
+            this.selectedModel = this.allowedModel(model);
+            this.modelMenuOpen = false;
+            this.changeModel();
         },
 
         modelLabel(model) {

@@ -38,6 +38,10 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /id:'gpt-5\.5'/);
     assert.match(view, /id:'gpt-4o-mini'/);
     assert.match(view, /model:this\.selectedModel/);
+    assert.match(view, /class="ai-model-trigger"/);
+    assert.match(view, /class="ai-model-menu"/);
+    assert.match(view, /selectModel\(model\.id\)/);
+    assert.doesNotMatch(view, /<select[^>]*x-model="selectedModel"/);
     assert.match(view, /\.ai-composer textarea\{[^}]*margin:0;padding:0;[^}]*line-height:22px/);
     assert.match(view, /'agenda-create':'solar:calendar-add-bold-duotone'/);
     assert.doesNotMatch(view, /home-overview-shell|homeOverviewHub|api\/home-overview/);

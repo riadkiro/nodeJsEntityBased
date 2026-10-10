@@ -20,7 +20,9 @@ async function getProvider() {
 async function isConfigured() {
     try {
         const provider = await getProvider();
-        return Boolean(provider?.oauthClientSecrets?.ciphertext);
+        if (!provider?.oauthClientSecrets?.ciphertext) return false;
+        const credentials = OAuthService.decryptClientSecrets(provider);
+        return Boolean(credentials.clientId && credentials.clientSecret);
     } catch (_) {
         return false;
     }

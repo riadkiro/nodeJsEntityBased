@@ -122,8 +122,10 @@ document.addEventListener('alpine:init', () => {
                         this.emailDiscovery = {
                             key: isGoogle ? 'gmail' : 'microsoft',
                             name: isGoogle ? 'Gmail' : 'Outlook / Hotmail',
+                            color: isGoogle ? '#ea4335' : '#1473e6',
                             authType: 'oauth2',
                             oauthAvailable: !oauthError.endsWith('_not_configured'),
+                            oauthStartUrl: this.accountBase + `/mailbox/oauth/${isGoogle ? 'google' : 'microsoft'}/start`,
                             helpText: (isGoogle ? 'Google' : 'Microsoft') + ' exige une connexion OAuth2 sécurisée.'
                         };
                         this.accountSetupStep = 'credentials';

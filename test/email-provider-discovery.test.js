@@ -72,6 +72,7 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     assert.match(view, /Continuer avec/);
     assert.match(view, /emailDiscovery\?\.key === 'gmail'.*'Google'.*'Microsoft'/s);
     assert.match(view, /Votre mot de passe ne transite jamais/);
+    assert.match(view, /mot de passe d’application Google de 16 caractères/);
     assert.match(view, /accountSetupStep === 'credentials'/);
     assert.match(view, /accountSetupStep === 'manual'/);
     assert.match(script, /accounts\/discover/);

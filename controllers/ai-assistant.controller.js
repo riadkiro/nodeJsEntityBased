@@ -15,6 +15,7 @@ const { tenantCollection } = require("../middleware/tenant");
 const IntegrationService = require("../src/integrations/services/IntegrationService");
 require("../models/mail.model");
 const TaskOverview = require("../services/task-overview.service");
+const WorkspaceDataSearch = require("../services/ai-workspace-data-search.service");
 const MobileAgendaService = require("../services/mobile-agenda.service");
 const { createAiEmailDraft } = require("../services/ai-email-draft.service");
 
@@ -732,6 +733,8 @@ ${taskContextPrompt(context?.taskContext)}
 
 RÈGLE TÂCHES: pour toute question sur les tâches, les priorités ou le programme du jour, utilise d'abord et fidèlement la section ci-dessus. Les fiches récentes des collections ne remplacent jamais cette liste. N'affirme jamais qu'il n'y a aucune tâche si le contexte des tâches n'est pas chargé.
 
+${WorkspaceDataSearch.dataSearchPrompt(context?.dataSearchContext)}
+
 ## 📅 Agenda réel du workspace:
 ${agendaContextPrompt(context?.agendaContext)}
 
@@ -1136,6 +1139,27 @@ module.exports = {
             const workspaceContext = clientContext?.workspace || (await buildWorkspaceContext(req));
             const pageContext = clientContext || {};
 
+            // Query the complete task dataset when the request contains filters or a date period.
+            // This fresh server-side result takes precedence over the lightweight day summary.
+            delete workspaceContext.dataSearchContext;
+            try {
+                const dataSearchContext = await WorkspaceDataSearch.runWorkspaceDataSearch(req, message, {
+                    history: conversationHistory,
+                    timeZone: workspaceContext?.taskContext?.timeZone || "Africa/Casablanca",
+                });
+                if (dataSearchContext) {
+                    workspaceContext.dataSearchContext = dataSearchContext;
+                    console.log(
+                        "[AIAssistant] workspace-data-search:",
+                        dataSearchContext.resource,
+                        JSON.stringify(dataSearchContext.filters),
+                        `=> ${dataSearchContext.total} result(s)`,
+                    );
+                }
+            } catch (dataSearchError) {
+                console.error("[AIAssistant] workspace-data-search failed:", dataSearchError.message);
+            }
+
             // ── Auto-detect email queries and inject email context ──
             const needsEmailContext = isEmailRelatedQuery(message) ||
                 pageContext?.page === "mailbox" ||
@@ -1260,6 +1284,14 @@ module.exports = {
                 plan: parsed.plan,
                 conversationId: newConversationId,
                 model: selectedModel,
+                toolsUsed: workspaceContext?.dataSearchContext
+                    ? [{
+                        name: workspaceContext.dataSearchContext.tool,
+                        resource: workspaceContext.dataSearchContext.resource,
+                        filters: workspaceContext.dataSearchContext.filters,
+                        total: workspaceContext.dataSearchContext.total,
+                    }]
+                    : [],
             };
             console.log("[AIAssistant] Sending response — hasActions:", !!parsed.actions, "| hasPlan:", !!parsed.plan, "| responseLength:", parsed.response.length);
 

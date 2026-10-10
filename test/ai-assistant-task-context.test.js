@@ -3,6 +3,76 @@ const test = require('node:test');
 
 const aiAssistant = require('../controllers/ai-assistant.controller');
 const MobileAgendaService = require('../services/mobile-agenda.service');
+const WorkspaceDataSearch = require('../services/ai-workspace-data-search.service');
+
+test('workspace data search turns next week into an exact start-date filter', () => {
+    const filters = WorkspaceDataSearch.inferTaskSearchFilters(
+        'Fais-moi un résumé des tâches de la semaine prochaine',
+        { now: new Date('2026-10-10T12:00:00.000Z'), timeZone: 'Africa/Casablanca' },
+    );
+
+    assert.equal(filters.resource, 'tasks');
+    assert.equal(filters.dateField, 'startDate');
+    assert.equal(filters.from, '2026-10-12');
+    assert.equal(filters.to, '2026-10-18');
+    assert.equal(filters.completion, 'open');
+});
+
+test('workspace data search keeps the previous period when the user refines the date field', () => {
+    const filters = WorkspaceDataSearch.inferTaskSearchFilters(
+        'Il faut checker la date de début',
+        {
+            now: new Date('2026-10-10T12:00:00.000Z'),
+            timeZone: 'Africa/Casablanca',
+            history: [{ role: 'user', content: 'Liste les tâches de la semaine prochaine' }],
+        },
+    );
+
+    assert.equal(filters.dateField, 'startDate');
+    assert.equal(filters.from, '2026-10-12');
+    assert.equal(filters.to, '2026-10-18');
+});
+
+test('workspace data search filters all task rows by start date instead of due date', () => {
+    const result = WorkspaceDataSearch.filterTaskRows([
+        { id: 'a', title: 'Commence lundi', status: 'À faire', startDate: '2026-10-12', dueDate: '2026-11-01', order: 2 },
+        { id: 'b', title: 'Commence dimanche', status: 'En cours', startDate: '2026-10-18', order: 1 },
+        { id: 'c', title: 'Échéance seulement', status: 'À faire', startDate: '2026-10-19', dueDate: '2026-10-14' },
+        { id: 'd', title: 'Déjà terminée', status: 'Terminé', startDate: '2026-10-15' },
+    ], {
+        dateField: 'startDate',
+        from: '2026-10-12',
+        to: '2026-10-18',
+        completion: 'open',
+        timeZone: 'Africa/Casablanca',
+    }, new Date('2026-10-10T12:00:00.000Z'));
+
+    assert.equal(result.total, 2);
+    assert.deepEqual(result.items.map(task => task.id), ['a', 'b']);
+});
+
+test('workspace data search results are injected as an authoritative AI source', () => {
+    const prompt = WorkspaceDataSearch.dataSearchPrompt({
+        tool: 'workspace-data-search',
+        resource: 'tasks',
+        filters: {
+            dateField: 'startDate',
+            from: '2026-10-12',
+            to: '2026-10-18',
+            completion: 'open',
+        },
+        total: 1,
+        returned: 1,
+        truncated: false,
+        items: [{ title: 'Préparer le bilan', startDate: '2026-10-13', priority: 'Important', status: 'À faire', list: 'Finance' }],
+    });
+
+    assert.match(prompt, /workspace-data-search/);
+    assert.match(prompt, /date de début/);
+    assert.match(prompt, /2026-10-12 au 2026-10-18/);
+    assert.match(prompt, /Préparer le bilan/);
+    assert.match(prompt, /requête serveur fraîche/);
+});
 
 test('AI workspace prompt contains the real tasks selected for today', () => {
     const taskContext = aiAssistant.__test.summarizeTaskBoardForAssistant({

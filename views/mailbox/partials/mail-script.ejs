@@ -414,6 +414,10 @@ document.addEventListener('alpine:init', () => {
 
         selectMail(mail) {
             if (mail) {
+                if (mail.type === 'draft') {
+                    this.openMail('draft', mail);
+                    return;
+                }
                 mail.isUnread = false;
                 this.selectedMail = mail;
                 this.isEdit = false;

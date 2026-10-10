@@ -107,13 +107,14 @@ test('system prompt authorizes drafts but explicitly forbids sending', () => {
     assert.match(prompt, /l'utilisateur doit toujours ouvrir, relire et envoyer lui-même/);
 });
 
-test('mailbox previews persisted drafts, can edit them, and saves through the draft-only endpoint', () => {
+test('mailbox opens persisted drafts directly in the editor and saves through the draft-only endpoint', () => {
     const root = path.join(__dirname, '..');
     const routes = fs.readFileSync(path.join(root, 'routes', 'mailbox.router.js'), 'utf8');
     const script = fs.readFileSync(path.join(root, 'views', 'mailbox', 'partials', 'mail-script.ejs'), 'utf8');
     const detail = fs.readFileSync(path.join(root, 'views', 'mailbox', 'partials', 'mail-detail.ejs'), 'utf8');
     const draftService = fs.readFileSync(path.join(root, 'services', 'ai-email-draft.service.js'), 'utf8');
     assert.match(routes, /post\('\/api\/drafts', mailboxController\.saveDraft\)/);
+    assert.match(script, /if \(mail\.type === 'draft'\) \{\s*this\.openMail\('draft', mail\);\s*return;/);
     assert.match(script, /mailSenderName\(mail\)/);
     assert.match(script, /mailRecipient\(mail\)/);
     assert.match(script, /this\.apiBase \+ '\/drafts'/);

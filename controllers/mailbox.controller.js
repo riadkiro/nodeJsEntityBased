@@ -6,6 +6,7 @@ const mailConfig = require('../config/mail.config');
 const { discoverEmailProvider, listEmailProviders, PROVIDERS } = require('../services/email-provider-discovery.service');
 const MicrosoftMailOAuth = require('../services/microsoft-mail-oauth.service');
 const GoogleMailOAuth = require('../services/google-mail-oauth.service');
+const { MASKED_MAIL_PASSWORD, mailAccountForClient } = require('../services/mail-account-client.service');
 
 exports.sync = async (req, res) => {
     try {
@@ -252,17 +253,7 @@ exports.getAccounts = async (req, res) => {
     try {
         const MailAccount = await tenantCollection(req, "MailAccount");
         const accounts = await MailAccount.find().sort({ createdAt: 1 }).lean();
-        // Hide passwords in response
-        const safe = accounts.map(a => ({
-            ...a,
-            imap: { ...a.imap, password: '••••••••' },
-            smtp: a.smtp ? { ...a.smtp, password: '••••••••' } : undefined,
-            oauth: a.oauth ? {
-                provider: a.oauth.provider,
-                expiresAt: a.oauth.expiresAt,
-                scope: a.oauth.scope
-            } : undefined,
-        }));
+        const safe = accounts.map(mailAccountForClient);
         res.json({ success: true, accounts: safe });
     } catch (error) {
         console.error('getAccounts Error:', error);
@@ -290,6 +281,7 @@ function googleRedirectUri(req) {
 
 exports.startGoogleOAuth = async (req, res) => {
     const email = String(req.query.email || '').trim().toLowerCase();
+    const accountName = String(req.query.name || '').trim().slice(0, 120);
     try {
         const provider = await GoogleMailOAuth.getProvider();
         if (!provider?.oauthClientSecrets?.ciphertext) {
@@ -305,6 +297,7 @@ exports.startGoogleOAuth = async (req, res) => {
             verifier: pkce.codeVerifier,
             redirectUri,
             email,
+            name: accountName,
             accountNumber: String(req.account_number),
             createdAt: Date.now()
         };
@@ -349,7 +342,7 @@ exports.finishGoogleOAuth = async (req, res) => {
         if (!account) account = new MailAccount();
 
         const storedTokens = GoogleMailOAuth.encryptedTokenData(tokenSet);
-        account.name = identity.name || provider.name;
+        account.name = pending.name || identity.name || provider.name;
         account.email = identity.email;
         account.authType = 'oauth2';
         account.color = provider.color;
@@ -378,6 +371,7 @@ exports.finishGoogleOAuth = async (req, res) => {
 
 exports.startMicrosoftOAuth = async (req, res) => {
     const email = String(req.query.email || '').trim().toLowerCase();
+    const accountName = String(req.query.name || '').trim().slice(0, 120);
     try {
         if (!MicrosoftMailOAuth.isConfigured()) {
             return res.redirect(mailboxRedirect(req, {
@@ -394,6 +388,7 @@ exports.startMicrosoftOAuth = async (req, res) => {
             verifier: pkce.verifier,
             redirectUri,
             email,
+            name: accountName,
             accountNumber: String(req.account_number),
             createdAt: Date.now()
         };
@@ -435,7 +430,7 @@ exports.finishMicrosoftOAuth = async (req, res) => {
         if (!account) account = new MailAccount();
 
         const storedTokens = MicrosoftMailOAuth.encryptedTokenData(tokenSet);
-        account.name = identity.name || provider.name;
+        account.name = pending.name || identity.name || provider.name;
         account.email = identity.email;
         account.authType = 'oauth2';
         account.color = provider.color;
@@ -496,7 +491,7 @@ exports.createAccount = async (req, res) => {
             isDefault: count === 0,
         });
 
-        res.json({ success: true, account: { ...account.toObject(), imap: { ...account.imap, password: '••••••••' } } });
+        res.json({ success: true, account: mailAccountForClient(account) });
     } catch (error) {
         console.error('createAccount Error:', error);
         res.status(500).json({ error: 'Internal Server Error' });
@@ -562,7 +557,17 @@ exports.setDefaultAccount = async (req, res) => {
 
 exports.testConnection = async (req, res) => {
     try {
-        const { host, port, user, password, tls } = req.body;
+        let { host, port, user, password, tls } = req.body;
+        if (req.body.accountId && (!password || password === MASKED_MAIL_PASSWORD)) {
+            const MailAccount = await tenantCollection(req, 'MailAccount');
+            const account = await MailAccount.findById(req.body.accountId);
+            if (!account) return res.status(404).json({ error: 'Account not found' });
+            host = host || account.imap?.host;
+            port = port || account.imap?.port;
+            user = user || account.imap?.user;
+            password = account.imap?.password;
+            if (tls === undefined) tls = account.imap?.tls;
+        }
         if (!host || !user || !password) {
             return res.status(400).json({ error: 'Host, user and password are required' });
         }
@@ -589,15 +594,7 @@ exports.index = async (req, res) => {
 
         // Load mail accounts
         const accounts = await MailAccount.find().sort({ createdAt: 1 }).lean();
-        const mailAccounts = accounts.map(a => ({
-            _id: a._id,
-            name: a.name,
-            email: a.email,
-            color: a.color,
-            isDefault: a.isDefault,
-            isActive: a.isActive,
-            lastSync: a.lastSync,
-        }));
+        const mailAccounts = accounts.map(mailAccountForClient);
 
         // Determine selected account (from query or default)
         let selectedAccountId = req.query.accountId || null;

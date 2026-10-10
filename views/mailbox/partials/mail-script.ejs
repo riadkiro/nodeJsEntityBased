@@ -999,7 +999,6 @@ document.addEventListener('alpine:init', () => {
             if (!provider) return;
             const email = String(this.editingAccount.email || '').trim().toLowerCase();
             this.emailDiscovery = provider;
-            this.editingAccount.name = provider.name;
             this.editingAccount.color = provider.color || '#4361ee';
             this.editingAccount.imap = {
                 ...provider.imap,
@@ -1033,6 +1032,12 @@ document.addEventListener('alpine:init', () => {
         },
 
         async connectDetectedAccount() {
+            const accountName = String(this.editingAccount.name || '').trim();
+            if (!accountName) {
+                this.emailDiscoveryError = 'Donnez un nom à ce compte, par exemple « E-mail professionnel ».';
+                return;
+            }
+            this.editingAccount.name = accountName;
             if (this.emailDiscovery?.authType === 'oauth2') {
                 if (!this.emailDiscovery.oauthAvailable) {
                     const brand = this.emailDiscovery?.key === 'gmail' ? 'Google' : 'Microsoft';
@@ -1040,7 +1045,11 @@ document.addEventListener('alpine:init', () => {
                     return;
                 }
                 const startUrl = this.emailDiscovery.oauthStartUrl || (this.accountBase + '/mailbox/oauth/microsoft/start');
-                window.location.assign(startUrl + '?email=' + encodeURIComponent(this.editingAccount.email));
+                const params = new URLSearchParams({
+                    email: this.editingAccount.email,
+                    name: accountName,
+                });
+                window.location.assign(startUrl + '?' + params.toString());
                 return;
             }
             const password = String(this.editingAccount.imap.password || '');
@@ -1138,7 +1147,7 @@ document.addEventListener('alpine:init', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify(imap),
+                    body: JSON.stringify({ ...imap, accountId: this.editingAccount._id || undefined }),
                 });
                 const data = await resp.json();
                 if (data.success) {
@@ -1161,15 +1170,7 @@ document.addEventListener('alpine:init', () => {
                 const resp = await fetch(this.apiBase + '/accounts', { credentials: 'include' });
                 const data = await resp.json();
                 if (data.success) {
-                    this.mailAccounts = data.accounts.map(a => ({
-                        _id: a._id,
-                        name: a.name,
-                        email: a.email,
-                        color: a.color,
-                        isDefault: a.isDefault,
-                        isActive: a.isActive,
-                        lastSync: a.lastSync,
-                    }));
+                    this.mailAccounts = data.accounts;
                 }
             } catch (e) {
                 console.error('loadAccounts Error:', e);

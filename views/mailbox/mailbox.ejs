@@ -335,6 +335,15 @@
                     <button type="button" class="text-xs font-bold text-primary" @click="changeAccountEmail()">Modifier</button>
                 </div>
 
+                <div class="mb-4">
+                    <label class="mb-2 block text-sm font-bold">Nom du compte *</label>
+                    <div class="relative">
+                        <iconify-icon icon="solar:user-id-bold-duotone" width="20" class="absolute left-3 top-1/2 -translate-y-1/2 text-primary"></iconify-icon>
+                        <input type="text" class="form-input h-12 pl-11 text-sm" placeholder="Ex. E-mail professionnel" x-model="editingAccount.name" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                    </div>
+                    <p class="mt-1.5 text-[11px] text-white-dark">Ce nom sert uniquement à identifier la boîte dans DexApp.</p>
+                </div>
+
                 <div x-show="emailDiscovery?.authType !== 'oauth2'">
                     <label class="mb-2 block text-sm font-bold" x-text="emailDiscovery?.passwordLabel || 'Mot de passe'"></label>
                     <div class="relative">

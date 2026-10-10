@@ -9,6 +9,7 @@ const {
     listEmailProviders,
     discoverEmailProvider
 } = require('../services/email-provider-discovery.service');
+const { MASKED_MAIL_PASSWORD, mailAccountForClient } = require('../services/mail-account-client.service');
 
 test('known personal email domains are configured without a DNS lookup', async () => {
     let dnsCalls = 0;
@@ -80,6 +81,26 @@ test('provider selection exposes ready-to-use IMAP and SMTP presets', () => {
     assert.equal('domains' in byKey.onecom, false);
 });
 
+test('saved account settings remain available to Configure without exposing passwords', () => {
+    const account = mailAccountForClient({
+        _id: 'mail-account-id',
+        name: 'Commercial Belgique',
+        email: 'contact@da-clean.be',
+        authType: 'password',
+        imap: { host: 'imap.one.com', port: 993, user: 'contact@da-clean.be', password: 'secret', tls: true },
+        smtp: { host: 'send.one.com', port: 587, user: 'contact@da-clean.be', password: 'secret', secure: false }
+    });
+
+    assert.equal(account.name, 'Commercial Belgique');
+    assert.equal(account.imap.host, 'imap.one.com');
+    assert.equal(account.imap.user, 'contact@da-clean.be');
+    assert.equal(account.smtp.host, 'send.one.com');
+    assert.equal(account.smtp.port, 587);
+    assert.equal(account.imap.password, MASKED_MAIL_PASSWORD);
+    assert.equal(account.smtp.password, MASKED_MAIL_PASSWORD);
+    assert.doesNotMatch(JSON.stringify(account), /secret/);
+});
+
 test('unknown and invalid addresses safely fall back to manual setup', async () => {
     assert.equal(parseEmail('not-an-email'), null);
     const invalid = await discoverEmailProvider('not-an-email', {
@@ -99,6 +120,7 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     const view = fs.readFileSync(path.join(root, 'views', 'mailbox', 'mailbox.ejs'), 'utf8');
     const script = fs.readFileSync(path.join(root, 'views', 'mailbox', 'partials', 'mail-script.ejs'), 'utf8');
     const routes = fs.readFileSync(path.join(root, 'routes', 'mailbox.router.js'), 'utf8');
+    const controller = fs.readFileSync(path.join(root, 'controllers', 'mailbox.controller.js'), 'utf8');
 
     assert.match(view, /Configuration automatique/);
     assert.match(view, /Fournisseur détecté/);
@@ -106,6 +128,8 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     assert.match(view, /Autre fournisseur/);
     assert.match(view, /One\.com/);
     assert.match(view, /Hostinger/);
+    assert.match(view, /Nom du compte \*/);
+    assert.match(view, /x-model="editingAccount\.name"/);
     assert.match(view, /Continuer avec/);
     assert.match(view, /emailDiscovery\?\.key === 'gmail'.*'Google'.*'Microsoft'/s);
     assert.match(view, /Votre mot de passe ne transite jamais/);
@@ -116,11 +140,15 @@ test('mail account modal uses the guided auto-detection flow before manual setti
     assert.match(script, /discoverAccountProvider\(\)/);
     assert.match(script, /emailProviderOptions/);
     assert.match(script, /selectAccountProvider\(provider\)/);
+    assert.doesNotMatch(script, /editingAccount\.name = provider\.name/);
+    assert.match(script, /this\.mailAccounts = data\.accounts/);
+    assert.match(script, /accountId: this\.editingAccount\._id/);
     assert.match(script, /connectDetectedAccount\(\)/);
     assert.match(script, /mailbox\/oauth\/microsoft\/start/);
     assert.match(routes, /oauth\/google\/start', mailboxController\.startGoogleOAuth/);
     assert.match(routes, /accounts\/discover', mailboxController\.discoverProvider/);
     assert.match(routes, /oauth\/microsoft\/callback', mailboxController\.finishMicrosoftOAuth/);
+    assert.match(controller, /accounts\.map\(mailAccountForClient\)/);
 
     const rendered = await ejs.renderFile(path.join(root, 'views', 'mailbox', 'mailbox.ejs'), {
         account_number: '6804',

@@ -7,6 +7,7 @@ const { discoverEmailProvider, listEmailProviders, PROVIDERS } = require('../ser
 const MicrosoftMailOAuth = require('../services/microsoft-mail-oauth.service');
 const GoogleMailOAuth = require('../services/google-mail-oauth.service');
 const { MASKED_MAIL_PASSWORD, mailAccountForClient } = require('../services/mail-account-client.service');
+const { sendMailboxMail } = require('../services/mailbox-send.service');
 
 exports.sync = async (req, res) => {
     try {
@@ -288,7 +289,11 @@ exports.saveDraft = async (req, res) => {
         draft.isUnread = false;
         draft.date = new Date();
         draft.time = draft.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-        draft.attachments = Array.isArray(input.attachments) ? input.attachments.slice(0, 20) : [];
+        draft.attachments = (Array.isArray(input.attachments) ? input.attachments : []).slice(0, 20).map(file => ({
+            name: String(file?.name || '').slice(0, 180),
+            size: String(file?.size || '').slice(0, 40),
+            type: file?.type === 'image' ? 'image' : 'file',
+        }));
         await draft.save();
 
         const output = draft.toObject();
@@ -297,6 +302,21 @@ exports.saveDraft = async (req, res) => {
     } catch (error) {
         console.error('saveDraft Error:', error);
         res.status(500).json({ error: 'Draft could not be saved' });
+    }
+};
+
+// ===== API: Send through the selected mailbox SMTP provider =====
+exports.sendMail = async (req, res) => {
+    try {
+        const result = await sendMailboxMail(req, req.body || {});
+        res.json({ success: true, ...result });
+    } catch (error) {
+        console.error('sendMail Error:', error.code || error.message);
+        res.status(Number(error.status || 500)).json({
+            success: false,
+            error: error.message || "L'e-mail n'a pas pu être envoyé.",
+            code: error.code || 'MAIL_SEND_FAILED',
+        });
     }
 };
 

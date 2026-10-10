@@ -1,98 +1,91 @@
 <!-- ========== COMPOSE / EDIT VIEW ========== -->
-<div x-show="isEdit" style="display: none;">
-    <div class="flex items-center px-6 py-4">
-        <button type="button" class="flex items-center hover:text-primary ltr:mr-2 rtl:ml-2" @click="isEdit = false; selectedMail = null;">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" class="h-5 w-5">
-                <path d="M15 5L9 12L15 19" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span class="ltr:ml-1 rtl:mr-1">Back</span>
-        </button>
-        <h4 class="text-lg font-medium dark:text-gray-300" x-text="params.id ? 'Edit Message' : 'New Message'"></h4>
-    </div>
-    <div class="h-px border-b border-[#e0e6ed] dark:border-[#1b2e4b]"></div>
-    <div class="p-6">
-        <form @submit.prevent="saveMail('send', params.id)">
-            <div class="space-y-5">
-                <!-- To -->
-                <div>
-                    <label for="to" class="mb-1 block text-sm font-semibold dark:text-gray-300">To:</label>
-                    <input id="to" type="email" class="form-input" placeholder="Enter recipient email" x-model="params.to" required autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+<div x-show="isEdit" class="h-full" style="display: none;">
+    <form class="flex h-full min-h-0 flex-col bg-white dark:bg-[#0e1726]" @submit.prevent="saveMail('send', params.id)">
+        <div class="flex shrink-0 items-center justify-between border-b border-[#e8ecf3] px-4 py-3 dark:border-[#1b2e4b]">
+            <div class="flex min-w-0 items-center gap-3">
+                <button type="button" class="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[#e0e6ed] text-[#68758d] hover:border-primary/40 hover:text-primary dark:border-[#1b2e4b]" @click="closeMsgPopUp()" aria-label="Retour">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M15 5L9 12L15 19" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <div class="min-w-0">
+                    <h4 class="truncate text-base font-bold text-[#172033] dark:text-gray-200" x-text="params.id ? 'Modifier le message' : 'Nouveau message'"></h4>
+                    <p class="truncate text-xs text-[#8b97ad]" x-text="activeAccount ? activeAccount.email : params.from"></p>
                 </div>
-                <!-- CC -->
-                <div>
-                    <label for="cc" class="mb-1 block text-sm font-semibold dark:text-gray-300">Cc:</label>
-                    <input id="cc" type="text" class="form-input" placeholder="Enter Cc" x-model="params.cc" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
-                </div>
-                <!-- Subject -->
-                <div>
-                    <label for="title" class="mb-1 block text-sm font-semibold dark:text-gray-300">Subject:</label>
-                    <input id="title" type="text" class="form-input" placeholder="Enter subject" x-model="params.title" required autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
-                </div>
-                <!-- Template selector -->
-                <template x-if="templates.length > 0">
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Use Template:</label>
-                        <select class="form-select" @change="applyTemplate($event.target.value)">
-                            <option value="">-- Select a template --</option>
-                            <template x-for="(tpl, idx) in templates" :key="idx">
-                                <option :value="idx" x-text="tpl.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                </template>
-                <!-- Signature selector -->
-                <template x-if="signatures.length > 0">
-                    <div>
-                        <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Signature:</label>
-                        <select class="form-select" x-model="selectedSignatureIdx" @change="applySignature()">
-                            <option value="-1">-- No signature --</option>
-                            <template x-for="(sig, idx) in signatures" :key="idx">
-                                <option :value="idx" x-text="sig.name"></option>
-                            </template>
-                        </select>
-                    </div>
-                </template>
-                <!-- Editor -->
-                <div>
-                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Message:</label>
-                    <div id="editor" class="quill-editor" style="min-height: 200px;"></div>
-                </div>
-                <!-- File attachment -->
-                <div>
-                    <label class="mb-1 block text-sm font-semibold dark:text-gray-300">Attachments:</label>
-                    <input type="file" class="form-input p-0 file:border-0 file:bg-primary/90 file:px-4 file:py-2 file:font-semibold file:text-white file:hover:bg-primary ltr:file:mr-5 rtl:file:ml-5" multiple @change="handleFiles($event)" />
-                    <!-- Show attached files -->
-                    <template x-if="params.attachments && params.attachments.length > 0">
-                        <div class="mt-2 flex flex-wrap gap-2">
-                            <template x-for="(file, i) in params.attachments" :key="i">
-                                <span class="inline-flex items-center gap-1 rounded-md bg-primary/10 px-2 py-1 text-sm text-primary">
-                                    <span x-text="file.name"></span>
-                                    <button type="button" class="hover:text-danger" @click="params.attachments.splice(i, 1)">&times;</button>
-                                </span>
-                            </template>
-                        </div>
+            </div>
+            <span x-show="params.id" class="rounded-full bg-warning/10 px-2.5 py-1 text-[11px] font-bold text-warning">Brouillon</span>
+        </div>
+
+        <div class="shrink-0 space-y-2.5 border-b border-[#edf0f5] px-4 py-3 dark:border-[#1b2e4b]">
+            <div class="grid grid-cols-1 gap-2.5 md:grid-cols-2">
+                <label class="flex h-10 items-center rounded-lg border border-[#dfe5ef] bg-white px-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 dark:border-[#263754] dark:bg-[#111c2f]">
+                    <span class="w-9 shrink-0 text-xs font-bold text-[#71809a]">À</span>
+                    <input id="to" type="text" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-[#b2bdcd]" placeholder="destinataire@exemple.com" x-model="params.to" required autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                </label>
+                <label class="flex h-10 items-center rounded-lg border border-[#dfe5ef] bg-white px-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 dark:border-[#263754] dark:bg-[#111c2f]">
+                    <span class="w-9 shrink-0 text-xs font-bold text-[#71809a]">Cc</span>
+                    <input id="cc" type="text" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-[#b2bdcd]" placeholder="Copie (facultatif)" x-model="params.cc" autocomplete="off" data-lpignore="true" data-1p-ignore="true" data-bwignore="true" />
+                </label>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <label class="flex h-10 min-w-0 flex-1 items-center rounded-lg border border-[#dfe5ef] bg-white px-3 transition focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 dark:border-[#263754] dark:bg-[#111c2f]">
+                    <span class="w-14 shrink-0 text-xs font-bold text-[#71809a]">Objet</span>
+                    <input id="title" type="text" class="min-w-0 flex-1 border-0 bg-transparent p-0 text-sm outline-none placeholder:text-[#b2bdcd]" placeholder="Objet du message" x-model="params.title" required autocomplete="off" />
+                </label>
+                <input x-ref="attachmentInput" type="file" class="hidden" multiple @change="handleFiles($event)" />
+                <button type="button" class="grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-[#dfe5ef] text-[#6d7b94] transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:border-[#263754]" @click="$refs.attachmentInput.click()" title="Ajouter une pièce jointe" aria-label="Ajouter une pièce jointe">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M8.5 12.5L14.9 6.1C16.1 4.9 18.1 4.9 19.3 6.1C20.5 7.3 20.5 9.3 19.3 10.5L10.8 19C8.8 21 5.6 21 3.6 19C1.6 17 1.6 13.8 3.6 11.8L12 3.4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+                <button type="button" class="flex h-10 shrink-0 items-center gap-1.5 rounded-lg border border-[#dfe5ef] px-3 text-xs font-bold text-[#65738d] transition hover:border-primary/40 hover:bg-primary/5 hover:text-primary dark:border-[#263754]" @click="showComposeOptions = !showComposeOptions" :aria-expanded="showComposeOptions">
+                    Plus
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" class="transition-transform" :class="showComposeOptions ? 'rotate-180' : ''"><path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+            </div>
+
+            <template x-if="params.attachments && params.attachments.length">
+                <div class="flex flex-wrap gap-1.5">
+                    <template x-for="(file, i) in params.attachments" :key="file.name + '-' + i">
+                        <span class="inline-flex max-w-[260px] items-center gap-1.5 rounded-full border border-primary/15 bg-primary/5 px-2.5 py-1 text-xs text-primary">
+                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M8.5 12.5L14.9 6.1C16.1 4.9 18.1 4.9 19.3 6.1C20.5 7.3 20.5 9.3 19.3 10.5L10.8 19C8.8 21 5.6 21 3.6 19C1.6 17 1.6 13.8 3.6 11.8L12 3.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                            <span class="truncate" x-text="file.name"></span>
+                            <span class="text-[10px] text-primary/60" x-text="file.size"></span>
+                            <button type="button" class="grid h-4 w-4 place-items-center rounded-full hover:bg-primary/10" @click="params.attachments.splice(i, 1)" aria-label="Retirer">&times;</button>
+                        </span>
                     </template>
                 </div>
+            </template>
+
+            <div x-show="showComposeOptions" x-transition class="grid grid-cols-1 gap-2.5 rounded-lg border border-[#e7ebf2] bg-[#fafbfe] p-2.5 md:grid-cols-2 dark:border-[#263754] dark:bg-[#111c2f]" style="display: none;">
+                <label x-show="templates.length > 0" class="flex items-center gap-2">
+                    <span class="shrink-0 text-xs font-bold text-[#71809a]">Modèle</span>
+                    <select class="form-select h-9 flex-1 py-1.5 text-xs" @change="applyTemplate($event.target.value)">
+                        <option value="">Aucun modèle</option>
+                        <template x-for="(tpl, idx) in templates" :key="idx"><option :value="idx" x-text="tpl.name"></option></template>
+                    </select>
+                </label>
+                <label x-show="signatures.length > 0" class="flex items-center gap-2">
+                    <span class="shrink-0 text-xs font-bold text-[#71809a]">Signature</span>
+                    <select class="form-select h-9 flex-1 py-1.5 text-xs" x-model="selectedSignatureIdx" @change="applySignature()">
+                        <option value="-1">Aucune signature</option>
+                        <template x-for="(sig, idx) in signatures" :key="idx"><option :value="idx" x-text="sig.name"></option></template>
+                    </select>
+                </label>
             </div>
-            <!-- Buttons -->
-            <div class="mt-8 flex items-center gap-3">
-                <button type="submit" class="btn btn-primary gap-2">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M17.4975 18.4851L20.6281 9.09373C21.8764 5.34874 22.5006 3.47624 21.5122 2.48782C20.5237 1.49939 18.6511 2.12356 14.906 3.37189L5.57477 6.48218C3.49295 7.1761 2.45203 7.52305 2.13608 8.28637C2.06182 8.46577 2.01692 8.65596 2.00311 8.84963C1.94433 9.67365 2.72018 10.4495 4.27188 12.0011L4.55451 12.2837C4.80921 12.5384 4.93655 12.6658 5.03282 12.8075C5.22269 13.0871 5.33046 13.4143 5.34393 13.7519C5.35076 13.9232 5.32403 14.1013 5.27057 14.4574C5.07488 15.7612 4.97703 16.4131 5.0923 16.9147C5.32205 17.9146 6.09599 18.6995 7.09257 18.9433C7.59255 19.0656 8.24576 18.977 9.5522 18.7997L9.62363 18.79C9.99191 18.74 10.1761 18.715 10.3529 18.7257C10.6738 18.745 10.9838 18.8496 11.251 19.0285C11.3981 19.1271 11.5295 19.2585 11.7923 19.5213L12.0436 19.7725C13.5539 21.2828 14.309 22.0379 15.1101 21.9985C15.3309 21.9877 15.5479 21.9365 15.7503 21.8474C16.4844 21.5244 16.8221 20.5113 17.4975 18.4851Z" stroke="currentColor" stroke-width="1.5" />
-                        <path opacity="0.5" d="M6 18L21 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                    </svg>
-                    Send
-                </button>
-                <button type="button" class="btn btn-outline-warning gap-2" @click="saveMail('draft', params.id)">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path opacity="0.5" d="M13 2.5V5C13 7.35702 13 8.53553 13.7322 9.26777C14.4645 10 15.643 10 18 10H22" stroke="currentColor" stroke-width="1.5" />
-                    </svg>
-                    Save Draft
-                </button>
-                <button type="button" class="btn btn-outline-danger" @click="closeMsgPopUp()">
-                    Discard
+        </div>
+
+        <div class="mail-compose-editor-shell min-h-0 flex-1 overflow-y-auto px-4 py-3">
+            <div id="editor" class="quill-editor h-full min-h-[220px]"></div>
+        </div>
+
+        <div class="flex shrink-0 flex-wrap items-center justify-between gap-2 border-t border-[#e8ecf3] px-4 py-3 dark:border-[#1b2e4b]">
+            <button type="button" class="btn btn-outline-secondary btn-sm" @click="closeMsgPopUp()">Annuler</button>
+            <div class="flex items-center gap-2">
+                <button type="button" class="btn btn-outline-primary btn-sm" :disabled="sendingMail" @click="saveMail('draft', params.id)">Enregistrer le brouillon</button>
+                <button type="submit" class="btn btn-primary btn-sm gap-2" :disabled="sendingMail">
+                    <svg x-show="!sendingMail" width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M17.5 18.5L20.6 9.1C21.9 5.3 22.5 3.5 21.5 2.5C20.5 1.5 18.7 2.1 14.9 3.4L5.6 6.5C3.5 7.2 2.5 7.5 2.1 8.3C1.8 9.1 2.7 10.4 4.3 12L5 12.7C5.3 13 5.4 13.5 5.3 14L5.1 16.9C5.3 18 6 18.7 7.1 18.9L10 18.7C10.5 18.6 11 18.7 11.3 19L12 19.7C13.6 21.3 14.9 22.2 15.7 21.9C16.5 21.5 16.8 20.5 17.5 18.5Z" stroke="currentColor" stroke-width="1.5"/><path d="M6 18L21 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+                    <svg x-show="sendingMail" class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-30" cx="12" cy="12" r="9" stroke="currentColor" stroke-width="3"/><path d="M21 12a9 9 0 00-9-9" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>
+                    <span x-text="sendingMail ? 'Envoi…' : 'Envoyer'"></span>
                 </button>
             </div>
-        </form>
-    </div>
+        </div>
+    </form>
 </div>

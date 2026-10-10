@@ -39,6 +39,8 @@ const mailSchema = new Schema({
     accountId: { type: Schema.Types.ObjectId, ref: 'MailAccount' }, // Which mail account this belongs to
     sourceMailId: { type: Schema.Types.ObjectId, ref: 'Mail' },
     isAiDraft: { type: Boolean, default: false },
+    messageId: String,
+    sentAt: Date,
     tenantId: { type: Schema.Types.ObjectId, ref: 'Account' } // Logical separation if needed
 }, { timestamps: true });
 

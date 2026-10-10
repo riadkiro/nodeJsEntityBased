@@ -50,6 +50,27 @@
   overflow: auto;
 }
 
+.mail-compose-editor-shell {
+  display: flex;
+  flex-direction: column;
+}
+
+.mail-compose-editor-shell > .ql-toolbar {
+  flex: none;
+}
+
+.mail-compose-editor-shell > .ql-container {
+  min-height: 180px;
+  height: auto !important;
+  flex: 1;
+}
+
+.mail-compose-editor-shell .ql-editor {
+  min-height: 180px;
+  max-height: none;
+  height: 100%;
+}
+
 .rtl .ql-snow .ql-editor {
   text-align: right;
 }

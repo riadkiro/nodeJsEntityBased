@@ -390,7 +390,7 @@ function emailSearchTerms(searchQuery, maxTerms = 12) {
 function buildEmailSearchFilter(searchQuery) {
     const terms = emailSearchTerms(searchQuery);
     if (!terms.length) return null;
-    const fields = ["title", "email", "firstName", "lastName", "displayDescription", "description"];
+    const fields = ["title", "email", "to", "cc", "firstName", "lastName", "displayDescription", "description"];
     return {
         $or: terms.flatMap(term => fields.map(field => ({
             [field]: { $regex: escapeRegex(term), $options: "i" },

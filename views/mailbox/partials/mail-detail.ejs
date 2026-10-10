@@ -45,11 +45,11 @@
                 <div class="flex flex-wrap justify-between lg:flex-nowrap">
                     <div class="flex w-max items-center">
                         <div class="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary ltr:mr-4 rtl:ml-4">
-                            <span class="text-lg font-semibold" x-text="(selectedMail.firstName ? selectedMail.firstName[0] : '') + (selectedMail.lastName ? selectedMail.lastName[0] : '')"></span>
+                            <span class="text-lg font-semibold" x-text="mailInitials(selectedMail)"></span>
                         </div>
                         <div>
-                            <h4 class="text-base font-semibold dark:text-gray-300" x-text="selectedMail.firstName + ' ' + (selectedMail.lastName || '')"></h4>
-                            <span class="text-white-dark" x-text="selectedMail.email"></span>
+                            <h4 class="text-base font-semibold dark:text-gray-300" x-text="mailDisplayName(selectedMail)"></h4>
+                            <span class="text-white-dark" x-text="selectedMail.type === 'sent_mail' ? ('À : ' + (selectedMail.to || '')) : selectedMail.email"></span>
                         </div>
                     </div>
                     <div class="flex items-center text-white-dark">

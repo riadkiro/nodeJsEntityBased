@@ -51,6 +51,8 @@ document.addEventListener('alpine:init', () => {
         editingTemplate: null,
         // Signatures
         showSignature: false,
+        showComposeOptions: false,
+        sendingMail: false,
         signatures: [
             { name: 'Professional', content: '<p style="margin:0"><strong>Best regards,</strong></p><p style="margin:0;color:#666">Your Name | Company Inc.</p><p style="margin:0;color:#999;font-size:12px">Phone: +1 234 567 890 | Web: example.com</p>', isDefault: true },
         ],
@@ -371,6 +373,8 @@ document.addEventListener('alpine:init', () => {
                     (d.firstName && d.firstName.toLowerCase().includes(txt)) ||
                     (d.lastName && d.lastName.toLowerCase().includes(txt)) ||
                     (d.email && d.email.toLowerCase().includes(txt)) ||
+                    (d.to && d.to.toLowerCase().includes(txt)) ||
+                    (d.cc && d.cc.toLowerCase().includes(txt)) ||
                     (d.title && d.title.toLowerCase().includes(txt)) ||
                     (d.displayDescription && d.displayDescription.toLowerCase().includes(txt))
                 );
@@ -723,7 +727,7 @@ document.addEventListener('alpine:init', () => {
             } else if (type === 'reply') {
                 this.params = {
                     ...this.defaultParams,
-                    to: mail.email,
+                    to: mail.type === 'sent_mail' ? (mail.to || '') : mail.email,
                     title: 'Re: ' + mail.title,
                     description: '<br><br><blockquote style="border-left: 3px solid #ccc; padding-left: 10px; color: #666;">' + (mail.description || '') + '</blockquote>',
                     attachments: [],
@@ -753,12 +757,13 @@ document.addEventListener('alpine:init', () => {
         },
 
         async saveMail(type, id) {
+            if (this.sendingMail) return;
             if (!this.params.to && type === 'send') {
-                this.showMessage('Recipient is required', 'error');
+                this.showMessage('Le destinataire est requis', 'error');
                 return;
             }
             if (!this.params.title) {
-                this.showMessage('Subject is required', 'error');
+                this.showMessage("L'objet est requis", 'error');
                 return;
             }
 
@@ -799,6 +804,30 @@ document.addEventListener('alpine:init', () => {
                 }
             }
 
+            if (type === 'send') {
+                this.sendingMail = true;
+                try {
+                    const response = await fetch(this.apiBase + '/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            ...this.params,
+                            id: id || undefined,
+                            accountId: this.activeAccount?._id || this.selectedAccountId || undefined,
+                        }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.success) throw new Error(data.error || "L'e-mail n'a pas pu être envoyé");
+                    mail = { ...mail, ...data.mail, type: 'sent_mail' };
+                } catch (error) {
+                    this.showMessage(error.message || "L'e-mail n'a pas pu être envoyé", 'error');
+                    return;
+                } finally {
+                    this.sendingMail = false;
+                }
+            }
+
             if (id) {
                 const idx = this.mailList.findIndex((d) => d.id === id);
                 if (idx >= 0) this.mailList[idx] = mail;
@@ -806,28 +835,64 @@ document.addEventListener('alpine:init', () => {
                 this.mailList.unshift(mail);
             }
 
-            this.showMessage(type === 'draft' ? 'Draft saved' : 'Mail sent successfully');
+            this.showMessage(type === 'draft' ? 'Brouillon enregistré' : 'E-mail envoyé avec succès');
             this.closeMsgPopUp();
             this.searchMails();
         },
 
         closeMsgPopUp() {
             this.isEdit = false;
+            this.showComposeOptions = false;
             this.params = { ...this.defaultParams, attachments: [] };
             if (this.quillEditor) this.quillEditor.setContents([]);
         },
 
         // ===== FILE HANDLING =====
-        handleFiles(event) {
+        async handleFiles(event) {
             const files = event.target.files;
             if (!this.params.attachments) this.params.attachments = [];
             for (const file of files) {
+                if (file.size > 10 * 1024 * 1024) {
+                    this.showMessage(`La pièce jointe « ${file.name} » dépasse 10 Mo`, 'error');
+                    continue;
+                }
+                let content;
+                try {
+                    content = await this.readFileAsDataUrl(file);
+                } catch (error) {
+                    this.showMessage(error.message || `Impossible de lire « ${file.name} »`, 'error');
+                    continue;
+                }
                 this.params.attachments.push({
                     name: file.name,
                     size: (file.size / 1024).toFixed(1) + 'KB',
                     type: file.type.includes('image') ? 'image' : 'file',
+                    mimeType: file.type || 'application/octet-stream',
+                    content,
                 });
             }
+            event.target.value = '';
+        },
+
+        readFileAsDataUrl(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(String(reader.result || ''));
+                reader.onerror = () => reject(new Error(`Impossible de lire « ${file.name} »`));
+                reader.readAsDataURL(file);
+            });
+        },
+
+        mailDisplayName(mail) {
+            if (mail?.type === 'sent_mail' || mail?.type === 'draft') return mail.to || 'Sans destinataire';
+            return mail?.firstName ? `${mail.firstName} ${mail.lastName || ''}`.trim() : (mail?.email || '');
+        },
+
+        mailInitials(mail) {
+            const label = this.mailDisplayName(mail).replace(/<[^>]+>/g, '').trim();
+            if (!label) return '?';
+            const words = label.split(/\s+/).filter(Boolean);
+            return (words[0]?.[0] || '') + (words.length > 1 ? words[1]?.[0] || '' : '');
         },
 
         // ===== TEMPLATES =====

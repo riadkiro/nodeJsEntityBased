@@ -14,6 +14,9 @@ const mailSchema = new Schema({
     firstName: String,
     lastName: String,
     email: { type: String, required: true },
+    from: String,
+    to: String,
+    cc: String,
     date: Date,
     time: String, // Kept for compatibility with template, but derived from date usually
     title: String,
@@ -34,6 +37,8 @@ const mailSchema = new Schema({
     },
     attachments: [attachmentSchema],
     accountId: { type: Schema.Types.ObjectId, ref: 'MailAccount' }, // Which mail account this belongs to
+    sourceMailId: { type: Schema.Types.ObjectId, ref: 'Mail' },
+    isAiDraft: { type: Boolean, default: false },
     tenantId: { type: Schema.Types.ObjectId, ref: 'Account' } // Logical separation if needed
 }, { timestamps: true });
 

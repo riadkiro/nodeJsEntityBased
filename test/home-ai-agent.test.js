@@ -14,6 +14,9 @@ test('home is a focused AI agent workspace with chat and active integrations', a
     assert.match(view, /Agent IA DexApp/);
     assert.match(view, /api\/ai-assistant\/chat/);
     assert.match(view, /api\/ai-assistant\/execute/);
+    assert.match(view, /email-create/);
+    assert.match(view, /email-reply/);
+    assert.match(view, /Ouvrir le brouillon/);
     assert.match(view, /class="ai-connections"/);
     assert.match(view, /Intégrations actives/);
     assert.match(view, /Ajouter une intégration/);

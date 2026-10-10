@@ -16,6 +16,7 @@ const IntegrationService = require("../src/integrations/services/IntegrationServ
 require("../models/mail.model");
 const TaskOverview = require("../services/task-overview.service");
 const MobileAgendaService = require("../services/mobile-agenda.service");
+const { createAiEmailDraft } = require("../services/ai-email-draft.service");
 
 // ── Global models (Provider & Action live in global DB) ──────
 const IntegrationProvider = require("../src/integrations/models/IntegrationProvider.model");
@@ -736,6 +737,8 @@ Tu as accès à la boîte mail de l'utilisateur. Tu peux:
 - **Chercher des emails** — Par expéditeur, sujet, contenu
 - **Lire un email** — Afficher le contenu complet d'un email
 - **Analyser les emails** — Identifier les emails importants, non lus, urgents
+- **Rédiger un e-mail** — Créer exclusivement un brouillon que l'utilisateur relira et enverra lui-même
+- **Préparer une réponse** — Créer exclusivement une réponse en brouillon, sans jamais l'envoyer
 ${context?.emailContext ? `
 ### Statistiques email actuelles:
 - 📥 Inbox: ${context.emailContext.stats?.inbox || 0} emails (${context.emailContext.stats?.unread || 0} non lus)
@@ -754,6 +757,7 @@ ${context?.currentEmailDetail ? `
 ## 📩 EMAIL ACTUELLEMENT OUVERT PAR L'UTILISATEUR:
 L'utilisateur consulte actuellement cet email. UTILISE CE CONTENU DIRECTEMENT quand il demande de résumer, traduire, analyser ou répondre à "ce mail":
 - **De:** ${context.currentEmailDetail.from || ''} (${context.currentEmailDetail.fromEmail || ''})
+- **ID:** ${context.currentEmailDetail.id || ''}
 - **Objet:** ${context.currentEmailDetail.subject || '(sans objet)'}
 - **Date:** ${context.currentEmailDetail.date || 'Inconnue'}
 - **Pièces jointes:** ${context.currentEmailDetail.hasAttachments ? 'Oui' : 'Non'}
@@ -780,9 +784,14 @@ ${context.currentEmailDetail.body || '(contenu vide)'}
    - Proposer une ACTION de type \`create\` avec les données à créer
 3. **Chercher des fiches** — Trouver des fiches par critères
 4. **Planifier des tâches complexes** — Pour les demandes complexes (multi-étapes), propose un PLAN avec les étapes à valider
-5. **📧 Emails** — Consulter, chercher, résumer, analyser les emails:
+5. **📧 Emails** — Consulter, chercher, résumer, analyser et préparer des brouillons:
    - Pour chercher un email: action \`email-search\` avec le champ \`query\`
    - Pour lire un email: action \`email-detail\` avec le champ \`emailId\`
+   - Pour rédiger: action \`email-create\` avec \`to\`, \`subject\` et \`body\`. Cette action crée uniquement un brouillon.
+   - Pour répondre: action \`email-reply\` avec \`emailId\` ou \`query\`, puis \`body\` et éventuellement \`subject\`. Cette action crée uniquement un brouillon.
+   - Si l'utilisateur demande de répondre au mail actuellement ouvert, utilise son ID ci-dessus.
+   - Si l'utilisateur désigne un mail par son expéditeur ou son sujet, utilise \`query\` au lieu de redemander un identifiant technique.
+   - Le champ \`body\` doit être du texte brut, sans HTML.
    - Pour les statistiques: utilise les données du contexte ci-dessus
 6. **🧭 Navigation** — Naviguer vers n'importe quelle page de l'application:
    - Tu peux ouvrir une collection, la page d'accueil, les tâches, la messagerie, les réglages, etc.
@@ -869,6 +878,35 @@ ${context?.entities?.length ? `   - Collections disponibles (utilise le slug exa
 \`\`\`actions
 [
   {
+    "type": "email-create",
+    "label": "Créer le brouillon",
+    "description": "Le message restera à valider dans Brouillons",
+    "data": {
+      "to": "destinataire@exemple.com",
+      "subject": "Objet du message",
+      "body": "Texte du message"
+    }
+  }
+]
+\`\`\`
+
+\`\`\`actions
+[
+  {
+    "type": "email-reply",
+    "label": "Préparer la réponse",
+    "description": "Créer une réponse en brouillon",
+    "data": {
+      "emailId": "ID_DE_LEMAIL",
+      "body": "Texte de la réponse"
+    }
+  }
+]
+\`\`\`
+
+\`\`\`actions
+[
+  {
     "type": "agenda-create",
     "label": "Ajouter Maroc - Niger à l'agenda",
     "description": "15 novembre 2026 à 20:00",
@@ -896,8 +934,9 @@ ${context?.entities?.length ? `   - Collections disponibles (utilise le slug exa
 
 ## ⚠️ RÈGLES DE SÉCURITÉ EMAIL:
 - Ne JAMAIS afficher de données sensibles (mots de passe, tokens, liens de connexion)
-- Ne JAMAIS tenter de répondre ou transférer des emails
-- Tu es en LECTURE SEULE sur la boîte mail
+- Ne JAMAIS envoyer un e-mail, appeler une action d'envoi, ni affirmer qu'un message a été envoyé
+- Tu peux uniquement créer des brouillons avec \`email-create\` ou \`email-reply\`; l'utilisateur doit toujours ouvrir, relire et envoyer lui-même le message
+- Toute demande « écris », « rédige », « réponds » ou « envoie » doit aboutir au maximum à un brouillon soumis à validation explicite
 - Si un email contient des liens suspects, préviens l'utilisateur
 
 Ne mets les blocs actions/plan QUE quand l'utilisateur demande une action concrète, pas pour les questions simples.
@@ -1423,6 +1462,24 @@ module.exports = {
                             response += `   💬 ${e.preview || "(vide)"}\n\n`;
                         });
                     }
+                    break;
+                }
+
+                case "email-create":
+                case "email-reply": {
+                    const mode = action.type === "email-reply" ? "reply" : "create";
+                    const draft = await createAiEmailDraft(req, {
+                        ...(action.data || {}),
+                        mode,
+                    });
+                    const mailboxUrl = `/account/${req.account_number}/mailbox/draft?accountId=${encodeURIComponent(draft.accountId)}`;
+                    result = {
+                        ...draft,
+                        openUrl: mailboxUrl,
+                    };
+                    response = mode === "reply"
+                        ? `✅ **Réponse préparée en brouillon**\n\n📧 **${draft.subject}** — pour ${draft.to}\n\nAucun e-mail n'a été envoyé. Ouvrez le brouillon pour le relire et l'envoyer vous-même.`
+                        : `✅ **E-mail créé en brouillon**\n\n📧 **${draft.subject}** — pour ${draft.to}\n\nAucun e-mail n'a été envoyé. Ouvrez le brouillon pour le relire et l'envoyer vous-même.`;
                     break;
                 }
 

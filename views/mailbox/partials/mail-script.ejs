@@ -87,6 +87,13 @@ document.addEventListener('alpine:init', () => {
             // Load mail accounts from server data
             this.mailAccounts = <%- JSON.stringify(mailAccounts || []).replace(/<\//g, '<\\/') %>;
             this.selectedAccountId = '<%= selectedAccountId || "" %>' || null;
+            this.defaultParams.from = this.activeAccount?.email || this.defaultParams.from;
+            this.params.from = this.defaultParams.from;
+
+            const mailboxIdx = pathParts.indexOf('mailbox');
+            const routeTab = mailboxIdx >= 0 ? pathParts[mailboxIdx + 1] : '';
+            const routeTabs = { inbox: 'inbox', sent: 'sent_mail', draft: 'draft', spam: 'spam', trash: 'trash', archive: 'archive' };
+            if (routeTabs[routeTab]) this.selectedTab = routeTabs[routeTab];
 
             // Load mails from server
             const initialMails = <%- JSON.stringify(initialMails || []).replace(/<\//g, '<\\/') %>;
@@ -403,6 +410,10 @@ document.addEventListener('alpine:init', () => {
 
         selectMail(mail) {
             if (mail) {
+                if (mail.type === 'draft') {
+                    this.openMail('draft', mail);
+                    return;
+                }
                 mail.isUnread = false;
                 this.selectedMail = mail;
                 this.isEdit = false;
@@ -697,7 +708,18 @@ document.addEventListener('alpine:init', () => {
             this._clearEmailContext();
 
             if (type === 'add') {
-                this.params = { ...this.defaultParams, attachments: [] };
+                this.params = { ...this.defaultParams, from: this.activeAccount?.email || this.defaultParams.from, attachments: [] };
+            } else if (type === 'draft') {
+                this.params = {
+                    ...this.defaultParams,
+                    id: mail.id,
+                    from: mail.from || this.activeAccount?.email || mail.email || this.defaultParams.from,
+                    to: mail.to || '',
+                    cc: mail.cc || '',
+                    title: mail.title || '',
+                    description: mail.description || '',
+                    attachments: mail.attachments ? [...mail.attachments] : [],
+                };
             } else if (type === 'reply') {
                 this.params = {
                     ...this.defaultParams,
@@ -730,7 +752,7 @@ document.addEventListener('alpine:init', () => {
             });
         },
 
-        saveMail(type, id) {
+        async saveMail(type, id) {
             if (!this.params.to && type === 'send') {
                 this.showMessage('Recipient is required', 'error');
                 return;
@@ -740,7 +762,7 @@ document.addEventListener('alpine:init', () => {
                 return;
             }
 
-            const mail = {
+            let mail = {
                 ...this.params,
                 id: id || (this.mailList.length ? Math.max(...this.mailList.map(m => m.id)) + 1 : 1),
                 firstName: 'Me',
@@ -755,6 +777,27 @@ document.addEventListener('alpine:init', () => {
                 group: '',
                 displayDescription: this.params.description?.replace(/<[^>]*>/g, '').substring(0, 100) || '',
             };
+
+            if (type === 'draft') {
+                try {
+                    const response = await fetch(this.apiBase + '/drafts', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            ...this.params,
+                            id: id || undefined,
+                            accountId: this.activeAccount?._id || this.selectedAccountId || undefined,
+                        }),
+                    });
+                    const data = await response.json().catch(() => ({}));
+                    if (!response.ok || !data.success) throw new Error(data.error || 'Draft could not be saved');
+                    mail = { ...mail, ...data.mail, type: 'draft' };
+                } catch (error) {
+                    this.showMessage(error.message || 'Draft could not be saved', 'error');
+                    return;
+                }
+            }
 
             if (id) {
                 const idx = this.mailList.findIndex((d) => d.id === id);

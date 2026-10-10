@@ -219,6 +219,87 @@ exports.deleteMails = async (req, res) => {
     }
 };
 
+function sanitizeDraftHtml(value = '') {
+    return String(value || '')
+        .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+        .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+        .replace(/<(?:iframe|object|embed)[^>]*>[\s\S]*?<\/(?:iframe|object|embed)>/gi, '')
+        .replace(/\son\w+\s*=\s*(?:"[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+        .replace(/javascript\s*:/gi, '');
+}
+
+function draftPreview(value = '') {
+    return String(value || '')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .replace(/&amp;/gi, '&')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .slice(0, 150);
+}
+
+// ===== API: Create/update a persisted draft (never sends) =====
+exports.saveDraft = async (req, res) => {
+    try {
+        const Mail = await tenantCollection(req, 'Mail');
+        const MailAccount = await tenantCollection(req, 'MailAccount');
+        const input = req.body || {};
+        const title = String(input.title || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
+        const to = String(input.to || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 1000);
+        if (!title) return res.status(400).json({ error: 'Subject is required' });
+
+        let draft = null;
+        const numericId = Number(input.id);
+        if (Number.isFinite(numericId)) {
+            const draftFilter = { id: numericId, type: 'draft' };
+            if (input.accountId && /^[a-f\d]{24}$/i.test(String(input.accountId))) {
+                draftFilter.accountId = input.accountId;
+            }
+            draft = await Mail.findOne(draftFilter);
+        }
+
+        let account = null;
+        if (input.accountId && /^[a-f\d]{24}$/i.test(String(input.accountId))) {
+            account = await MailAccount.findById(input.accountId);
+        }
+        if (!account && draft?.accountId) account = await MailAccount.findById(draft.accountId);
+        if (!account) account = await MailAccount.findOne({ isDefault: true, isActive: { $ne: false } });
+        if (!account) account = await MailAccount.findOne({ isActive: { $ne: false } }).sort({ createdAt: 1 });
+        if (!account) return res.status(400).json({ error: 'No active mail account configured' });
+
+        if (!draft) {
+            const latest = await Mail.findOne().sort({ id: -1 }).select('id').lean();
+            const timeBasedId = (Date.now() * 1000) + Math.floor(Math.random() * 1000);
+            draft = new Mail({ id: Math.max(timeBasedId, Number(latest?.id || 0) + 1) });
+        }
+
+        const description = sanitizeDraftHtml(input.description);
+        draft.accountId = account._id;
+        draft.email = account.email;
+        draft.from = account.email;
+        draft.to = to;
+        draft.cc = String(input.cc || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 1000);
+        draft.firstName = 'Moi';
+        draft.lastName = '';
+        draft.title = title;
+        draft.description = description;
+        draft.displayDescription = draftPreview(description);
+        draft.type = 'draft';
+        draft.isUnread = false;
+        draft.date = new Date();
+        draft.time = draft.date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+        draft.attachments = Array.isArray(input.attachments) ? input.attachments.slice(0, 20) : [];
+        await draft.save();
+
+        const output = draft.toObject();
+        delete output.__v;
+        res.json({ success: true, mail: output });
+    } catch (error) {
+        console.error('saveDraft Error:', error);
+        res.status(500).json({ error: 'Draft could not be saved' });
+    }
+};
+
 // ===== MAIL ACCOUNTS CRUD =====
 exports.discoverProvider = async (req, res) => {
     try {

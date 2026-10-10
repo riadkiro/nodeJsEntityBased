@@ -443,7 +443,9 @@ document.addEventListener('alpine:init', () => {
                 'agenda-create':'solar:calendar-add-bold-duotone',
                 search:'solar:magnifer-linear',
                 'email-search':'solar:letter-bold-duotone',
-                'email-detail':'solar:letter-opened-bold-duotone'
+                'email-detail':'solar:letter-opened-bold-duotone',
+                'email-create':'solar:pen-new-square-bold-duotone',
+                'email-reply':'solar:reply-bold-duotone'
             };
             return icons[action.type] || 'solar:play-circle-bold-duotone';
         },
@@ -465,7 +467,16 @@ document.addEventListener('alpine:init', () => {
                 });
                 const data = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(data.error || data.response || 'Action impossible.');
-                this.messages.push(this.makeMessage('assistant', data.response || 'Action terminée.'));
+                const completedMessage = this.makeMessage('assistant', data.response || 'Action terminée.');
+                if (data.result?.openUrl) {
+                    completedMessage.actions = [{
+                        type:'navigate',
+                        label:'Ouvrir le brouillon',
+                        description:'Relire et envoyer depuis la messagerie',
+                        data:{ url:data.result.openUrl, pageName:'Brouillons' }
+                    }];
+                }
+                this.messages.push(completedMessage);
                 message.actions = null;
                 await this.loadContext();
             } catch (error) {

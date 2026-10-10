@@ -12,6 +12,7 @@ router.post('/api/group', mailboxController.setGroup);
 router.post('/api/type', mailboxController.setType);
 router.post('/api/read-status', mailboxController.setReadStatus);
 router.post('/api/delete', mailboxController.deleteMails);
+router.post('/api/drafts', mailboxController.saveDraft);
 
 // API routes - Mail accounts
 router.get('/api/accounts', mailboxController.getAccounts);
